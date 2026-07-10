@@ -1,0 +1,6 @@
+{
+  "name": "AI CMO",
+  "description": "An interactive, strategic growth marketing department in a single AI agent. Input your business website to analyze SWOT positioning, target audience segments, develop 30-day priorities, and automatically draft high-conversion SEO keywords, authority blogs, ready-to-publish social feeds, nurturing emails, and landing magnets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

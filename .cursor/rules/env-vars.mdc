@@ -1,0 +1,23 @@
+# Environment variables
+
+When a feature needs new configuration:
+
+1. Add the variable to **`.env.example`** with a placeholder and a one-line comment.
+2. Add the same key to **`.env.local`** (preserve existing values; use empty string or placeholder if the user must fill it in).
+3. Add TypeScript types in **`src/vite-env.d.ts`** for any `VITE_*` client vars.
+4. Read server vars via **`server/lib/config.ts`** helpers when possible (don't scatter `process.env` checks).
+
+Never commit real secrets to `.env.example`. Never overwrite existing secret values in `.env.local` when adding new keys.
+
+Current required keys:
+
+| Key | Where | Purpose |
+|-----|-------|---------|
+| `GEMINI_API_KEY` | server | Hosted AI |
+| `APP_URL` | server | OAuth redirects |
+| `CMO_API_TOKEN` / `VITE_CMO_API_TOKEN` | server + client | Local dev API auth |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | client | Cloud sign-in |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | server | Workspace DB |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | server | GSC + GA4 OAuth |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | server | Billing webhooks |
+| `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_TEAM_MONTHLY` | server | Checkout price IDs |
