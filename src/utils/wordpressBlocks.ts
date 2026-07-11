@@ -89,11 +89,22 @@ function separatorBlock(): string {
 <!-- /wp:separator -->`;
 }
 
+function imageBlock(url: string, alt: string): string {
+  const safeUrl = escapeHtml(url);
+  const safeAlt = escapeHtml(alt);
+  return `<!-- wp:image {"align":"wide","sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image alignwide size-large"><img src="${safeUrl}" alt="${safeAlt}"/></figure>
+<!-- /wp:image -->`;
+}
+
 export interface WordPressSeoMeta {
   title?: string;
   summary?: string;
   taglineOrCTA?: string;
   seoInstructions?: string;
+  /** Campaign Studio preview image — embedded as wp:image at top of post body */
+  featuredImageUrl?: string;
+  featuredImageAlt?: string;
 }
 
 function slugify(title: string): string {
@@ -113,6 +124,8 @@ function buildSeoCommentBlock(seo: WordPressSeoMeta): string {
     seo.summary ? `Meta description: ${seo.summary}` : '',
     seo.taglineOrCTA ? `Primary CTA: ${seo.taglineOrCTA}` : '',
     seo.title ? `Suggested slug: ${slugify(seo.title)}` : '',
+    seo.featuredImageUrl ? `Featured image URL: ${seo.featuredImageUrl}` : '',
+    seo.featuredImageAlt ? `Featured image alt text: ${seo.featuredImageAlt}` : '',
     seo.seoInstructions ? `SEO strategy:\n${seo.seoInstructions}` : '',
   ].filter((line) => line !== '');
 
@@ -246,7 +259,16 @@ export function toWordPressBlocks(markdown: string, seo?: WordPressSeoMeta): str
   if (seo && hasSeoContent(seo)) {
     parts.push(buildSeoCommentBlock(seo));
   }
-  if (body) parts.push(body);
+
+  const bodyParts: string[] = [];
+  if (seo?.featuredImageUrl?.trim()) {
+    bodyParts.push(
+      imageBlock(seo.featuredImageUrl.trim(), seo.featuredImageAlt?.trim() || seo.title || 'Featured image'),
+    );
+  }
+  if (body) bodyParts.push(body);
+  if (bodyParts.length) parts.push(bodyParts.join('\n\n'));
+
   if (seo && hasSeoContent(seo)) {
     parts.push(buildSeoReferenceSection(seo));
   }

@@ -44,4 +44,16 @@ describe('wordpressBlocks', () => {
     expect(out).toContain('<!-- wp:heading {"level":3} -->');
     expect(out).toContain('Hello world.');
   });
+
+  it('embeds featured image as wp:image block at top of body', () => {
+    const out = toWordPressBlocks('## Intro\n\nHello world.', {
+      title: 'My Post',
+      featuredImageUrl: 'https://example.com/hero.jpg',
+      featuredImageAlt: 'Hero banner',
+    });
+    expect(out).toContain('<!-- wp:image');
+    expect(out).toContain('src="https://example.com/hero.jpg"');
+    expect(out).toContain('alt="Hero banner"');
+    expect(out.indexOf('<!-- wp:image')).toBeLessThan(out.indexOf('<!-- wp:heading'));
+  });
 });

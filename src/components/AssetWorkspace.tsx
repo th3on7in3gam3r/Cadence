@@ -441,17 +441,20 @@ export default function AssetWorkspace({
   };
 
   const handleCopyWordPress = async () => {
+    const featuredImageUrl = getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt);
     const wpHtml = toWordPressBlocks(localAssetContent, {
       title: asset.title,
       summary: asset.summary,
       taglineOrCTA: asset.taglineOrCTA,
       seoInstructions: asset.seoInstructions,
+      featuredImageUrl,
+      featuredImageAlt: customImagePrompt || asset.title || companyInfo.brandName,
     });
     await navigator.clipboard.writeText(wpHtml);
     setCopiedWp(true);
     setTimeout(() => setCopiedWp(false), 2000);
     triggerToast?.(
-      'WordPress HTML copied — in your post editor choose ⋮ → Code editor, then paste.',
+      'WordPress HTML copied with featured image — paste in Code editor. Upload image to Media Library if the preview URL does not load.',
       'success',
     );
   };
@@ -475,6 +478,8 @@ export default function AssetWorkspace({
           summary: asset.summary,
           taglineOrCTA: asset.taglineOrCTA,
           seoInstructions: asset.seoInstructions,
+          featuredImageUrl: getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt),
+          featuredImageAlt: customImagePrompt || asset.title || companyInfo.brandName,
         }) || localAssetContent,
         excerpt: asset.summary || '',
         status: asDraft ? 'draft' : 'publish',
