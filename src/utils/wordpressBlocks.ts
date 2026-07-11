@@ -97,6 +97,32 @@ function imageBlock(url: string, alt: string): string {
 <!-- /wp:image -->`;
 }
 
+function subscribeCtaBlock(meta: WordPressSeoMeta): string {
+  const brand = meta.brandName?.trim() || 'our blog';
+  const headline = `Stay connected with ${brand}`;
+  const body =
+    meta.summary?.trim() ||
+    'Get new articles, encouragement, and practical tips delivered to your inbox.';
+  const url = meta.subscribeUrl?.trim() || '#subscribe';
+  const buttonLabel = meta.taglineOrCTA?.trim() || 'Subscribe';
+
+  return `<!-- wp:group {"style":{"spacing":{"padding":{"top":"2rem","bottom":"2rem","left":"1.5rem","right":"1.5rem"}},"border":{"radius":"12px"}},"backgroundColor":"base-2","layout":{"type":"constrained"}} -->
+<div class="wp-block-group has-base-2-background-color has-background" style="border-radius:12px;padding-top:2rem;padding-right:1.5rem;padding-bottom:2rem;padding-left:1.5rem"><!-- wp:heading {"textAlign":"center","level":3} -->
+<h3 class="wp-block-heading has-text-align-center">${escapeHtml(headline)}</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"align":"center"} -->
+<p class="has-text-align-center">${escapeHtml(body)}</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="${escapeHtml(url)}">${escapeHtml(buttonLabel)}</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons --></div>
+<!-- /wp:group -->`;
+}
+
 export interface WordPressSeoMeta {
   title?: string;
   summary?: string;
@@ -105,6 +131,10 @@ export interface WordPressSeoMeta {
   /** Campaign Studio preview image — embedded as wp:image at top of post body */
   featuredImageUrl?: string;
   featuredImageAlt?: string;
+  /** Newsletter / email signup CTA for blog posts */
+  brandName?: string;
+  subscribeUrl?: string;
+  includeSubscribe?: boolean;
 }
 
 function slugify(title: string): string {
@@ -126,6 +156,7 @@ function buildSeoCommentBlock(seo: WordPressSeoMeta): string {
     seo.title ? `Suggested slug: ${slugify(seo.title)}` : '',
     seo.featuredImageUrl ? `Featured image URL: ${seo.featuredImageUrl}` : '',
     seo.featuredImageAlt ? `Featured image alt text: ${seo.featuredImageAlt}` : '',
+    seo.includeSubscribe && seo.subscribeUrl ? `Subscribe button URL: ${seo.subscribeUrl}` : '',
     seo.seoInstructions ? `SEO strategy:\n${seo.seoInstructions}` : '',
   ].filter((line) => line !== '');
 
@@ -268,6 +299,10 @@ export function toWordPressBlocks(markdown: string, seo?: WordPressSeoMeta): str
   }
   if (body) bodyParts.push(body);
   if (bodyParts.length) parts.push(bodyParts.join('\n\n'));
+
+  if (seo?.includeSubscribe && (seo.brandName || seo.subscribeUrl)) {
+    parts.push(subscribeCtaBlock(seo));
+  }
 
   if (seo && hasSeoContent(seo)) {
     parts.push(buildSeoReferenceSection(seo));

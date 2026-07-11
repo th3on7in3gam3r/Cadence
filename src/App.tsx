@@ -889,6 +889,7 @@ export default function App({ onGoHome }: AppProps) {
                       assetType={activeAssetType}
                       asset={cachedAssets[activeAssetType]!}
                       companyInfo={brandAnalysis}
+                      brandUrl={brandUrl}
                       onBackToDashboard={() => goTo('dashboard')}
                       onRefineAsset={handleRefineAsset}
                       isRefining={isRefiningAsset}

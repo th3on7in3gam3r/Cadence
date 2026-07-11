@@ -56,4 +56,18 @@ describe('wordpressBlocks', () => {
     expect(out).toContain('alt="Hero banner"');
     expect(out.indexOf('<!-- wp:image')).toBeLessThan(out.indexOf('<!-- wp:heading'));
   });
+
+  it('adds subscribe CTA block for blog exports', () => {
+    const out = toWordPressBlocks('## Intro\n\nHello world.', {
+      title: 'Faith at Home',
+      brandName: 'Bible Funland',
+      subscribeUrl: 'https://biblefunland.com/#subscribe',
+      taglineOrCTA: 'Subscribe',
+      includeSubscribe: true,
+    });
+    expect(out).toContain('<!-- wp:buttons');
+    expect(out).toContain('href="https://biblefunland.com/#subscribe"');
+    expect(out).toContain('Subscribe');
+    expect(out).toContain('Stay connected with Bible Funland');
+  });
 });

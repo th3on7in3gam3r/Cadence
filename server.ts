@@ -27,6 +27,7 @@ import { emitStudioOpsEvent } from "./server/lib/studioOps";
 import { getSupabaseAdmin } from "./server/db/supabaseAdmin";
 import type { AuthedRequest } from "./server/middleware/requireUser";
 import { formatBrandKitBlock } from "./server/lib/brandKitPrompt";
+import { generateStudioImage } from "./server/lib/imagen";
 import { isSupabaseConfigured, isHostedAiMode } from "./server/lib/config";
 import { requestLogger, metricsHandler } from "./server/lib/metrics";
 import { initSentry, logger } from "./server/lib/logger";
@@ -822,6 +823,41 @@ Return JSON with suggestedTitle (30-60 chars), suggestedMetaDescription (110-170
   } catch (error: any) {
     console.error("Meta rewrite failed:", error);
     res.status(500).json({ error: error.message || "Meta rewrite failed." });
+  }
+});
+
+// 8. Campaign Studio — generate hero image with Google Imagen
+app.post("/api/generate-image", ...protectedApi, async (req, res) => {
+  try {
+    const { prompt, assetType, artisticTheme } = req.body;
+    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+      return res.status(400).json({ error: "prompt is required." });
+    }
+    if (!assetType || typeof assetType !== "string") {
+      return res.status(400).json({ error: "assetType is required." });
+    }
+
+    const ai = getAI();
+    const result = await generateStudioImage(ai, {
+      prompt,
+      assetType,
+      artisticTheme: typeof artisticTheme === "string" ? artisticTheme : undefined,
+    });
+
+    const userId = (req as AuthedRequest).userId;
+    if (userId) {
+      await recordUsageEvent(userId, "imagen_generate", {
+        assetType,
+        model: result.model,
+      });
+    }
+
+    res.json(result);
+  } catch (error: any) {
+    console.error("Image generation failed:", error);
+    res.status(500).json({
+      error: error.message || "Image generation failed. Check your prompt and try again.",
+    });
   }
 });
 

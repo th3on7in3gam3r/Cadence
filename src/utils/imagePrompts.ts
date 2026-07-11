@@ -68,6 +68,51 @@ export function getStudioImageUrl(
   return `https://picsum.photos/seed/imagen-${assetType}-${artisticTheme}-${imagenSeed}-${encoded}/1200/675`;
 }
 
+const GENERATED_IMAGES_KEY = 'ai_cmo_generated_images_by_asset';
+
+export function loadGeneratedImageUrl(assetType: MarketingAssetType): string | null {
+  try {
+    const raw = localStorage.getItem(GENERATED_IMAGES_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw) as Partial<Record<MarketingAssetType, string>>;
+    return map[assetType]?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveGeneratedImageUrl(assetType: MarketingAssetType, imageDataUrl: string): void {
+  try {
+    const raw = localStorage.getItem(GENERATED_IMAGES_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[assetType] = imageDataUrl;
+    localStorage.setItem(GENERATED_IMAGES_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
+/** Prefer a real Imagen result; otherwise show the placeholder preview. */
+export function resolveStudioImageUrl(input: {
+  generatedUrl?: string | null;
+  assetType: MarketingAssetType;
+  artisticTheme: string;
+  imagenSeed: number;
+  prompt: string;
+}): string {
+  if (input.generatedUrl?.trim()) return input.generatedUrl.trim();
+  return getStudioImageUrl(
+    input.assetType,
+    input.artisticTheme,
+    input.imagenSeed,
+    input.prompt,
+  );
+}
+
+export function isGeneratedImageUrl(url: string): boolean {
+  return url.startsWith('data:image/');
+}
+
 export function getStudioLabels(assetType: MarketingAssetType): { suite: string; panel: string } {
   const labels: Record<MarketingAssetType, { suite: string; panel: string }> = {
     blog_post: {

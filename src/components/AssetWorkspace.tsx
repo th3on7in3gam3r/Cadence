@@ -27,11 +27,15 @@ import { computeWordDiff } from '../utils/wordDiff';
 import { toWordPressBlocks } from '../utils/wordpressBlocks';
 import {
   buildDefaultImagePrompt,
-  getStudioImageUrl,
   getStudioLabels,
+  isGeneratedImageUrl,
+  loadGeneratedImageUrl,
   loadImagePrompt,
+  resolveStudioImageUrl,
+  saveGeneratedImageUrl,
   saveImagePrompt,
 } from '../utils/imagePrompts';
+import { generateStudioImage } from '../lib/studioImageApi';
 import ScrollToTopButton from './ScrollToTopButton';
 
 import EmailMockupViewport from './EmailMockupViewport';
@@ -52,6 +56,7 @@ interface AssetWorkspaceProps {
   assetType: MarketingAssetType;
   asset: GeneratedAsset;
   companyInfo: WebsiteAnalysis;
+  brandUrl?: string;
   onBackToDashboard: () => void;
   onRefineAsset: (feedback: string, toneIntensity: number) => Promise<void>;
   isRefining: boolean;
@@ -83,6 +88,7 @@ export default function AssetWorkspace({
   assetType, 
   asset, 
   companyInfo,
+  brandUrl = '',
   onBackToDashboard, 
   onRefineAsset, 
   isRefining,
@@ -164,6 +170,7 @@ export default function AssetWorkspace({
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
   const [imagenSeed, setImagenSeed] = useState<number>(101);
   const [customImagePrompt, setCustomImagePrompt] = useState<string>('');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [isAiEditorOverlayOpen, setIsAiEditorOverlayOpen] = useState<boolean>(false);
   const [imageProgressPercentage, setImageProgressPercentage] = useState<number>(0);
   const [imageGenerationLog, setImageGenerationLog] = useState<string>('Ready to synthesize');
@@ -174,7 +181,36 @@ export default function AssetWorkspace({
     setCustomImagePrompt(
       saved || buildDefaultImagePrompt(assetType, asset, companyInfo.brandName),
     );
+    setGeneratedImageUrl(loadGeneratedImageUrl(assetType));
   }, [assetType, asset.title, asset.summary, companyInfo.brandName]);
+
+  const studioImageSrc = (promptOverride?: string) =>
+    resolveStudioImageUrl({
+      generatedUrl: generatedImageUrl,
+      assetType,
+      artisticTheme,
+      imagenSeed,
+      prompt: promptOverride ?? customImagePrompt,
+    });
+
+  const subscribeUrl = (() => {
+    const base = brandUrl?.trim() || localStorage.getItem('ai_cmo_brand_url')?.trim() || '';
+    if (!base) return '#subscribe';
+    const normalized = base.startsWith('http') ? base : `https://${base}`;
+    return `${normalized.replace(/\/$/, '')}/#subscribe`;
+  })();
+
+  const buildWordPressSeoMeta = (featuredImageUrl: string) => ({
+    title: asset.title,
+    summary: asset.summary,
+    taglineOrCTA: asset.taglineOrCTA,
+    seoInstructions: asset.seoInstructions,
+    featuredImageUrl: isGeneratedImageUrl(featuredImageUrl) ? undefined : featuredImageUrl,
+    featuredImageAlt: customImagePrompt || asset.title || companyInfo.brandName,
+    brandName: companyInfo.brandName,
+    subscribeUrl,
+    includeSubscribe: assetType === 'blog_post',
+  });
 
   useEffect(() => {
     if (customImagePrompt.trim()) {
@@ -229,34 +265,45 @@ export default function AssetWorkspace({
   const categoryTagsPreset = ['Draft', 'Test', 'Under Review', 'Final', 'Approved'];
 
 
-  const handleTriggerImagenGeneration = () => {
+  const handleTriggerImagenGeneration = async () => {
+    if (!customImagePrompt.trim()) return;
+
     setIsGeneratingImage(true);
-    setImageProgressPercentage(0);
-    setImageGenerationLog('Contacting Google Imagen 3 Engine...');
+    setImageProgressPercentage(5);
+    setImageGenerationLog('Contacting Google Imagen...');
 
-    const logs = [
-      { pct: 15, msg: 'Deconstructing copy context & semantic metadata...' },
-      { pct: 40, msg: `Injecting artistic style profile [${artisticTheme.toUpperCase()}]...` },
-      { pct: 60, msg: 'Synthesizing creative latent pixels using neural weights...' },
-      { pct: 85, msg: 'Perfecting HDR color grading and contrast profiles...' },
-      { pct: 100, msg: 'Widescreen visual generated successfully!' }
-    ];
+    try {
+      setImageProgressPercentage(25);
+      setImageGenerationLog('Rendering image from your design prompt...');
 
-    logs.forEach((step, idx) => {
-      setTimeout(() => {
-        setImageProgressPercentage(step.pct);
-        setImageGenerationLog(step.msg);
-        if (step.pct === 100) {
-          setTimeout(() => {
-            setImagenSeed(prev => prev + Math.floor(Math.random() * 200) + 1);
-            setIsGeneratingImage(false);
-            if (triggerToast) {
-              triggerToast('Google Imagen 3: Brand graphic asset generated successfully!', 'success');
-            }
-          }, 400);
-        }
-      }, (idx + 1) * 350);
-    });
+      const result = await generateStudioImage({
+        prompt: customImagePrompt,
+        assetType,
+        artisticTheme,
+      });
+
+      setImageProgressPercentage(90);
+      setImageGenerationLog('Applying final color grading...');
+
+      setGeneratedImageUrl(result.imageDataUrl);
+      saveGeneratedImageUrl(assetType, result.imageDataUrl);
+      setImagenSeed((prev) => prev + 1);
+      setImageProgressPercentage(100);
+      setImageGenerationLog('Image generated successfully!');
+
+      triggerToast?.(
+        result.enhancedPrompt
+          ? 'Imagen image ready. Download it for WordPress Media Library if needed.'
+          : 'Imagen image generated from your prompt.',
+        'success',
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Image generation failed.';
+      setImageGenerationLog(message);
+      triggerToast?.(message, 'error');
+    } finally {
+      setTimeout(() => setIsGeneratingImage(false), 400);
+    }
   };
 
   const feedbackInputRef = useRef<HTMLTextAreaElement>(null);
@@ -441,20 +488,16 @@ export default function AssetWorkspace({
   };
 
   const handleCopyWordPress = async () => {
-    const featuredImageUrl = getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt);
-    const wpHtml = toWordPressBlocks(localAssetContent, {
-      title: asset.title,
-      summary: asset.summary,
-      taglineOrCTA: asset.taglineOrCTA,
-      seoInstructions: asset.seoInstructions,
-      featuredImageUrl,
-      featuredImageAlt: customImagePrompt || asset.title || companyInfo.brandName,
-    });
+    const featuredImageUrl = studioImageSrc();
+    const wpHtml = toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(featuredImageUrl));
     await navigator.clipboard.writeText(wpHtml);
     setCopiedWp(true);
     setTimeout(() => setCopiedWp(false), 2000);
+    const imageNote = isGeneratedImageUrl(featuredImageUrl)
+      ? ' Upload your generated hero image to WordPress Media Library and set it as the featured image.'
+      : ' Generate a custom Imagen image first, or upload a placeholder to Media Library.';
     triggerToast?.(
-      'WordPress HTML copied with featured image — paste in Code editor. Upload image to Media Library if the preview URL does not load.',
+      `WordPress HTML copied with subscribe CTA.${imageNote}`,
       'success',
     );
   };
@@ -473,14 +516,7 @@ export default function AssetWorkspace({
     try {
       const result = await publishToWordPress({
         title: asset.title || `${companyInfo.brandName} blog post`,
-        content: toWordPressBlocks(localAssetContent, {
-          title: asset.title,
-          summary: asset.summary,
-          taglineOrCTA: asset.taglineOrCTA,
-          seoInstructions: asset.seoInstructions,
-          featuredImageUrl: getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt),
-          featuredImageAlt: customImagePrompt || asset.title || companyInfo.brandName,
-        }) || localAssetContent,
+        content: toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(studioImageSrc())) || localAssetContent,
         excerpt: asset.summary || '',
         status: asDraft ? 'draft' : 'publish',
       });
@@ -1245,7 +1281,7 @@ export default function AssetWorkspace({
                                 <div className="space-y-3 w-full bg-slate-900/40 p-1 rounded-2xl border border-slate-850">
                                   <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-[16/9] w-full shadow-inner flex items-center justify-center">
                                     <img
-                                      src={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
+                                      src={studioImageSrc()}
                                       alt={customImagePrompt || "Blog cover photo"}
                                       referrerPolicy="no-referrer"
                                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-102"
@@ -1299,9 +1335,18 @@ export default function AssetWorkspace({
                                     <div className="flex items-center gap-2">
                                       <span>Ratio: <strong>16:9 Banner</strong></span>
                                       <span className="text-slate-800">|</span>
-                                      <span>Engine: <strong>Imagen 3 (Landscape)</strong></span>
+                                      <span>Engine: <strong>{generatedImageUrl ? 'Imagen (generated)' : 'Placeholder preview'}</strong></span>
                                     </div>
                                     <div className="flex items-center gap-3">
+                                      {generatedImageUrl && (
+                                        <a
+                                          href={generatedImageUrl}
+                                          download={`${assetType}-hero.png`}
+                                          className="text-emerald-400 hover:text-emerald-300 font-bold"
+                                        >
+                                          Download image
+                                        </a>
+                                      )}
                                       <label className="flex items-center gap-1 cursor-pointer text-slate-400 hover:text-slate-250">
                                         <input
                                           type="checkbox"
@@ -1313,7 +1358,7 @@ export default function AssetWorkspace({
                                       </label>
                                       <span className="text-slate-800">|</span>
                                       <a
-                                        href={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
+                                        href={generatedImageUrl || studioImageSrc()}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-emerald-400 hover:text-emerald-350 font-bold transition flex items-center gap-1"
@@ -1387,7 +1432,7 @@ export default function AssetWorkspace({
                                     {/* The Dynamic Social Image Card */}
                                     <div className="relative rounded-lg overflow-hidden border border-slate-850 bg-slate-900 aspect-[1.91/1] max-h-[190px] flex items-center justify-center">
                                       <img
-                                        src={getStudioImageUrl('social_posts', artisticTheme, imagenSeed, `${activeSocialTab}-${customImagePrompt}`)}
+                                        src={studioImageSrc(`${activeSocialTab}-${customImagePrompt}`)}
                                         alt="Linked social asset preview"
                                         referrerPolicy="no-referrer"
                                         className="w-full h-full object-cover transition-transform duration-350"
@@ -1474,7 +1519,7 @@ export default function AssetWorkspace({
                                     }`}
                                   >
                                     <img
-                                      src={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
+                                      src={studioImageSrc()}
                                       alt={customImagePrompt || 'Campaign visual'}
                                       referrerPolicy="no-referrer"
                                       className="w-full h-full object-cover"
@@ -1499,7 +1544,7 @@ export default function AssetWorkspace({
                                   <div className="flex flex-wrap items-center justify-between text-[10px] text-slate-500 px-3 py-2 font-mono gap-2">
                                     <span>Engine: <strong>Imagen 3</strong></span>
                                     <a
-                                      href={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
+                                      href={generatedImageUrl || studioImageSrc()}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
@@ -1583,8 +1628,13 @@ export default function AssetWorkspace({
                             {/* Imagen tool generator block */}
                             <div className="pt-3 border-t border-slate-850/40 space-y-1.5">
                               <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block leading-none">
-                                Powered by Google Imagen 3 API
+                                Google Imagen — uses your design prompt
                               </span>
+                              {!generatedImageUrl && (
+                                <p className="text-[9px] text-amber-400/90 leading-relaxed">
+                                  Preview above is a stock placeholder until you click Generate Custom Image.
+                                </p>
+                              )}
                               <button
                                 type="button"
                                 onClick={handleTriggerImagenGeneration}
