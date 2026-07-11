@@ -69,7 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const redirectTo = `${window.location.origin}/app`;
     await sb.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo },
+      options: {
+        redirectTo,
+        queryParams: { prompt: 'select_account' },
+      },
     });
   }, []);
 

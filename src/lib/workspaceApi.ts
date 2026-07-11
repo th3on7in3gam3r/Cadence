@@ -61,6 +61,36 @@ export function buildPayloadFromLocal(): WorkspacePayload {
   };
 }
 
+/** Merge cloud, local storage, and live overrides — never drop asset types on save. */
+export function mergeWorkspacePayload(
+  ...layers: Array<Partial<WorkspacePayload> | null | undefined>
+): WorkspacePayload {
+  const base = buildPayloadFromLocal();
+  const merged: WorkspacePayload = { ...base };
+
+  for (const layer of layers) {
+    if (!layer) continue;
+    if (layer.brandUrl !== undefined) merged.brandUrl = layer.brandUrl;
+    if (layer.growthGoal !== undefined) merged.growthGoal = layer.growthGoal;
+    if (layer.brandVoice !== undefined) merged.brandVoice = layer.brandVoice;
+    if (layer.customChallenge !== undefined) merged.customChallenge = layer.customChallenge;
+    if (layer.brandAnalysis !== undefined) merged.brandAnalysis = layer.brandAnalysis;
+    if (layer.activeView !== undefined) merged.activeView = layer.activeView;
+    if (layer.activeAssetType !== undefined) merged.activeAssetType = layer.activeAssetType;
+    if (layer.campaignRuns !== undefined) merged.campaignRuns = layer.campaignRuns;
+    if (layer.seoCrawl !== undefined) merged.seoCrawl = layer.seoCrawl;
+    if (layer.seoAudit !== undefined) merged.seoAudit = layer.seoAudit;
+    if (layer.cachedAssets) {
+      merged.cachedAssets = { ...merged.cachedAssets, ...layer.cachedAssets };
+    }
+    if (layer.assetHistory) {
+      merged.assetHistory = { ...merged.assetHistory, ...layer.assetHistory };
+    }
+  }
+
+  return merged;
+}
+
 export async function fetchCloudWorkspace(): Promise<WorkspacePayload | null> {
   const res = await apiFetch('/api/workspace/current');
   if (!res.ok) return null;

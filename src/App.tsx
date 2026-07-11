@@ -54,6 +54,7 @@ import {
   fetchCloudWorkspace,
   hydrateLocalFromPayload,
   saveCloudWorkspace,
+  mergeWorkspacePayload,
   type WorkspacePayload,
 } from './lib/workspaceApi';
 import {
@@ -169,19 +170,21 @@ export default function App({ onGoHome }: AppProps) {
     async (overrides?: Partial<WorkspacePayload>) => {
       if (!cloudEnabled || !session || !cloudHydrated) return;
       const base = workspaceSnapshotRef.current;
-      const payload: WorkspacePayload = {
-        brandUrl: base.brandUrl,
-        growthGoal: base.growthGoal,
-        brandVoice: base.brandVoice,
-        customChallenge: base.customChallenge,
-        brandAnalysis: base.brandAnalysis,
-        cachedAssets: base.cachedAssets,
-        assetHistory: base.assetHistory,
-        campaignRuns: base.campaignRuns,
-        activeView: base.activeView,
-        activeAssetType: base.activeAssetType,
-        ...overrides,
-      };
+      const payload = mergeWorkspacePayload(
+        {
+          brandUrl: base.brandUrl,
+          growthGoal: base.growthGoal,
+          brandVoice: base.brandVoice,
+          customChallenge: base.customChallenge,
+          brandAnalysis: base.brandAnalysis,
+          cachedAssets: base.cachedAssets,
+          assetHistory: base.assetHistory,
+          campaignRuns: base.campaignRuns,
+          activeView: base.activeView,
+          activeAssetType: base.activeAssetType,
+        },
+        overrides,
+      );
       await saveCloudWorkspace(payload).catch(() => undefined);
     },
     [cloudEnabled, session, cloudHydrated],
@@ -199,22 +202,24 @@ export default function App({ onGoHome }: AppProps) {
       const payload = await fetchCloudWorkspace();
       if (cancelled) return;
       if (payload) {
-        hydrateLocalFromPayload(payload);
-        if (payload.brandAnalysis) setBrandAnalysis(payload.brandAnalysis);
-        if (payload.brandUrl) setBrandUrl(normalizeBrandUrl(payload.brandUrl));
-        if (payload.growthGoal) setGrowthGoal(payload.growthGoal);
-        if (payload.brandVoice) setBrandVoice(payload.brandVoice);
-        if (payload.customChallenge) setCustomChallenge(payload.customChallenge);
-        if (payload.cachedAssets) setCachedAssets(payload.cachedAssets);
-        if (payload.assetHistory) setAssetHistory(payload.assetHistory as typeof assetHistory);
-        if (payload.campaignRuns) setCampaignRuns(payload.campaignRuns);
-        if (payload.brandAnalysis) {
+        const localSnapshot = buildPayloadFromLocal();
+        const merged = mergeWorkspacePayload(payload, localSnapshot);
+        hydrateLocalFromPayload(merged);
+        if (merged.brandAnalysis) setBrandAnalysis(merged.brandAnalysis);
+        if (merged.brandUrl) setBrandUrl(normalizeBrandUrl(merged.brandUrl));
+        if (merged.growthGoal) setGrowthGoal(merged.growthGoal);
+        if (merged.brandVoice) setBrandVoice(merged.brandVoice);
+        if (merged.customChallenge) setCustomChallenge(merged.customChallenge);
+        if (merged.cachedAssets) setCachedAssets(merged.cachedAssets);
+        if (merged.assetHistory) setAssetHistory(merged.assetHistory as typeof assetHistory);
+        if (merged.campaignRuns) setCampaignRuns(merged.campaignRuns);
+        if (merged.brandAnalysis) {
           localStorage.setItem('ai_cmo_user_setup_complete', 'true');
           const bid = slugifyBrandId(payload.brandUrl || '');
           setActiveView('dashboard');
           navigate(buildAppPath('dashboard', bid), { replace: true });
-        } else if (payload.activeView && payload.activeView !== 'onboarding') {
-          setActiveView(payload.activeView as typeof activeView);
+        } else if (merged.activeView && merged.activeView !== 'onboarding') {
+          setActiveView(merged.activeView as typeof activeView);
         }
       }
       setCloudHydrated(true);
@@ -237,17 +242,20 @@ export default function App({ onGoHome }: AppProps) {
   useEffect(() => {
     if (!cloudEnabled || !session || !cloudHydrated) return;
     const timer = setTimeout(() => {
-      const payload = buildPayloadFromLocal();
-      payload.brandAnalysis = brandAnalysis;
-      payload.brandUrl = brandUrl;
-      payload.growthGoal = growthGoal;
-      payload.brandVoice = brandVoice;
-      payload.customChallenge = customChallenge;
-      payload.cachedAssets = cachedAssets;
-      payload.assetHistory = assetHistory;
-      payload.campaignRuns = campaignRuns;
-      payload.activeView = activeView;
-      payload.activeAssetType = activeAssetType;
+      const payload = mergeWorkspacePayload(
+        {
+          brandUrl,
+          growthGoal,
+          brandVoice,
+          customChallenge,
+          brandAnalysis,
+          cachedAssets,
+          assetHistory,
+          campaignRuns,
+          activeView,
+          activeAssetType,
+        },
+      );
       saveCloudWorkspace(payload).catch(() => undefined);
     }, 2000);
     return () => clearTimeout(timer);
@@ -519,20 +527,30 @@ export default function App({ onGoHome }: AppProps) {
       }
 
       const data = await response.json();
-      
-      const newCached = { ...cachedAssets, [type]: data };
-      const newHistory = {
-        ...assetHistory,
-        [type]: [{
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          summary: "Original AI draft generation",
-          asset: data
-        }],
-      };
 
-      setCachedAssets(newCached);
-      setAssetHistory(newHistory);
-      void persistCloudWorkspace({ cachedAssets: newCached, assetHistory: newHistory });
+      let newCached!: Partial<Record<MarketingAssetType, GeneratedAsset>>;
+      let newHistory!: typeof assetHistory;
+
+      setCachedAssets((prev) => {
+        newCached = { ...prev, [type]: data };
+        return newCached;
+      });
+      setAssetHistory((prev) => {
+        newHistory = {
+          ...prev,
+          [type]: [{
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            summary: "Original AI draft generation",
+            asset: data
+          }],
+        };
+        return newHistory;
+      });
+
+      // Persist after state updates are queued; merge reads localStorage so prior assets are kept
+      setTimeout(() => {
+        void persistCloudWorkspace({ cachedAssets: newCached, assetHistory: newHistory });
+      }, 0);
 
       // Focus appropriate workspace specialist
       if (type === 'seo_keywords') setSelectedSpecialist('kofi');
@@ -578,24 +596,37 @@ export default function App({ onGoHome }: AppProps) {
       }
 
       const data = await response.json();
-      
-      const newCached = { ...cachedAssets, [activeAssetType]: data };
-      const newHistory = {
-        ...assetHistory,
-        [activeAssetType]: [
-          ...(assetHistory[activeAssetType] || []),
-          {
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            summary: data.summary || `Refined: "${feedbackText.slice(0, 35)}${feedbackText.length > 35 ? '...' : ''}"`,
-            asset: data,
-            toneIntensity
-          }
-        ],
-      };
 
-      setCachedAssets(newCached);
-      setAssetHistory(newHistory);
-      void persistCloudWorkspace({ cachedAssets: newCached, assetHistory: newHistory });
+      let newCached!: Partial<Record<MarketingAssetType, GeneratedAsset>>;
+      let newHistory!: typeof assetHistory;
+
+      setCachedAssets((prev) => {
+        if (!activeAssetType) return prev;
+        newCached = { ...prev, [activeAssetType]: data };
+        return newCached;
+      });
+      setAssetHistory((prev) => {
+        if (!activeAssetType) return prev;
+        newHistory = {
+          ...prev,
+          [activeAssetType]: [
+            ...(prev[activeAssetType] || []),
+            {
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              summary: data.summary || `Refined: "${feedbackText.slice(0, 35)}${feedbackText.length > 35 ? '...' : ''}"`,
+              asset: data,
+              toneIntensity
+            }
+          ],
+        };
+        return newHistory;
+      });
+
+      setTimeout(() => {
+        if (newCached && newHistory) {
+          void persistCloudWorkspace({ cachedAssets: newCached, assetHistory: newHistory });
+        }
+      }, 0);
       triggerToast('AI Copy refinement successfully compiled!', 'success');
     } catch (error: any) {
       console.error(error);
