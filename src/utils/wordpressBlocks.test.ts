@@ -61,13 +61,23 @@ describe('wordpressBlocks', () => {
     const out = toWordPressBlocks('## Intro\n\nHello world.', {
       title: 'Faith at Home',
       brandName: 'Bible Funland',
-      subscribeUrl: 'https://biblefunland.com/#subscribe',
-      taglineOrCTA: 'Subscribe',
+      subscribeUrl: 'https://biblefunland-studio.kit.com/290e477938',
+      subscribeButtonLabel: 'Subscribe',
       includeSubscribe: true,
     });
     expect(out).toContain('<!-- wp:buttons');
-    expect(out).toContain('href="https://biblefunland.com/#subscribe"');
+    expect(out).toContain('href="https://biblefunland-studio.kit.com/290e477938"');
     expect(out).toContain('Subscribe');
+    expect(out).toContain('Sign up for our newsletter');
     expect(out).toContain('Stay connected with Bible Funland');
+  });
+
+  it('adds hero image upload note when featured image is pending', () => {
+    const out = toWordPressBlocks('## Intro\n\nHello.', {
+      title: 'My Post',
+      featuredImagePending: true,
+    });
+    expect(out).toContain('Hero image:');
+    expect(out).toContain('Featured image');
   });
 });

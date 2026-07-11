@@ -4,6 +4,7 @@
  */
 
 import { apiFetch } from './api';
+import { sanitizeWorkspacePayload } from './workspaceSanitize';
 import { WebsiteAnalysis, GeneratedAsset, MarketingAssetType, AssetHistoryEntry, CampaignRun, SiteCrawlResult, SeoAgentAuditResult } from '../types';
 
 export interface WorkspacePayload {
@@ -99,12 +100,13 @@ export async function fetchCloudWorkspace(): Promise<WorkspacePayload | null> {
 }
 
 export async function saveCloudWorkspace(payload: WorkspacePayload, name?: string): Promise<boolean> {
+  const safePayload = sanitizeWorkspacePayload(payload);
   const res = await apiFetch('/api/workspace/current', {
     method: 'PUT',
     body: JSON.stringify({
-      name: name || payload.brandAnalysis?.brandName || 'My workspace',
-      brandUrl: payload.brandUrl,
-      payload,
+      name: name || safePayload.brandAnalysis?.brandName || 'My workspace',
+      brandUrl: safePayload.brandUrl,
+      payload: safePayload,
     }),
   });
   return res.ok;

@@ -20,6 +20,7 @@ import {
 import CopywriterSidebar from './CopywriterSidebar';
 import FormatMarkdown from './asset-workspace/FormatMarkdown';
 import RefinePanel from './asset-workspace/RefinePanel';
+import StudioImageMetaBar from './asset-workspace/StudioImageMetaBar';
 import SeoChecklistPanel from './asset-workspace/SeoChecklistPanel';
 import VersionCompareDiff from './asset-workspace/VersionCompareDiff';
 import VersionCompareModal from './asset-workspace/VersionCompareModal';
@@ -203,9 +204,12 @@ export default function AssetWorkspace({
     seoInstructions: asset.seoInstructions,
     featuredImageUrl: isGeneratedImageUrl(featuredImageUrl) ? undefined : featuredImageUrl,
     featuredImageAlt: customImagePrompt || asset.title || companyInfo.brandName,
+    featuredImagePending: isGeneratedImageUrl(featuredImageUrl),
     brandName: companyInfo.brandName,
     subscribeUrl,
+    subscribeButtonLabel: 'Subscribe',
     includeSubscribe: assetType === 'blog_post',
+    productCta: asset.taglineOrCTA,
   });
 
   useEffect(() => {
@@ -487,13 +491,21 @@ export default function AssetWorkspace({
     const featuredImageUrl = studioImageSrc();
     const wpHtml = toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(featuredImageUrl));
     await navigator.clipboard.writeText(wpHtml);
+
+    if (generatedImageUrl) {
+      const link = document.createElement('a');
+      link.href = generatedImageUrl;
+      link.download = `${assetType}-hero.png`;
+      link.click();
+    }
+
     setCopiedWp(true);
     setTimeout(() => setCopiedWp(false), 2000);
     const imageNote = isGeneratedImageUrl(featuredImageUrl)
-      ? ' Upload your generated hero image to WordPress Media Library and set it as the featured image.'
-      : ' Generate a custom Imagen image first, or upload a placeholder to Media Library.';
+      ? ' Hero image downloaded — set it as Featured image in WordPress sidebar.'
+      : ' Generate a custom Imagen image in Campaign Studio for a matching hero.';
     triggerToast?.(
-      `WordPress HTML copied with subscribe CTA.${imageNote}`,
+      `WordPress HTML copied.${imageNote}`,
       'success',
     );
   };
@@ -1327,43 +1339,13 @@ export default function AssetWorkspace({
                                   </div>
 
                                   {/* Aspect Ratio Specifications Tagline */}
-                                  <div className="flex flex-wrap items-center justify-between text-[10px] text-slate-500 bg-slate-950/40 px-3 py-2 border border-slate-850/60 rounded-xl gap-2 font-mono">
-                                    <div className="flex items-center gap-2">
-                                      <span>Ratio: <strong>16:9 Banner</strong></span>
-                                      <span className="text-slate-800">|</span>
-                                      <span>Engine: <strong>{generatedImageUrl ? 'Imagen (generated)' : 'Placeholder preview'}</strong></span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                      {generatedImageUrl && (
-                                        <a
-                                          href={generatedImageUrl}
-                                          download={`${assetType}-hero.png`}
-                                          className="text-emerald-400 hover:text-emerald-300 font-bold"
-                                        >
-                                          Download image
-                                        </a>
-                                      )}
-                                      <label className="flex items-center gap-1 cursor-pointer text-slate-400 hover:text-slate-250">
-                                        <input
-                                          type="checkbox"
-                                          checked={showTitleOverlay}
-                                          onChange={(e) => setShowTitleOverlay(e.target.checked)}
-                                          className="rounded border-slate-800 bg-slate-950 text-emerald-500 focus:ring-emerald-500/50 accent-emerald-500"
-                                        />
-                                        <span>Title Overlay</span>
-                                      </label>
-                                      <span className="text-slate-800">|</span>
-                                      <a
-                                        href={generatedImageUrl || studioImageSrc()}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-emerald-400 hover:text-emerald-350 font-bold transition flex items-center gap-1"
-                                      >
-                                        <Eye className="w-3 h-3" />
-                                        <span>Inspect raw image</span>
-                                      </a>
-                                    </div>
-                                  </div>
+                                  <StudioImageMetaBar
+                                    assetType={assetType}
+                                    generatedImageUrl={generatedImageUrl}
+                                    inspectUrl={generatedImageUrl || studioImageSrc()}
+                                    showTitleOverlay={showTitleOverlay}
+                                    onTitleOverlayChange={setShowTitleOverlay}
+                                  />
                                 </div>
                               )}
 
@@ -1504,6 +1486,12 @@ export default function AssetWorkspace({
                                       </button>
                                     </div>
                                   </div>
+
+                                  <StudioImageMetaBar
+                                    assetType={assetType}
+                                    generatedImageUrl={generatedImageUrl}
+                                    inspectUrl={generatedImageUrl || studioImageSrc(`${activeSocialTab}-${customImagePrompt}`)}
+                                  />
                                 </div>
                               )}
 
@@ -1537,18 +1525,14 @@ export default function AssetWorkspace({
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex flex-wrap items-center justify-between text-[10px] text-slate-500 px-3 py-2 font-mono gap-2">
-                                    <span>Engine: <strong>Imagen 3</strong></span>
-                                    <a
-                                      href={generatedImageUrl || studioImageSrc()}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
-                                    >
-                                      <Eye className="w-3 h-3" />
-                                      Inspect raw image
-                                    </a>
-                                  </div>
+                                  <StudioImageMetaBar
+                                    assetType={assetType}
+                                    generatedImageUrl={generatedImageUrl}
+                                    inspectUrl={generatedImageUrl || studioImageSrc()}
+                                    showTitleOverlay={showTitleOverlay}
+                                    onTitleOverlayChange={setShowTitleOverlay}
+                                    className="border-0 bg-transparent px-3"
+                                  />
                                 </div>
                               )}
                           </div>
@@ -1675,8 +1659,8 @@ export default function AssetWorkspace({
                           </span>
                         </div>
                         
-                        <div id="seo-rankings-recharts-container" className="h-[280px] w-full bg-slate-900/40 p-2 rounded-xl border border-slate-850/60 flex items-center justify-center">
-                          <ResponsiveContainer width="100%" height="100%">
+                        <div id="seo-rankings-recharts-container" className="h-[280px] min-h-[280px] w-full min-w-0 bg-slate-900/40 p-2 rounded-xl border border-slate-850/60">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
                             <ComposedChart data={getKeywordChartData()} margin={{ top: 15, right: 10, left: -20, bottom: 5 }}>
                               <defs>
                                 <linearGradient id="volumeGrad" x1="0" y1="0" x2="0" y2="1">

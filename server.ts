@@ -70,7 +70,7 @@ app.post(
   }
 );
 
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 // Initialize Gemini API client lazily to avoid crashing on start if GEMINI_API_KEY is missing
 let aiClient: GoogleGenAI | null = null;
