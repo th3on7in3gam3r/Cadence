@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BrainCircuit,
   Home,
@@ -15,6 +15,7 @@ import {
   Sliders,
   Plus,
   Grid3X3,
+  Menu,
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { AppView } from '../lib/appPaths';
@@ -23,6 +24,7 @@ import { PRODUCT_NAME, PRODUCT_TAGLINE, showGrowthStackUi } from '../lib/brand';
 import BrandSwitcher from './BrandSwitcher';
 import ProductSwitcher from './ProductSwitcher';
 import NotificationCenter from './NotificationCenter';
+import MobileNavDrawer, { MobileNavItem } from './MobileNavDrawer';
 
 interface AppHeaderProps {
   activeView: AppView;
@@ -72,9 +74,15 @@ export default function AppHeader({
   onNewAudit,
   goTo,
 }: AppHeaderProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const showNav = activeView !== 'onboarding' && !!brandAnalysis;
   const stackUi = showGrowthStackUi();
   const navItems = stackUi ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.view !== 'studio');
+  const closeMenu = () => setMobileMenuOpen(false);
+  const goToView = (view: AppView) => {
+    goTo(view);
+    closeMenu();
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/95 backdrop-blur shadow-lg/10">
@@ -127,7 +135,7 @@ export default function AppHeader({
               <button
                 type="button"
                 onClick={() => goTo('profile')}
-                className="flex items-center gap-2 px-2 py-1.5 sm:px-2.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition-all cursor-pointer"
+                className="hidden sm:flex items-center gap-2 px-2 py-1.5 sm:px-2.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition-all cursor-pointer"
                 title="Marketer profile"
               >
                 <div className={`w-5 h-5 rounded bg-gradient-to-br ${profileColor} flex items-center justify-center text-slate-950 font-bold text-[10px] shrink-0`}>
@@ -135,17 +143,34 @@ export default function AppHeader({
                 </div>
                 <span className="max-w-[88px] truncate hidden lg:inline text-slate-300">{profileName}</span>
               </button>
-              <BrandSwitcher currentBrandName={brandAnalysis.brandName} />
-              {stackUi && <ProductSwitcher />}
+              <div className="hidden sm:block">
+                <BrandSwitcher currentBrandName={brandAnalysis.brandName} />
+              </div>
+              {stackUi && (
+                <div className="hidden sm:block">
+                  <ProductSwitcher />
+                </div>
+              )}
             </>
+          )}
+          {showNav && (
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 cursor-pointer"
+              aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
           )}
           <span className="inline-flex w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" aria-hidden />
         </div>
       </div>
 
-      {/* Row 2 — tab navigation (full width, scrollable) */}
+      {/* Row 2 — tab navigation (tablet/desktop) */}
       {showNav && (
-        <div className="border-t border-slate-800/80 bg-slate-950/40">
+        <div className="hidden md:block border-t border-slate-800/80 bg-slate-950/40">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
             <nav
               className="flex items-stretch gap-0.5 overflow-x-auto py-0 scrollbar-none -mb-px"
@@ -185,6 +210,57 @@ export default function AppHeader({
             </nav>
           </div>
         </div>
+      )}
+
+      {showNav && (
+        <MobileNavDrawer open={mobileMenuOpen} onClose={closeMenu} title={brandAnalysis?.brandName || 'Navigate'}>
+          {onGoHome && (
+            <MobileNavItem
+              label="Marketing homepage"
+              icon={<Home className="w-4 h-4" />}
+              onClick={() => {
+                closeMenu();
+                onGoHome();
+              }}
+            />
+          )}
+          {navItems.map((item) => (
+            <div key={item.view}>
+              <MobileNavItem
+                label={item.label}
+                icon={item.icon}
+                active={isNavActive(activeView, item)}
+                onClick={() => goToView(item.view)}
+              />
+            </div>
+          ))}
+          <div className="border-t border-slate-800 my-2 pt-2 space-y-1">
+            <MobileNavItem
+              label="New audit"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={() => {
+                closeMenu();
+                onNewAudit();
+              }}
+              variant="primary"
+            />
+            <MobileNavItem
+              label="Marketer profile"
+              icon={<User className="w-4 h-4" />}
+              onClick={() => goToView('profile')}
+            />
+            {cloudEnabled && user && (
+              <MobileNavItem
+                label="Sign out"
+                onClick={() => {
+                  closeMenu();
+                  onSignOut();
+                }}
+                variant="muted"
+              />
+            )}
+          </div>
+        </MobileNavDrawer>
       )}
     </header>
   );

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -19,9 +19,11 @@ import {
   Zap,
   Target,
   Package,
+  Menu,
 } from 'lucide-react';
 import CadencePricingSection from './CadencePricingSection';
 import MarketingFooter from './MarketingFooter';
+import MobileNavDrawer, { MobileNavItem } from './MobileNavDrawer';
 import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCT_TAGLINE, showGrowthStackUi } from '../lib/brand';
 
 interface LandingPageProps {
@@ -92,12 +94,15 @@ export default function LandingPage({
   hasWorkspace,
   cloudEnabled,
 }: LandingPageProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const primaryCta = cloudEnabled ? (onSignIn ?? onGetStarted) : onGetStarted;
   const stackUi = showGrowthStackUi();
   const faq = [FAQ_BASE[0], getStartedFaq(cloudEnabled), ...FAQ_BASE.slice(1)];
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setMobileMenuOpen(false);
   };
+  const closeMenu = () => setMobileMenuOpen(false);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 antialiased">
@@ -158,14 +163,70 @@ export default function LandingPage({
             <button
               type="button"
               onClick={primaryCta}
-              className="text-xs md:text-sm font-bold px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg cursor-pointer flex items-center gap-1.5 transition"
+              className="hidden sm:inline-flex text-xs md:text-sm font-bold px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg cursor-pointer items-center gap-1.5 transition"
             >
               {cloudEnabled ? 'Open app' : 'Get started'}
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800 cursor-pointer"
+              aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </header>
+
+      <MobileNavDrawer open={mobileMenuOpen} onClose={closeMenu} title={PRODUCT_NAME}>
+        <MobileNavItem label="Features" onClick={() => scrollTo('features')} />
+        <MobileNavItem label="How it works" onClick={() => scrollTo('how-it-works')} />
+        <MobileNavItem label="Pricing" onClick={() => scrollTo('pricing')} />
+        {stackUi && (
+          <Link
+            to="/studio"
+            onClick={closeMenu}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+          >
+            <Package className="w-4 h-4 shrink-0 opacity-90" />
+            <span>Studio hub</span>
+          </Link>
+        )}
+        <MobileNavItem label="FAQ" onClick={() => scrollTo('faq')} />
+        <div className="border-t border-slate-800 my-2 pt-2 space-y-1">
+          {hasWorkspace && (
+            <MobileNavItem
+              label="Open workspace"
+              onClick={() => {
+                closeMenu();
+                onOpenWorkspace();
+              }}
+            />
+          )}
+          {cloudEnabled && (
+            <MobileNavItem
+              label="Sign in"
+              onClick={() => {
+                closeMenu();
+                primaryCta();
+              }}
+              variant="muted"
+            />
+          )}
+          <MobileNavItem
+            label={cloudEnabled ? 'Open app' : 'Get started free'}
+            onClick={() => {
+              closeMenu();
+              primaryCta();
+            }}
+            variant="primary"
+            icon={<ArrowRight className="w-4 h-4" />}
+          />
+        </div>
+      </MobileNavDrawer>
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-slate-800">
