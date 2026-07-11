@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useEffect } from 'react';
-import { MessageSquare, Send, Sparkles, Settings, RefreshCw } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { MessageSquare, Send, Sparkles, Settings, RefreshCw, ChevronDown, Search } from 'lucide-react';
 import { ChatMessage } from '../../types';
 
 export interface RefinePanelProps {
@@ -19,6 +19,15 @@ export interface RefinePanelProps {
   tonePresets: { label: string; value: number; feedback: string; structureTooltip: string }[];
   quickPolishPresets: { label: string; prompt: string }[];
   quickPills: { label: string; text: string }[];
+  /** Increment from parent to expand when collapsed (e.g. toolbar "Refine draft") */
+  expandToken?: number;
+  seoSnapshot?: {
+    title: string;
+    summary: string;
+    seoInstructions: string;
+    taglineOrCTA: string;
+    wordCount: number;
+  };
 }
 
 export default function RefinePanel({
@@ -33,9 +42,16 @@ export default function RefinePanel({
   tonePresets,
   quickPolishPresets,
   quickPills,
+  expandToken = 0,
+  seoSnapshot,
 }: RefinePanelProps) {
+  const [isOpen, setIsOpen] = useState(true);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const feedbackInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (expandToken > 0) setIsOpen(true);
+  }, [expandToken]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,22 +70,35 @@ export default function RefinePanel({
       id="refine-draft-panel"
       className="bg-slate-900 rounded-2xl border border-emerald-500/20 shadow-lg overflow-hidden"
     >
-      <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        aria-expanded={isOpen}
+        className="w-full px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3 text-left cursor-pointer hover:bg-slate-900/80 transition-colors"
+      >
+        <div className="flex items-center gap-3 min-w-0">
           <MessageSquare className="w-5 h-5 text-emerald-400 shrink-0" />
-          <div>
+          <div className="min-w-0">
             <h4 className="text-base font-display font-bold text-white">Refine this draft</h4>
-            <p className="text-sm text-slate-400">Adjust tone, polish copy, or chat with the AI editor</p>
+            <p className="text-sm text-slate-400">
+              {isOpen ? 'Adjust tone, polish copy, or chat with the AI editor' : 'Click to expand refine tools'}
+            </p>
           </div>
         </div>
-        {isRefining && (
-          <span className="inline-flex items-center gap-2 text-sm text-emerald-300 font-medium">
-            <RefreshCw className="w-4 h-4 animate-spin" />
-            Rewriting…
-          </span>
-        )}
-      </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {isRefining && (
+            <span className="inline-flex items-center gap-2 text-sm text-emerald-300 font-medium">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Rewriting…
+            </span>
+          )}
+          <ChevronDown
+            className={`w-5 h-5 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </button>
 
+      {isOpen && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-px lg:bg-slate-800">
         {/* Chat column */}
         <div className="bg-slate-900 flex flex-col min-h-[280px] lg:min-h-[420px]">
@@ -130,7 +159,7 @@ export default function RefinePanel({
         </div>
 
         {/* Controls column */}
-        <div className="bg-slate-900 p-5 space-y-5">
+        <div className="bg-slate-900 p-5 flex flex-col gap-5 lg:min-h-[420px]">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-semibold text-white flex items-center gap-2">
@@ -220,8 +249,62 @@ export default function RefinePanel({
               ))}
             </div>
           </div>
+
+          {seoSnapshot && (
+            <div className="space-y-3 mt-auto pt-4 border-t border-slate-800">
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Search className="w-4 h-4 text-emerald-400 shrink-0" />
+                  SEO snapshot
+                </span>
+                <span className="text-xs text-slate-500 shrink-0">{seoSnapshot.wordCount} words</span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Shown below your post when you use <strong className="text-slate-400">Copy WordPress HTML</strong>
+              </p>
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 text-sm">
+                {seoSnapshot.summary && (
+                  <div>
+                    <p className="text-xs font-mono text-emerald-400/80 uppercase tracking-wide mb-1">
+                      Meta description
+                    </p>
+                    <p className="text-slate-300 leading-relaxed">{seoSnapshot.summary}</p>
+                  </div>
+                )}
+                {seoSnapshot.seoInstructions && (
+                  <div>
+                    <p className="text-xs font-mono text-emerald-400/80 uppercase tracking-wide mb-1">
+                      Keywords &amp; strategy
+                    </p>
+                    <p className="text-slate-400 leading-relaxed whitespace-pre-line line-clamp-5">
+                      {seoSnapshot.seoInstructions}
+                    </p>
+                  </div>
+                )}
+                {seoSnapshot.taglineOrCTA && (
+                  <div>
+                    <p className="text-xs font-mono text-emerald-400/80 uppercase tracking-wide mb-1">Primary CTA</p>
+                    <p className="text-slate-300 italic">&ldquo;{seoSnapshot.taglineOrCTA}&rdquo;</p>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  handlePolish(
+                    'Optimize this draft for search and readability: improve headline clarity, weave target keywords naturally, strengthen meta-worthy opening lines, and ensure scannable structure with clear subheadings.',
+                  )
+                }
+                disabled={isRefining}
+                className="w-full text-sm bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-200 px-3 py-2.5 border border-emerald-500/30 rounded-lg transition-all cursor-pointer disabled:opacity-50 font-semibold"
+              >
+                Run full SEO pass with AI
+              </button>
+            </div>
+          )}
         </div>
       </div>
+      )}
     </div>
   );
 }

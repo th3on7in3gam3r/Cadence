@@ -11,18 +11,67 @@
 html {
   scroll-behavior: smooth;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  /* Comfortable default — scales all rem-based Tailwind sizes */
+  font-size: 125%;
 }
 
-/* Base custom styles to ensure premium editorial layout */
+/* Base custom styles — high contrast, relaxed line height for readability */
 body {
   background-color: #020617; /* slate-950 */
-  color: #e2e8f0; /* slate-200 */
+  color: #f1f5f9; /* slate-100 */
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom styled scrollbars */
+/* App-wide readable text floors (many screens used 9–11px micro copy) */
+#root [class*='text-[8px]'],
+#root [class*='text-[9px]'],
+#root [class*='text-[10px]'] {
+  font-size: 0.875rem !important;
+  line-height: 1.55 !important;
+}
+
+#root [class*='text-[11px]'] {
+  font-size: 0.9375rem !important;
+  line-height: 1.55 !important;
+}
+
+#root .text-xs {
+  font-size: 0.9375rem !important;
+  line-height: 1.55 !important;
+}
+
+#root .text-sm {
+  font-size: 1.0625rem !important;
+  line-height: 1.6 !important;
+}
+
+#root .text-base {
+  font-size: 1.1875rem !important;
+  line-height: 1.65 !important;
+}
+
+/* Brighter secondary copy on dark backgrounds */
+#root .text-slate-500 {
+  color: #94a3b8;
+}
+
+#root .text-slate-400 {
+  color: #cbd5e1;
+}
+
+#root input:not([type='checkbox']):not([type='radio']):not([type='range']),
+#root textarea,
+#root select {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Slightly wider scrollbars — easier to grab */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -49,7 +98,7 @@ body {
   background: #10b981;
   color: #020617;
   font-weight: 700;
-  font-size: 0.875rem;
+  font-size: 1rem;
   border-radius: 0 0 0.5rem 0;
 }
 .skip-link:focus {

@@ -79,7 +79,7 @@ export default function AppHeader({
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/95 backdrop-blur shadow-lg/10">
       {/* Row 1 — brand + actions (never overlaps) */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 min-h-[3.75rem] py-2 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
           <button
             type="button"
@@ -90,10 +90,10 @@ export default function AppHeader({
             <BrainCircuit className="w-5 h-5" />
           </button>
           <div className="min-w-0 leading-tight">
-            <span className="font-display font-extrabold text-sm sm:text-base text-white block truncate">
+            <span className="font-display font-extrabold text-base sm:text-lg text-white block truncate">
               {PRODUCT_NAME}
             </span>
-            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider hidden sm:block truncate">
+            <span className="text-xs sm:text-sm font-mono text-slate-400 uppercase tracking-wider hidden sm:block truncate">
               {PRODUCT_TAGLINE}
             </span>
           </div>
@@ -104,7 +104,7 @@ export default function AppHeader({
             <button
               type="button"
               onClick={onSignOut}
-              className="inline-flex text-[11px] font-bold text-slate-500 hover:text-red-400 px-2 py-1 cursor-pointer"
+              className="inline-flex text-sm font-bold text-slate-300 hover:text-red-400 px-2 py-1 cursor-pointer"
               title={user.email || 'Sign out'}
             >
               Sign out
@@ -116,7 +116,7 @@ export default function AppHeader({
               type="button"
               id="nav-new-audit-btn"
               onClick={onNewAudit}
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-emerald-400 rounded-lg cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-sm font-bold px-3 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-emerald-400 rounded-lg cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">New audit</span>
@@ -127,7 +127,7 @@ export default function AppHeader({
               <button
                 type="button"
                 onClick={() => goTo('profile')}
-                className="flex items-center gap-2 px-2 py-1.5 sm:px-2.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-2.5 py-2 sm:px-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-sm font-semibold text-slate-100 transition-all cursor-pointer"
                 title="Marketer profile"
               >
                 <div className={`w-5 h-5 rounded bg-gradient-to-br ${profileColor} flex items-center justify-center text-slate-950 font-bold text-[10px] shrink-0`}>
@@ -156,7 +156,7 @@ export default function AppHeader({
                   type="button"
                   id="nav-home-btn"
                   onClick={onGoHome}
-                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700 transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-3 text-sm sm:text-base font-bold whitespace-nowrap border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 transition-colors cursor-pointer shrink-0"
                 >
                   <Home className="w-3.5 h-3.5 shrink-0" />
                   <span>Home</span>
@@ -170,10 +170,10 @@ export default function AppHeader({
                     type="button"
                     id={`nav-${item.view}-btn`}
                     onClick={() => goTo(item.view)}
-                    className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 transition-colors cursor-pointer shrink-0 ${
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-sm sm:text-base font-bold whitespace-nowrap border-b-2 transition-colors cursor-pointer shrink-0 ${
                       active
                         ? 'border-emerald-500 text-white bg-slate-900/50'
-                        : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                        : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
                     }`}
                   >
                     {item.icon}

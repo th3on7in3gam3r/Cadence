@@ -24,6 +24,7 @@ import SeoChecklistPanel from './asset-workspace/SeoChecklistPanel';
 import VersionCompareDiff from './asset-workspace/VersionCompareDiff';
 import VersionCompareModal from './asset-workspace/VersionCompareModal';
 import { computeWordDiff } from '../utils/wordDiff';
+import { toWordPressBlocks } from '../utils/wordpressBlocks';
 
 import EmailMockupViewport from './EmailMockupViewport';
 import { GeneratedAsset, MarketingAssetType, ChatMessage, WebsiteAnalysis, ApprovalStatus } from '../types';
@@ -93,6 +94,7 @@ export default function AssetWorkspace({
   currentApprovalStatus = 'draft',
 }: AssetWorkspaceProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedWp, setCopiedWp] = useState(false);
   const [feedbackInput, setFeedbackInput] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [toneIntensity, setToneIntensity] = useState<number>(5);
@@ -147,6 +149,7 @@ export default function AssetWorkspace({
   const [showApprovalPanel, setShowApprovalPanel] = useState(
     isCloudEnabled() && assetType === 'blog_post',
   );
+  const [refineExpandToken, setRefineExpandToken] = useState(0);
 
   // Custom User Requested features: Visual Branding, Imagen generation, and AI Editor Integration
   const [artisticTheme, setArtisticTheme] = useState<'minimalist' | 'vibrant' | 'corporate' | 'neon' | 'organic' | 'retro' | 'cinematic'>('minimalist');
@@ -426,6 +429,22 @@ export default function AssetWorkspace({
     }
   };
 
+  const handleCopyWordPress = async () => {
+    const wpHtml = toWordPressBlocks(localAssetContent, {
+      title: asset.title,
+      summary: asset.summary,
+      taglineOrCTA: asset.taglineOrCTA,
+      seoInstructions: asset.seoInstructions,
+    });
+    await navigator.clipboard.writeText(wpHtml);
+    setCopiedWp(true);
+    setTimeout(() => setCopiedWp(false), 2000);
+    triggerToast?.(
+      'WordPress HTML copied — in your post editor choose ⋮ → Code editor, then paste.',
+      'success',
+    );
+  };
+
   const handlePublishWordPress = async (asDraft: boolean) => {
     if (!isCloudEnabled()) {
       triggerToast?.('Sign in and connect WordPress in Settings → Integrations.', 'info');
@@ -440,7 +459,12 @@ export default function AssetWorkspace({
     try {
       const result = await publishToWordPress({
         title: asset.title || `${companyInfo.brandName} blog post`,
-        content: localAssetContent,
+        content: toWordPressBlocks(localAssetContent, {
+          title: asset.title,
+          summary: asset.summary,
+          taglineOrCTA: asset.taglineOrCTA,
+          seoInstructions: asset.seoInstructions,
+        }) || localAssetContent,
         excerpt: asset.summary || '',
         status: asDraft ? 'draft' : 'publish',
       });
@@ -694,7 +718,7 @@ export default function AssetWorkspace({
         <button
           id="back-to-boardroom-btn"
           onClick={onBackToDashboard}
-          className="flex items-center gap-1.5 text-xs font-mono text-slate-300 border border-slate-800 hover:border-slate-700 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-all cursor-pointer shadow-sm active:scale-95"
+          className="flex items-center gap-2 text-sm font-mono text-slate-200 border border-slate-800 hover:border-slate-700 bg-slate-900 hover:bg-slate-800 px-4 py-2.5 rounded-lg transition-all cursor-pointer shadow-sm active:scale-95"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Strategy Boardroom</span>
@@ -715,16 +739,16 @@ export default function AssetWorkspace({
             {/* Asset Top Actions Header */}
             <div className="bg-slate-900 border-b border-slate-800 p-4 md:px-6 flex flex-wrap justify-between items-start sm:items-center gap-3 bg-slate-900/95 sticky top-0 z-10">
               <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-mono text-slate-450 block mb-0.5">
+                <span className="text-sm font-mono text-slate-300 block mb-1">
                   ACTIVE DELIVERABLE
                 </span>
-                <h3 className="text-md font-display font-extrabold text-white">
+                <h3 className="text-lg font-display font-extrabold text-white">
                   {asset.title || "Copywriting Document"}
                 </h3>
               </div>
               <div className="flex items-center flex-wrap gap-2 select-none">
                 {/* Auto-save Status Indicator */}
-                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1.5 bg-slate-950/80 border border-slate-850 rounded text-[9px] font-mono text-slate-400">
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-slate-950/80 border border-slate-850 rounded text-sm font-mono text-slate-300">
                   <span className={`w-1.5 h-1.5 rounded-full ${isSaving ? "bg-amber-400 animate-pulse" : "bg-emerald-500"}`} />
                   <span>{isSaving ? "AUTO-SAVING..." : lastSaved ? `AUTO-SAVED AT ${lastSaved}` : "SAVED TO LOCAL STORAGE"}</span>
                 </div>
@@ -733,7 +757,7 @@ export default function AssetWorkspace({
                   type="button"
                   id="open-copywriter-sidebar-btn"
                   onClick={() => setIsCopywriterOpen(true)}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-700 text-white font-bold rounded text-xs cursor-pointer shadow-sm transition-all active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 border border-indigo-700 text-white font-bold rounded-md text-sm cursor-pointer shadow-sm transition-all active:scale-95"
                   title="Open AI Copywriter conversation drawer"
                 >
                   <MessageSquarePlus className="w-3.5 h-3.5" />
@@ -742,9 +766,10 @@ export default function AssetWorkspace({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    document.getElementById('refine-draft-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
+                  onClick={() => {
+                    setRefineExpandToken((t) => t + 1);
+                    document.getElementById('refine-draft-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                   className="flex items-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 border border-emerald-700 text-white font-bold rounded-md text-sm cursor-pointer shadow-sm transition-all active:scale-95"
                   title="Jump to refine tools below"
                 >
@@ -772,7 +797,7 @@ export default function AssetWorkspace({
                     id="workspace-export-bundle-btn"
                     onClick={onExportCampaignBundle}
                     disabled={isExportingBundle}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 hover:text-white font-semibold rounded text-xs cursor-pointer disabled:opacity-50 transition-all active:scale-95"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 hover:text-white font-semibold rounded-md text-sm cursor-pointer disabled:opacity-50 transition-all active:scale-95"
                     title="Export full campaign ZIP"
                   >
                     <Package className="w-3.5 h-3.5" />
@@ -786,7 +811,7 @@ export default function AssetWorkspace({
                       type="button"
                       onClick={() => handlePublishWordPress(true)}
                       disabled={isPublishing}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-semibold rounded text-xs cursor-pointer disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-semibold rounded-md text-sm cursor-pointer disabled:opacity-50"
                       title="Save as WordPress draft"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -796,7 +821,7 @@ export default function AssetWorkspace({
                       type="button"
                       onClick={() => handlePublishWordPress(false)}
                       disabled={isPublishing}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 border border-blue-700 text-white font-bold rounded text-xs cursor-pointer disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 border border-blue-700 text-white font-bold rounded-md text-sm cursor-pointer disabled:opacity-50"
                       title="Publish to WordPress"
                     >
                       <Share2 className="w-3.5 h-3.5" />
@@ -809,7 +834,7 @@ export default function AssetWorkspace({
                   type="button"
                   onClick={handleManualSave}
                   title="Manually save current changes instantly to local storage"
-                  className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 border border-emerald-700 hover:border-emerald-500 text-slate-950 hover:text-slate-950 font-bold rounded text-xs cursor-pointer shadow-sm select-none transition-all active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 border border-emerald-700 hover:border-emerald-500 text-slate-950 hover:text-slate-950 font-bold rounded-md text-sm cursor-pointer shadow-sm select-none transition-all active:scale-95"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Save Draft</span>
@@ -819,7 +844,7 @@ export default function AssetWorkspace({
                   type="button"
                   id="toggle-seo-checklist-btn"
                   onClick={() => setShowSeoChecklist(!showSeoChecklist)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 border rounded text-xs font-semibold cursor-pointer transition-all active:scale-95 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 border rounded-md text-sm font-semibold cursor-pointer transition-all active:scale-95 ${
                     showSeoChecklist 
                       ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400' 
                       : 'bg-slate-800 border-slate-700 hover:border-slate-600 text-slate-300'
@@ -832,7 +857,7 @@ export default function AssetWorkspace({
                 <button
                   id="copy-asset-btn"
                   onClick={handleCopy}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white rounded text-xs font-semibold cursor-pointer shadow-sm select-none transition-all active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white rounded-md text-sm font-semibold cursor-pointer shadow-sm select-none transition-all active:scale-95"
                 >
                   {copied ? (
                     <>
@@ -846,6 +871,28 @@ export default function AssetWorkspace({
                     </>
                   )}
                 </button>
+                {assetType === 'blog_post' && (
+                  <button
+                    type="button"
+                    id="copy-wordpress-html-btn"
+                    onClick={handleCopyWordPress}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-950/50 border border-blue-500/30 hover:border-blue-400/50 text-blue-200 hover:text-white rounded-md text-sm font-semibold cursor-pointer shadow-sm select-none transition-all active:scale-95"
+                    title="Copy Gutenberg block HTML for WordPress Code editor"
+                  >
+                    {copiedWp ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span className="text-emerald-400 font-bold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Code2 className="w-4 h-4 text-blue-300" />
+                        <span className="hidden sm:inline">Copy WordPress HTML</span>
+                        <span className="sm:hidden">WP HTML</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1057,7 +1104,7 @@ export default function AssetWorkspace({
                         value={localAssetContent}
                         onChange={(e) => setLocalAssetContent(e.target.value)}
                         placeholder="Write or edit marketing draft copy here..."
-                        className="w-full h-[380px] bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500/40 text-xs md:text-sm font-mono leading-relaxed"
+                        className="w-full h-[380px] bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40 text-base md:text-lg font-mono leading-relaxed"
                       />
                       <p className="text-[9px] text-slate-550 font-sans leading-relaxed px-0.5">
                         Counts update live. Use character limits for social posts; aim for 300+ words on long-form SEO content.
@@ -2557,6 +2604,18 @@ Include personalized subject line options, preview text, and direct booking link
         tonePresets={tonePresets}
         quickPolishPresets={quickPolishPresets}
         quickPills={quickPills}
+        expandToken={refineExpandToken}
+        seoSnapshot={
+          assetType === 'blog_post'
+            ? {
+                title: asset.title,
+                summary: asset.summary,
+                seoInstructions: asset.seoInstructions,
+                taglineOrCTA: asset.taglineOrCTA,
+                wordCount: editorWordCount,
+              }
+            : undefined
+        }
       />
 
       {/* 30-Day strategic numbered "Next Step Options" matching target guidelines exactly! */}
