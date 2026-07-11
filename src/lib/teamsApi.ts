@@ -5,13 +5,20 @@
 
 import { apiFetch } from './api';
 import { isCloudEnabled } from './cloudConfig';
-import { buildPayloadFromLocal, hydrateLocalFromPayload, type WorkspacePayload } from './workspaceApi';
+import {
+  buildPayloadFromLocal,
+  hydrateLocalFromPayload,
+  mergeWorkspacePayload,
+  type WorkspacePayload,
+} from './workspaceApi';
 import { slugifyBrandId } from './appPaths';
+import { normalizeBrandUrl } from '../utils/websiteUrl';
 import {
   listLocalBrands,
   saveLocalBrands,
   getActiveBrandId,
   setActiveBrandId,
+  upsertBrandForWorkspace,
   type LocalBrand,
 } from '../utils/brands';
 
@@ -80,8 +87,55 @@ export async function fetchBrands(): Promise<BrandSummary[]> {
   return data.brands || [];
 }
 
-export async function createBrand(name: string, brandUrl?: string): Promise<BrandSummary> {
-  const payload = buildPayloadFromLocal();
+export async function updateBrand(
+  id: string,
+  patch: { name?: string; brandUrl?: string; payload?: WorkspacePayload },
+): Promise<BrandSummary> {
+  if (!isCloudEnabled()) {
+    const brands = listLocalBrands();
+    const idx = brands.findIndex((b) => b.id === id);
+    if (idx < 0) throw new Error('Brand not found');
+    brands[idx] = {
+      ...brands[idx],
+      ...(patch.name && { name: patch.name }),
+      ...(patch.brandUrl !== undefined && { brandUrl: patch.brandUrl }),
+      ...(patch.payload && { payload: patch.payload }),
+    };
+    saveLocalBrands(brands);
+    const b = brands[idx];
+    return { id: b.id, slug: b.slug, name: b.name, brand_url: b.brandUrl };
+  }
+  const res = await apiFetch(`/api/teams/brands/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      ...(patch.name && { name: patch.name }),
+      ...(patch.brandUrl !== undefined && { brandUrl: patch.brandUrl }),
+      ...(patch.payload && { payload: patch.payload }),
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to update brand');
+  const data = await res.json();
+  return data.brand;
+}
+
+export async function fetchBrandPayload(brandId: string): Promise<WorkspacePayload | null> {
+  if (!isCloudEnabled()) {
+    const brands = listLocalBrands();
+    const b = brands.find((x) => x.id === brandId);
+    return (b?.payload as WorkspacePayload) || null;
+  }
+  const res = await apiFetch(`/api/teams/brands/${brandId}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.brand?.payload || null;
+}
+
+export async function createBrand(
+  name: string,
+  brandUrl?: string,
+  payloadOverride?: WorkspacePayload,
+): Promise<BrandSummary> {
+  const payload = payloadOverride ?? buildPayloadFromLocal();
   if (!isCloudEnabled()) {
     const brands = listLocalBrands();
     const brand: LocalBrand = {
@@ -105,14 +159,72 @@ export async function createBrand(name: string, brandUrl?: string): Promise<Bran
     throw new Error(err.error || 'Failed to create brand');
   }
   const data = await res.json();
+  setActiveBrandId(data.brand.id);
   return data.brand;
+}
+
+/** After a site audit, keep the brand list and active brand aligned with the analyzed URL. */
+export async function syncWorkspaceBrand(
+  name: string,
+  brandUrl: string,
+  payload: WorkspacePayload,
+): Promise<BrandSummary> {
+  const normalized = normalizeBrandUrl(brandUrl);
+  if (!isCloudEnabled()) {
+    const brand = upsertBrandForWorkspace(name, normalized, payload);
+    return { id: brand.id, slug: brand.slug, name: brand.name, brand_url: brand.brandUrl };
+  }
+
+  const currentId = getActiveBrandId();
+  if (currentId) {
+    await updateBrand(currentId, { payload: buildPayloadFromLocal() }).catch(() => undefined);
+  }
+
+  const brands = await fetchBrands();
+  const existing = brands.find(
+    (b) => b.brand_url && normalizeBrandUrl(b.brand_url) === normalized,
+  );
+
+  if (existing) {
+    const updated = await updateBrand(existing.id, { name, brandUrl: normalized, payload });
+    setActiveBrandId(existing.id);
+    return updated;
+  }
+
+  return createBrand(name, normalized, payload);
+}
+
+/** On sign-in, load the active brand's saved workspace instead of a stale global workspace. */
+export async function resolveActiveBrandOnLoad(
+  workspacePayload: WorkspacePayload | null,
+): Promise<WorkspacePayload | null> {
+  if (!isCloudEnabled()) return workspacePayload;
+
+  const brands = await fetchBrands();
+  if (brands.length === 0) return workspacePayload;
+
+  let activeId = getActiveBrandId();
+  const url = workspacePayload?.brandUrl;
+
+  if (!activeId || !brands.some((b) => b.id === activeId)) {
+    const match = url
+      ? brands.find((b) => b.brand_url && normalizeBrandUrl(b.brand_url) === normalizeBrandUrl(url))
+      : undefined;
+    activeId = match?.id ?? brands[0].id;
+    setActiveBrandId(activeId);
+  }
+
+  const brandPayload = await fetchBrandPayload(activeId);
+  if (!brandPayload) return workspacePayload;
+  if (!workspacePayload) return brandPayload;
+  return mergeWorkspacePayload(workspacePayload, brandPayload);
 }
 
 export async function switchBrand(brandId: string): Promise<void> {
   if (!isCloudEnabled()) {
     const brands = listLocalBrands();
     const currentId = getActiveBrandId();
-    if (currentId) {
+    if (currentId && currentId !== brandId) {
       const idx = brands.findIndex((b) => b.id === currentId);
       if (idx >= 0) brands[idx] = { ...brands[idx], payload: buildPayloadFromLocal() };
     }
@@ -123,6 +235,12 @@ export async function switchBrand(brandId: string): Promise<void> {
     window.location.reload();
     return;
   }
+
+  const currentId = getActiveBrandId();
+  if (currentId && currentId !== brandId) {
+    await updateBrand(currentId, { payload: buildPayloadFromLocal() });
+  }
+
   const res = await apiFetch(`/api/teams/brands/${brandId}`);
   if (!res.ok) throw new Error('Failed to load brand');
   const data = await res.json();
@@ -175,14 +293,19 @@ export async function fetchUserRole(): Promise<{ role: MemberRole; canApprove: b
   return res.json();
 }
 
-export function saveCurrentBrandSnapshot(): void {
-  if (isCloudEnabled()) return;
-  const brands = listLocalBrands();
+export async function saveCurrentBrandSnapshot(): Promise<void> {
   const activeId = getActiveBrandId();
-  if (!activeId || brands.length === 0) return;
+  if (!activeId) return;
+  const payload = buildPayloadFromLocal();
+  if (isCloudEnabled()) {
+    await updateBrand(activeId, { payload });
+    return;
+  }
+  const brands = listLocalBrands();
+  if (brands.length === 0) return;
   const idx = brands.findIndex((b) => b.id === activeId);
   if (idx >= 0) {
-    brands[idx] = { ...brands[idx], payload: buildPayloadFromLocal() };
+    brands[idx] = { ...brands[idx], payload };
     saveLocalBrands(brands);
   }
 }

@@ -29,6 +29,7 @@ import MobileNavDrawer, { MobileNavItem } from './MobileNavDrawer';
 interface AppHeaderProps {
   activeView: AppView;
   brandAnalysis: WebsiteAnalysis | null;
+  brandUrl?: string;
   profileName: string;
   profileColor: string;
   cloudEnabled: boolean;
@@ -64,6 +65,7 @@ function isNavActive(activeView: AppView, item: (typeof NAV_ITEMS)[0]): boolean 
 export default function AppHeader({
   activeView,
   brandAnalysis,
+  brandUrl,
   profileName,
   profileColor,
   cloudEnabled,
@@ -144,7 +146,11 @@ export default function AppHeader({
                 <span className="max-w-[88px] truncate hidden lg:inline text-slate-300">{profileName}</span>
               </button>
               <div className="hidden sm:block">
-                <BrandSwitcher currentBrandName={brandAnalysis.brandName} />
+                <BrandSwitcher
+                  currentBrandName={brandAnalysis.brandName}
+                  brandUrl={brandUrl}
+                  onViewCampaignHistory={() => goTo('campaign-history')}
+                />
               </div>
               {stackUi && (
                 <div className="hidden sm:block">

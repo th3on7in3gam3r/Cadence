@@ -27,7 +27,7 @@ import CampaignCalendar from './components/CampaignCalendar';
 import AppHeader from './components/AppHeader';
 import StudioDashboard from './pages/StudioDashboard';
 import { PRODUCT_NAME } from './lib/brand';
-import { ensureDefaultBrand } from './utils/brands';
+import { syncWorkspaceBrand, resolveActiveBrandOnLoad, saveCurrentBrandSnapshot } from './lib/teamsApi';
 import { normalizeBrandUrl } from './utils/websiteUrl';
 import {
   shouldShowOnboarding,
@@ -199,9 +199,10 @@ export default function App({ onGoHome }: AppProps) {
     let cancelled = false;
     (async () => {
       syncUserSetupFromMetadata(session.user);
-      const payload = await fetchCloudWorkspace();
+      let payload = await fetchCloudWorkspace();
       if (cancelled) return;
       if (payload) {
+        payload = await resolveActiveBrandOnLoad(payload);
         const localSnapshot = buildPayloadFromLocal();
         const merged = mergeWorkspacePayload(payload, localSnapshot);
         hydrateLocalFromPayload(merged);
@@ -256,7 +257,9 @@ export default function App({ onGoHome }: AppProps) {
           activeAssetType,
         },
       );
-      saveCloudWorkspace(payload).catch(() => undefined);
+      saveCloudWorkspace(payload)
+        .then(() => saveCurrentBrandSnapshot().catch(() => undefined))
+        .catch(() => undefined);
     }, 2000);
     return () => clearTimeout(timer);
   }, [
@@ -457,7 +460,7 @@ export default function App({ onGoHome }: AppProps) {
 
       const data: WebsiteAnalysis = await response.json();
       setBrandAnalysis(data);
-      ensureDefaultBrand(data.brandName, normalizedUrl, {
+      const workspacePayload = {
         brandUrl: normalizedUrl,
         growthGoal: data.inferredGrowthGoal || config.goal,
         brandVoice: data.inferredBrandVoice || config.brandVoice,
@@ -465,7 +468,9 @@ export default function App({ onGoHome }: AppProps) {
         brandAnalysis: data,
         cachedAssets: {},
         assetHistory: {},
-      });
+        campaignRuns,
+      };
+      await syncWorkspaceBrand(data.brandName, normalizedUrl, workspacePayload);
       
       // Automatically update the primary growth objective and brand voice to values inferred from website Analysis
       if (data.inferredBrandVoice) {
@@ -800,6 +805,7 @@ export default function App({ onGoHome }: AppProps) {
       <AppHeader
         activeView={activeView}
         brandAnalysis={brandAnalysis}
+        brandUrl={brandUrl}
         profileName={profileName}
         profileColor={profileColor}
         cloudEnabled={cloudEnabled}
