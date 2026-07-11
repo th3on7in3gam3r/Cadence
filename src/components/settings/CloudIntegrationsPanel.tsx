@@ -117,7 +117,7 @@ export default function CloudIntegrationsPanel() {
         </div>
         {!googleOAuthConfigured && (
           <p className="text-xs text-amber-400/90 bg-amber-950/20 border border-amber-900/40 rounded-lg px-3 py-2">
-            Server needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.local.
+            Server needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in environment variables (Render on production).
           </p>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

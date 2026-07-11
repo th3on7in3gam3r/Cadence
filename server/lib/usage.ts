@@ -6,8 +6,11 @@
 import { getSupabaseAdmin } from '../db/supabaseAdmin';
 import type { PlanId, CrawlMode } from './plans';
 import { limitsForPlan, maxPagesForCrawl } from './plans';
+import { applyOwnerPlanGrantForUser } from './ownerGrant';
 
 export async function getUserPlan(userId: string): Promise<PlanId> {
+  await applyOwnerPlanGrantForUser(userId);
+
   const sb = getSupabaseAdmin();
   if (!sb) return 'free';
   const { data } = await sb
