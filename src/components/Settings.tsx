@@ -31,6 +31,8 @@ interface SystemSettingsData {
   enableExpertAutoPilot: boolean;
   activeStrategyFramework: string;
   autoSaveWorkspaceInterval: number;
+  /** Kit (ConvertKit) form or landing page URL for blog subscribe CTAs */
+  newsletterSubscribeUrl: string;
 }
 
 const defaultSettings: SystemSettingsData = {
@@ -40,6 +42,7 @@ const defaultSettings: SystemSettingsData = {
   enableExpertAutoPilot: true,
   activeStrategyFramework: 'Generative Engine Search Dominance (GEO)',
   autoSaveWorkspaceInterval: 5,
+  newsletterSubscribeUrl: '',
 };
 
 type IntegrationId =
@@ -259,7 +262,11 @@ export default function Settings({ brandName, brandUrl, onResetWorkspace }: Sett
   useEffect(() => {
     const saved = localStorage.getItem('ai_cmo_system_settings');
     if (saved) {
-      try { setSettings(JSON.parse(saved)); } catch (e) { console.error('Failed to parse system settings', e); }
+      try {
+        setSettings({ ...defaultSettings, ...JSON.parse(saved) });
+      } catch (e) {
+        console.error('Failed to parse system settings', e);
+      }
     }
   }, []);
 
@@ -484,6 +491,25 @@ export default function Settings({ brandName, brandUrl, onResetWorkspace }: Sett
                       className="w-full text-xs font-sans bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
                     />
                   </div>
+                </div>
+
+                <div className="border-t border-slate-800 pt-4 space-y-2">
+                  <label className="text-[10px] font-mono font-bold text-slate-500 block uppercase tracking-wider">
+                    Kit newsletter URL
+                  </label>
+                  <input
+                    type="url"
+                    value={settings.newsletterSubscribeUrl}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, newsletterSubscribeUrl: e.target.value }))
+                    }
+                    placeholder="https://biblefunland.kit.com/your-form"
+                    className="w-full text-xs font-sans bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                  />
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    Paste your Kit (ConvertKit) signup form or landing page URL. Blog WordPress exports use this
+                    for the Subscribe button.
+                  </p>
                 </div>
 
                 <div className="border-t border-slate-800 pt-4 space-y-3.5">

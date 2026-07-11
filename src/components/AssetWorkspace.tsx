@@ -36,6 +36,7 @@ import {
   saveImagePrompt,
 } from '../utils/imagePrompts';
 import { generateStudioImage } from '../lib/studioImageApi';
+import { resolveSubscribeUrl } from '../utils/newsletterSettings';
 import ScrollToTopButton from './ScrollToTopButton';
 
 import EmailMockupViewport from './EmailMockupViewport';
@@ -193,12 +194,7 @@ export default function AssetWorkspace({
       prompt: promptOverride ?? customImagePrompt,
     });
 
-  const subscribeUrl = (() => {
-    const base = brandUrl?.trim() || localStorage.getItem('ai_cmo_brand_url')?.trim() || '';
-    if (!base) return '#subscribe';
-    const normalized = base.startsWith('http') ? base : `https://${base}`;
-    return `${normalized.replace(/\/$/, '')}/#subscribe`;
-  })();
+  const subscribeUrl = resolveSubscribeUrl(brandUrl);
 
   const buildWordPressSeoMeta = (featuredImageUrl: string) => ({
     title: asset.title,
