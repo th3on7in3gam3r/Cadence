@@ -123,8 +123,8 @@ export default function Dashboard({
         <div className="flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-base font-display font-bold text-white">New here? Start in 3 steps</h3>
-            <ol className="mt-2 space-y-2 text-sm text-slate-200 list-decimal list-inside">
+            <h3 className="text-sm font-display font-bold text-white">New here? Start in 3 steps</h3>
+            <ol className="mt-2 space-y-1.5 text-xs text-slate-300 list-decimal list-inside">
               <li>Read your brand summary and score below — that’s your starting point.</li>
               <li>
                 {onNavigateToSeoAgent ? (
@@ -151,7 +151,7 @@ export default function Dashboard({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
           <div className="p-6 md:p-8 md:pr-6 min-w-0">
             <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="inline-block px-3 py-1.5 bg-slate-800 text-emerald-400 rounded text-sm font-mono border border-slate-700 uppercase tracking-wider">
+              <div className="inline-block px-2.5 py-1 bg-slate-800 text-emerald-400 rounded text-xs font-mono border border-slate-700 uppercase tracking-wider">
                 Your brand at a glance
               </div>
               <div className="md:hidden flex flex-col items-center">
@@ -168,7 +168,7 @@ export default function Dashboard({
             <div className="text-sm md:text-base text-slate-300 leading-relaxed font-sans mb-5">
               {analysis.strategicSummary}
             </div>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 border-t border-slate-800 text-sm text-slate-300">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 border-t border-slate-800 text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
                 <Compass className="w-4 h-4 text-slate-500 shrink-0" />
                 Main goal:{' '}
@@ -319,7 +319,7 @@ export default function Dashboard({
             <Clock className="w-5 h-5 text-amber-500" />
             Create marketing content
           </h3>
-          <p className="text-sm text-slate-300 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Pick one — AI writes it for you. You can edit everything after.
           </p>
         </div>
@@ -336,18 +336,18 @@ export default function Dashboard({
                   <div className="flex items-center gap-2.5">
                     <div className={`p-2 rounded-lg ${asset.bg}`}>{asset.icon}</div>
                     <div>
-                      <h4 className="text-base font-display font-extrabold text-white">{asset.simpleTitle}</h4>
-                      <p className="text-sm text-slate-400">{asset.title}</p>
+                      <h4 className="text-sm font-display font-extrabold text-white">{asset.simpleTitle}</h4>
+                      <p className="text-[10px] text-slate-500">{asset.title}</p>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-300 leading-relaxed">{asset.desc}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{asset.desc}</p>
                 </div>
 
                 <button
                   id={`launcher-${asset.id}`}
                   onClick={() => onGenerateAsset(asset.id)}
                   disabled={!!generatingType}
-                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg flex items-center justify-between disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer active:scale-[0.98] transition"
+                  className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center justify-between disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer active:scale-[0.98] transition"
                 >
                   {isGenerating ? (
                     <>
@@ -369,7 +369,7 @@ export default function Dashboard({
 
       {/* Collapsible deep-dive sections */}
       <div className="space-y-3">
-        <p className="text-sm text-slate-400 font-mono uppercase tracking-wider px-1">
+        <p className="text-xs text-slate-500 font-mono uppercase tracking-wider px-1">
           More details — tap to expand
         </p>
 

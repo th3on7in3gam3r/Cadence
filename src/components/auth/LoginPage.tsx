@@ -33,15 +33,15 @@ export default function LoginPage() {
             <BrainCircuit className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-display font-bold text-white">Sign in to {PRODUCT_NAME}</h1>
-            <p className="text-sm text-slate-300">{PRODUCT_TAGLINE}</p>
+            <h1 className="text-xl font-display font-bold text-white">Sign in to {PRODUCT_NAME}</h1>
+            <p className="text-xs text-slate-400">{PRODUCT_TAGLINE}</p>
           </div>
         </div>
 
         <button
           type="button"
           onClick={() => signInWithGoogle()}
-          className="w-full py-3.5 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-lg text-base cursor-pointer flex items-center justify-center gap-2 mb-4"
+          className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-lg text-sm cursor-pointer flex items-center justify-center gap-2 mb-4"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden>
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -54,7 +54,7 @@ export default function LoginPage() {
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-slate-800" />
-          <span className="text-sm font-mono text-slate-400 uppercase">or email</span>
+          <span className="text-[10px] font-mono text-slate-500 uppercase">or email</span>
           <div className="flex-1 h-px bg-slate-800" />
         </div>
 
@@ -72,14 +72,14 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 required
-                className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-lg text-white text-base outline-none focus:ring-1 focus:ring-emerald-500"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
-            {error && <p className="text-sm text-rose-400">{error}</p>}
+            {error && <p className="text-xs text-rose-400">{error}</p>}
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-lg text-base cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-lg text-sm cursor-pointer flex items-center justify-center gap-2"
             >
               Send magic link
               <ArrowRight className="w-4 h-4" />
@@ -87,7 +87,7 @@ export default function LoginPage() {
           </form>
         )}
 
-        <p className="text-sm text-slate-400 text-center mt-6 leading-relaxed">
+        <p className="text-[10px] text-slate-500 text-center mt-6 leading-relaxed">
           AI is powered by our servers — no Gemini API key needed after sign-in.
         </p>
       </div>
