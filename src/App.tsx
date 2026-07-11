@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Sparkles, AlertCircle, RefreshCw, 
   Settings, ShieldCheck, HelpCircle, 
@@ -54,6 +54,7 @@ import {
   fetchCloudWorkspace,
   hydrateLocalFromPayload,
   saveCloudWorkspace,
+  type WorkspacePayload,
 } from './lib/workspaceApi';
 import {
   buildCampaignBundleZip,
@@ -120,7 +121,71 @@ export default function App({ onGoHome }: AppProps) {
     opts?: { assetType?: MarketingAssetType; replace?: boolean }
   ) => {
     navigateTo(view, opts);
+    if (view === 'workspace') {
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
   };
+
+  const workspaceSnapshotRef = useRef({
+    brandUrl,
+    growthGoal,
+    brandVoice,
+    customChallenge,
+    brandAnalysis,
+    cachedAssets,
+    assetHistory,
+    campaignRuns,
+    activeView,
+    activeAssetType,
+  });
+
+  useEffect(() => {
+    workspaceSnapshotRef.current = {
+      brandUrl,
+      growthGoal,
+      brandVoice,
+      customChallenge,
+      brandAnalysis,
+      cachedAssets,
+      assetHistory,
+      campaignRuns,
+      activeView,
+      activeAssetType,
+    };
+  }, [
+    brandUrl,
+    growthGoal,
+    brandVoice,
+    customChallenge,
+    brandAnalysis,
+    cachedAssets,
+    assetHistory,
+    campaignRuns,
+    activeView,
+    activeAssetType,
+  ]);
+
+  const persistCloudWorkspace = useCallback(
+    async (overrides?: Partial<WorkspacePayload>) => {
+      if (!cloudEnabled || !session || !cloudHydrated) return;
+      const base = workspaceSnapshotRef.current;
+      const payload: WorkspacePayload = {
+        brandUrl: base.brandUrl,
+        growthGoal: base.growthGoal,
+        brandVoice: base.brandVoice,
+        customChallenge: base.customChallenge,
+        brandAnalysis: base.brandAnalysis,
+        cachedAssets: base.cachedAssets,
+        assetHistory: base.assetHistory,
+        campaignRuns: base.campaignRuns,
+        activeView: base.activeView,
+        activeAssetType: base.activeAssetType,
+        ...overrides,
+      };
+      await saveCloudWorkspace(payload).catch(() => undefined);
+    },
+    [cloudEnabled, session, cloudHydrated],
+  );
 
   // Cloud: load workspace on sign-in
   useEffect(() => {
@@ -184,7 +249,7 @@ export default function App({ onGoHome }: AppProps) {
       payload.activeView = activeView;
       payload.activeAssetType = activeAssetType;
       saveCloudWorkspace(payload).catch(() => undefined);
-    }, 4000);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [
     cloudEnabled,
@@ -201,6 +266,22 @@ export default function App({ onGoHome }: AppProps) {
     activeView,
     activeAssetType,
   ]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !session || !cloudHydrated) return;
+    const flush = () => {
+      void persistCloudWorkspace();
+    };
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [cloudEnabled, session, cloudHydrated, persistCloudWorkspace]);
 
   // OAuth return from Google integrations — handled after triggerToast is defined below
 
@@ -439,21 +520,19 @@ export default function App({ onGoHome }: AppProps) {
 
       const data = await response.json();
       
-      // Save to local cached dictionary
-      setCachedAssets(prev => ({
-        ...prev,
-        [type]: data
-      }));
-
-      // Initialize brand new asset in history
-      setAssetHistory(prev => ({
-        ...prev,
+      const newCached = { ...cachedAssets, [type]: data };
+      const newHistory = {
+        ...assetHistory,
         [type]: [{
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
           summary: "Original AI draft generation",
           asset: data
-        }]
-      }));
+        }],
+      };
+
+      setCachedAssets(newCached);
+      setAssetHistory(newHistory);
+      void persistCloudWorkspace({ cachedAssets: newCached, assetHistory: newHistory });
 
       // Focus appropriate workspace specialist
       if (type === 'seo_keywords') setSelectedSpecialist('kofi');
@@ -500,25 +579,23 @@ export default function App({ onGoHome }: AppProps) {
 
       const data = await response.json();
       
-      // Update local cache with newly returned version
-      setCachedAssets(prev => ({
-        ...prev,
-        [activeAssetType]: data
-      }));
-
-      // Append refined output state as a new entry in local history configuration
-      setAssetHistory(prev => ({
-        ...prev,
+      const newCached = { ...cachedAssets, [activeAssetType]: data };
+      const newHistory = {
+        ...assetHistory,
         [activeAssetType]: [
-          ...(prev[activeAssetType] || []),
+          ...(assetHistory[activeAssetType] || []),
           {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             summary: data.summary || `Refined: "${feedbackText.slice(0, 35)}${feedbackText.length > 35 ? '...' : ''}"`,
             asset: data,
             toneIntensity
           }
-        ]
-      }));
+        ],
+      };
+
+      setCachedAssets(newCached);
+      setAssetHistory(newHistory);
+      void persistCloudWorkspace({ cachedAssets: newCached, assetHistory: newHistory });
       triggerToast('AI Copy refinement successfully compiled!', 'success');
     } catch (error: any) {
       console.error(error);

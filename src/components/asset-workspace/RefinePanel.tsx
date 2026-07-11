@@ -53,9 +53,14 @@ export default function RefinePanel({
     if (expandToken > 0) setIsOpen(true);
   }, [expandToken]);
 
+  const prevChatLen = useRef(0);
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, isRefining]);
+    const grew = chatHistory.length > prevChatLen.current;
+    prevChatLen.current = chatHistory.length;
+    if (grew && chatHistory.length > 1) {
+      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [chatHistory]);
 
   const handlePolish = (prompt: string) => {
     applyQuickPolish(prompt);

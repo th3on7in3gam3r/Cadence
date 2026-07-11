@@ -25,6 +25,14 @@ import VersionCompareDiff from './asset-workspace/VersionCompareDiff';
 import VersionCompareModal from './asset-workspace/VersionCompareModal';
 import { computeWordDiff } from '../utils/wordDiff';
 import { toWordPressBlocks } from '../utils/wordpressBlocks';
+import {
+  buildDefaultImagePrompt,
+  getStudioImageUrl,
+  getStudioLabels,
+  loadImagePrompt,
+  saveImagePrompt,
+} from '../utils/imagePrompts';
+import ScrollToTopButton from './ScrollToTopButton';
 
 import EmailMockupViewport from './EmailMockupViewport';
 import { GeneratedAsset, MarketingAssetType, ChatMessage, WebsiteAnalysis, ApprovalStatus } from '../types';
@@ -160,19 +168,27 @@ export default function AssetWorkspace({
   const [imageProgressPercentage, setImageProgressPercentage] = useState<number>(0);
   const [imageGenerationLog, setImageGenerationLog] = useState<string>('Ready to synthesize');
 
-  // Sync state for custom image prompt
+  // Per-asset image prompt (saved per marketing content type)
   useEffect(() => {
-    if (asset.title) {
-      setCustomImagePrompt(asset.title);
-    }
-  }, [asset.title]);
+    const saved = loadImagePrompt(assetType);
+    setCustomImagePrompt(
+      saved || buildDefaultImagePrompt(assetType, asset, companyInfo.brandName),
+    );
+  }, [assetType, asset.title, asset.summary, companyInfo.brandName]);
 
   useEffect(() => {
+    if (customImagePrompt.trim()) {
+      saveImagePrompt(assetType, customImagePrompt);
+    }
     localStorage.setItem(
       'ai_cmo_imagen_meta',
-      JSON.stringify({ artisticTheme, imagenSeed, customImagePrompt })
+      JSON.stringify({ artisticTheme, imagenSeed, customImagePrompt }),
     );
-  }, [artisticTheme, imagenSeed, customImagePrompt]);
+  }, [artisticTheme, imagenSeed, customImagePrompt, assetType]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [assetType, asset.title]);
 
   // Synchronise content local state with parent prop updates (including reversion actions)
   useEffect(() => {
@@ -243,7 +259,6 @@ export default function AssetWorkspace({
     });
   };
 
-  const chatBottomRef = useRef<HTMLDivElement>(null);
   const feedbackInputRef = useRef<HTMLTextAreaElement>(null);
 
   const editorWordCount = localAssetContent ? localAssetContent.split(/\s+/).filter(Boolean).length : 0;
@@ -414,10 +429,6 @@ export default function AssetWorkspace({
     ]);
     setIsScheduled(false);
   }, [asset.title, companyInfo.brandName, assetType]);
-
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, isRefining]);
 
   const handleCopy = async () => {
     const fullText = `=== ${asset.title} ===\n\n[CMO Note]: ${asset.summary}\n\n[Content]:\n${localAssetContent}\n\n[CTA]: ${asset.taglineOrCTA}\n\n[Metadata / SEO Optimization]:\n${asset.seoInstructions}`;
@@ -871,28 +882,26 @@ export default function AssetWorkspace({
                     </>
                   )}
                 </button>
-                {assetType === 'blog_post' && (
-                  <button
-                    type="button"
-                    id="copy-wordpress-html-btn"
-                    onClick={handleCopyWordPress}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-950/50 border border-blue-500/30 hover:border-blue-400/50 text-blue-200 hover:text-white rounded text-xs font-semibold cursor-pointer shadow-sm select-none transition-all active:scale-95"
-                    title="Copy Gutenberg block HTML for WordPress Code editor"
-                  >
-                    {copiedWp ? (
-                      <>
-                        <Check className="w-4 h-4 text-emerald-400" />
-                        <span className="text-emerald-400 font-bold">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Code2 className="w-4 h-4 text-blue-300" />
-                        <span className="hidden sm:inline">Copy WordPress HTML</span>
-                        <span className="sm:hidden">WP HTML</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  id="copy-wordpress-html-btn"
+                  onClick={handleCopyWordPress}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-950/50 border border-blue-500/30 hover:border-blue-400/50 text-blue-200 hover:text-white rounded text-xs font-semibold cursor-pointer shadow-sm select-none transition-all active:scale-95"
+                  title="Copy Gutenberg block HTML for WordPress Code editor"
+                >
+                  {copiedWp ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-400 font-bold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Code2 className="w-4 h-4 text-blue-300" />
+                      <span className="hidden sm:inline">Copy WordPress HTML</span>
+                      <span className="sm:hidden">WP HTML</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -1175,8 +1184,8 @@ export default function AssetWorkspace({
                       />
                     )}
 
-                    {/* Visual Images for Blog Post or Social Posts */}
-                    {(!editMode && (assetType === 'blog_post' || assetType === 'social_posts')) && (
+                    {/* Campaign Studio Visual Suite — all marketing content types */}
+                    {!editMode && (
                       <div className="mb-8 p-5 bg-slate-950/80 border border-slate-800 rounded-2xl shadow-xl select-none animate-fade-in">
                         
                         {/* Title and Workspace Description */}
@@ -1186,8 +1195,9 @@ export default function AssetWorkspace({
                               🎨 Campaign Studio Visual Suite
                             </span>
                             <h4 className="text-sm font-display font-black text-white uppercase mt-0.5 tracking-tight">
-                              {assetType === 'blog_post' ? 'Featured Blog Banner Engine' : 'Social Graphic Channel Card Studio'}
+                              {getStudioLabels(assetType).suite}
                             </h4>
+                            <p className="text-[10px] text-slate-400 mt-1">{getStudioLabels(assetType).panel}</p>
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -1202,47 +1212,35 @@ export default function AssetWorkspace({
                           </div>
                         </div>
 
-                        {/* Scoped CSS Grid Areas and Dynamic Sizing Rules */}
                         <style>{`
                           .campaign-studio-grid {
-                            display: grid;
-                            grid-template-areas: 
-                              "preview"
-                              "settings";
-                            grid-template-columns: 1fr;
+                            display: flex;
+                            flex-direction: column;
                             gap: 1.5rem;
-                            align-items: stretch;
                             width: 100%;
                           }
-                          @media (min-width: 1280px) {
-                            .campaign-studio-grid {
-                              grid-template-areas: "preview settings";
-                              grid-template-columns: 7.2fr 4.8fr;
+                          .studio-controls-row {
+                            display: grid;
+                            grid-template-columns: 1fr;
+                            gap: 1.25rem;
+                          }
+                          @media (min-width: 768px) {
+                            .studio-controls-row {
+                              grid-template-columns: 1fr 1fr;
+                              align-items: start;
                             }
-                          }
-                          .studio-area-preview {
-                            grid-area: preview;
-                          }
-                          .studio-area-settings {
-                            grid-area: settings;
                           }
                         `}</style>
 
-                        {/* Interactive Dual-Panel Board with CSS Grid Areas */}
                         <div className="campaign-studio-grid">
-                          
-                          {/* PANEL LEFT: Preview & Live Canvas (Grid Area: preview) */}
-                          <div className="studio-area-preview flex flex-col justify-between space-y-4">
-                            
-                            {/* The Real Canvas Render Area */}
-                            <div className="bg-slate-900/40 p-1 rounded-2xl border border-slate-850 flex-1 flex flex-col justify-center">
+                          {/* Full-width preview on top */}
+                          <div className="w-full flex flex-col space-y-4">
                               
-                              {/* Blog cover card layout */}
                               {assetType === 'blog_post' && (
-                                <div className="space-y-3 w-full">
-                                  <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-[16/9] w-full max-h-[220px] sm:max-h-[280px] md:max-h-[350px] lg:max-h-[400px] xl:max-h-[295px] 2xl:max-h-[350px] shadow-inner flex items-center justify-center">
+                                <div className="space-y-3 w-full bg-slate-900/40 p-1 rounded-2xl border border-slate-850">
+                                  <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-[16/9] w-full shadow-inner flex items-center justify-center">
                                     <img
-                                      src={`https://picsum.photos/seed/imagen-${artisticTheme}-${imagenSeed}-${encodeURIComponent(customImagePrompt || 'marketing')}/1200/675`}
+                                      src={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
                                       alt={customImagePrompt || "Blog cover photo"}
                                       referrerPolicy="no-referrer"
                                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-102"
@@ -1310,7 +1308,7 @@ export default function AssetWorkspace({
                                       </label>
                                       <span className="text-slate-800">|</span>
                                       <a
-                                        href={`https://picsum.photos/seed/imagen-${artisticTheme}-${imagenSeed}-${encodeURIComponent(customImagePrompt || 'marketing')}/1200/675`}
+                                        href={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-emerald-400 hover:text-emerald-350 font-bold transition flex items-center gap-1"
@@ -1384,7 +1382,7 @@ export default function AssetWorkspace({
                                     {/* The Dynamic Social Image Card */}
                                     <div className="relative rounded-lg overflow-hidden border border-slate-850 bg-slate-900 aspect-[1.91/1] max-h-[190px] flex items-center justify-center">
                                       <img
-                                        src={`https://picsum.photos/seed/imagen-social-${activeSocialTab}-${artisticTheme}-${imagenSeed}-${encodeURIComponent(customImagePrompt || 'campaign')}/800/420`}
+                                        src={getStudioImageUrl('social_posts', artisticTheme, imagenSeed, `${activeSocialTab}-${customImagePrompt}`)}
                                         alt="Linked social asset preview"
                                         referrerPolicy="no-referrer"
                                         className="w-full h-full object-cover transition-transform duration-350"
@@ -1462,14 +1460,55 @@ export default function AssetWorkspace({
                                   </div>
                                 </div>
                               )}
-                            </div>
+
+                              {(assetType === 'email_sequence' || assetType === 'lead_magnet' || assetType === 'seo_keywords') && (
+                                <div className="space-y-3 w-full bg-slate-900/40 p-1 rounded-2xl border border-slate-850">
+                                  <div
+                                    className={`relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 w-full shadow-inner flex items-center justify-center ${
+                                      assetType === 'lead_magnet' ? 'aspect-square max-w-md mx-auto' : 'aspect-[16/9]'
+                                    }`}
+                                  >
+                                    <img
+                                      src={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
+                                      alt={customImagePrompt || 'Campaign visual'}
+                                      referrerPolicy="no-referrer"
+                                      className="w-full h-full object-cover"
+                                    />
+                                    {isGeneratingImage && (
+                                      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 z-20 text-center">
+                                        <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mb-2" />
+                                        <span className="text-[10px] font-mono text-emerald-400 uppercase">{imageGenerationLog}</span>
+                                      </div>
+                                    )}
+                                    {!isGeneratingImage && showTitleOverlay && (
+                                      <div className="absolute bottom-4 left-4 right-4 text-left pointer-events-none">
+                                        <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-emerald-500 text-slate-950 px-2 py-0.5 rounded">
+                                          {artisticTheme.toUpperCase()}
+                                        </span>
+                                        <h2 className="text-xs md:text-sm font-display font-extrabold text-white mt-1.5 drop-shadow-md line-clamp-2">
+                                          {customImagePrompt}
+                                        </h2>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap items-center justify-between text-[10px] text-slate-500 px-3 py-2 font-mono gap-2">
+                                    <span>Engine: <strong>Imagen 3</strong></span>
+                                    <a
+                                      href={getStudioImageUrl(assetType, artisticTheme, imagenSeed, customImagePrompt)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      Inspect raw image
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
                           </div>
 
-                          {/* PANEL RIGHT: Visual Branding Modifier & Imagen API Prompt Studio (Grid Area: settings) */}
-                          <div className="studio-area-settings p-4 bg-slate-900/60 border border-slate-850 rounded-2xl flex flex-col justify-between space-y-4">
-                            
-                            {/* Theme Modifiers selector */}
-                            <div className="space-y-2.5">
+                          <div className="studio-controls-row">
+                          <div className="p-4 bg-slate-900/60 border border-slate-850 rounded-2xl space-y-4">
                               <div>
                                 <span className="text-[10px] font-mono text-amber-500 font-bold uppercase tracking-wider block">
                                   🪄 1. DESIGN THEME SELECTION
@@ -1515,25 +1554,29 @@ export default function AssetWorkspace({
                                   </button>
                                 ))}
                               </div>
-                            </div>
+                          </div>
 
+                          <div className="p-4 bg-slate-900/60 border border-slate-850 rounded-2xl flex flex-col justify-between space-y-4">
                             {/* Prompt customizing box */}
-                            <div className="space-y-1.5 pt-2 border-t border-slate-850/40">
+                            <div className="space-y-1.5">
                               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase flex items-center justify-between">
                                 <span>🎨 2. IMAGEN DESIGN PROMPT</span>
-                                <span className="text-[9px] text-emerald-450 font-normal">Title Bound</span>
+                                <span className="text-[9px] text-emerald-450 font-normal">Per content type</span>
                               </label>
                               <textarea
                                 value={customImagePrompt}
                                 onChange={(e) => setCustomImagePrompt(e.target.value)}
-                                rows={2}
-                                className="w-full text-[11px] bg-slate-950/80 border border-slate-850 rounded-xl p-2.5 text-slate-300 placeholder-slate-700 font-sans focus:outline-none focus:border-emerald-500/50 resize-none leading-normal"
-                                placeholder="Edit the visual content description or modify the prompt for the Imagen generator..."
+                                rows={4}
+                                className="w-full text-[11px] bg-slate-950/80 border border-slate-850 rounded-xl p-2.5 text-slate-300 placeholder-slate-700 font-sans focus:outline-none focus:border-emerald-500/50 resize-y min-h-[88px] leading-normal"
+                                placeholder="Describe the image you want Imagen to generate for this marketing piece…"
                               />
+                              <p className="text-[9px] text-slate-500 leading-relaxed">
+                                Saved per asset type — switch content and each keeps its own prompt.
+                              </p>
                             </div>
 
                             {/* Imagen tool generator block */}
-                            <div className="pt-3 border-t border-slate-850/40 space-y-1.5 flex-1 flex flex-col justify-end">
+                            <div className="pt-3 border-t border-slate-850/40 space-y-1.5">
                               <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block leading-none">
                                 Powered by Google Imagen 3 API
                               </span>
@@ -1556,9 +1599,10 @@ export default function AssetWorkspace({
                                 )}
                               </button>
                             </div>
-                            
                           </div>
-                          
+
+                          </div>
+
                         </div>
 
                       </div>
@@ -2605,17 +2649,13 @@ Include personalized subject line options, preview text, and direct booking link
         quickPolishPresets={quickPolishPresets}
         quickPills={quickPills}
         expandToken={refineExpandToken}
-        seoSnapshot={
-          assetType === 'blog_post'
-            ? {
-                title: asset.title,
-                summary: asset.summary,
-                seoInstructions: asset.seoInstructions,
-                taglineOrCTA: asset.taglineOrCTA,
-                wordCount: editorWordCount,
-              }
-            : undefined
-        }
+        seoSnapshot={{
+          title: asset.title,
+          summary: asset.summary,
+          seoInstructions: asset.seoInstructions,
+          taglineOrCTA: asset.taglineOrCTA,
+          wordCount: editorWordCount,
+        }}
       />
 
       {/* 30-Day strategic numbered "Next Step Options" matching target guidelines exactly! */}
@@ -2931,6 +2971,7 @@ Include personalized subject line options, preview text, and direct booking link
         onRefine={onRefineAsset}
         computeWordDiff={computeWordDiff}
       />
+      <ScrollToTopButton />
     </div>
   );
 }
