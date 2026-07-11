@@ -31,6 +31,7 @@ import { generateStudioImage } from "./server/lib/imagen";
 import { isSupabaseConfigured, isHostedAiMode } from "./server/lib/config";
 import { requestLogger, metricsHandler } from "./server/lib/metrics";
 import { initSentry, logger } from "./server/lib/logger";
+import { buildRobotsTxt, buildSitemapXml } from "./server/lib/sitemap";
 
 // Load .env, then .env.local (overrides) — matches README and Vite conventions
 const envDir = process.cwd();
@@ -861,6 +862,17 @@ app.post("/api/generate-image", ...protectedApi, async (req, res) => {
   }
 });
 
+
+// SEO: sitemap & robots (uses APP_URL / VITE_APP_URL)
+app.get("/sitemap.xml", (_req, res) => {
+  res.type("application/xml");
+  res.send(buildSitemapXml());
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain");
+  res.send(buildRobotsTxt());
+});
 
 // Favicon (browsers request /favicon.ico by default)
 app.get("/favicon.ico", (_req, res) => {
