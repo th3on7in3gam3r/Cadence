@@ -14,7 +14,7 @@ import {
 } from '../../lib/billingApi';
 import { isCloudEnabled } from '../../lib/cloudConfig';
 import type { BundleCatalogItem, BundleId } from '../../lib/bundles';
-import { BUNDLE_CATALOG_ORDER, PRODUCT_LABELS } from '../../lib/bundles';
+import { BUNDLE_CATALOG_ORDER, PRODUCT_LABELS, bundlePricingCaption } from '../../lib/bundles';
 import { PRODUCT_NAME } from '../../lib/brand';
 
 const AI_CMO_FEATURES = {
@@ -140,11 +140,16 @@ export default function BillingTab({ highlightBundle }: { highlightBundle?: stri
           <h3 className="text-sm font-display font-extrabold text-white">Studio bundles</h3>
         </div>
         <p className="text-[11px] text-slate-500 max-w-2xl">
-          One Stripe customer, multiple products. Checkout here — entitlements sync to Kerygma, CitePilot, and Aegis via the studio billing hub.
+          One Stripe customer, multiple products. Bundle prices are a <strong className="text-slate-400">single monthly total</strong> for every app listed — not per product.
         </p>
         <div className="grid md:grid-cols-2 gap-4">
           {orderedBundles.map((bundle) => {
             const isActive = activeBundleIds.has(bundle.id);
+            const pricing = bundlePricingCaption(bundle.products.length);
+            const priceHint =
+              bundle.products.length > 1
+                ? `One subscription for all ${bundle.products.length} products — not $${bundle.monthlyListPrice} each`
+                : null;
             return (
               <div
                 key={bundle.id}
@@ -169,8 +174,11 @@ export default function BillingTab({ highlightBundle }: { highlightBundle?: stri
                 <p className="text-[10px] text-slate-600 mt-1 font-mono">{productPills(bundle.products)}</p>
                 <p className="text-2xl font-bold text-white mt-3">
                   ${bundle.monthlyListPrice}
-                  <span className="text-xs text-slate-500 font-normal">/mo list</span>
+                  <span className="text-xs text-slate-500 font-normal">{pricing.priceSuffix}</span>
                 </p>
+                {priceHint && (
+                  <p className="text-[10px] text-emerald-400/90 mt-1 leading-snug">{priceHint}</p>
+                )}
                 <button
                   type="button"
                   disabled={!bundle.configured || isActive || !!busy}

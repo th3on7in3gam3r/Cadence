@@ -73,7 +73,7 @@ export const STUDIO_BUNDLES: Record<BundleId, StudioBundle> = {
   studio: {
     id: 'studio',
     name: 'Studio Bundle',
-    tagline: 'All four products — best value for agencies',
+    tagline: 'All four products, one subscription — best value for agencies',
     monthlyListPrice: 199,
     products: ['ai_cmo', 'citepilot', 'kerygma', 'aegis'],
     entitlements: {

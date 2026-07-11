@@ -12,6 +12,7 @@ import {
   MARKETING_BUNDLES,
   bundleCheckoutHref,
   productPills,
+  bundlePricingCaption,
   type MarketingBundle,
 } from '../lib/bundles';
 import { PRODUCT_NAME } from '../lib/brand';
@@ -24,6 +25,12 @@ interface StudioBundlesPricingSectionProps {
 }
 
 function PricingBundleCard({ bundle }: { bundle: MarketingBundle }) {
+  const pricing = bundlePricingCaption(bundle.products.length);
+  const priceHint =
+    bundle.products.length > 1
+      ? `One subscription for all ${bundle.products.length} products — not $${bundle.monthlyListPrice} each`
+      : null;
+
   return (
     <div
       id={`pricing-bundle-${bundle.id}`}
@@ -45,10 +52,13 @@ function PricingBundleCard({ bundle }: { bundle: MarketingBundle }) {
         </div>
         <div className="text-right shrink-0">
           <p className="text-3xl font-display font-black text-white">${bundle.monthlyListPrice}</p>
-          <p className="text-[10px] font-mono text-slate-500">/month</p>
+          <p className="text-[10px] font-mono text-slate-500">{pricing.priceSuffix}</p>
         </div>
       </div>
-      <p className="mt-4 text-[11px] font-mono text-violet-300/80">{productPills(bundle.products)}</p>
+      {priceHint && (
+        <p className="text-[11px] text-emerald-400/90 mt-2 leading-snug">{priceHint}</p>
+      )}
+      <p className="mt-2 text-[11px] font-mono text-violet-300/80">{productPills(bundle.products)}</p>
       <ul className="mt-5 space-y-2.5 flex-1">
         {bundle.features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
@@ -163,7 +173,7 @@ export default function StudioBundlesPricingSection({
         )}
 
         <p className="mt-10 text-center text-[11px] text-slate-600 font-mono">
-          List prices shown for planning — final charge at Stripe checkout.{' '}
+          Bundle prices are one monthly total for every product in the bundle — not per app. Final charge at Stripe checkout.{' '}
           <a
             href="https://getcitepilot.com/pricing"
             target="_blank"

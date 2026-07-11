@@ -50,12 +50,13 @@ export const MARKETING_BUNDLES: MarketingBundle[] = [
   {
     id: 'studio',
     name: 'Studio Bundle',
-    tagline: 'All four growth products — best for agencies',
+    tagline: 'All four products, one subscription — best for agencies',
     monthlyListPrice: 199,
     products: ['ai_cmo', 'citepilot', 'kerygma', 'aegis'],
     badge: 'Best value',
     featured: true,
     features: [
+      'One monthly bill for all four apps below — not priced per product',
       `${PRODUCT_NAME} Team — seats, approvals, white-label PDFs`,
       'CitePilot Fleet — multi-brand citation tracking',
       'Kerygma Social Pro — autopilot posts',
@@ -134,4 +135,12 @@ export function bundleCheckoutHref(bundleId: BundleId): string {
 
 export function productPills(products: StudioProductId[]): string {
   return products.map((p) => PRODUCT_LABELS[p]).join(' · ');
+}
+
+/** Avoid "$199/mo" reading as per-product when a bundle includes multiple apps. */
+export function bundlePricingCaption(productCount: number): { priceSuffix: string } {
+  if (productCount > 1) {
+    return { priceSuffix: '/mo total' };
+  }
+  return { priceSuffix: '/mo' };
 }
