@@ -122,7 +122,7 @@ export default function LandingPage({
               </span>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-400">
+          <nav className="hidden lg:flex items-center gap-6 text-sm text-slate-400">
             <button type="button" onClick={() => scrollTo('features')} className="hover:text-white transition cursor-pointer">
               Features
             </button>
@@ -171,7 +171,7 @@ export default function LandingPage({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800 cursor-pointer"
+              className="lg:hidden p-2.5 min-h-[44px] min-w-[44px] rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800 cursor-pointer flex items-center justify-center touch-manipulation"
               aria-label="Open menu"
               aria-expanded={mobileMenuOpen}
             >

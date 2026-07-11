@@ -157,7 +157,7 @@ export default function AppHeader({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 cursor-pointer"
+              className="lg:hidden p-2.5 min-h-[44px] min-w-[44px] rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 cursor-pointer flex items-center justify-center touch-manipulation"
               aria-label="Open menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -168,9 +168,9 @@ export default function AppHeader({
         </div>
       </div>
 
-      {/* Row 2 — tab navigation (tablet/desktop) */}
+      {/* Row 2 — tab navigation (large screens) */}
       {showNav && (
-        <div className="hidden md:block border-t border-slate-800/80 bg-slate-950/40">
+        <div className="hidden lg:block border-t border-slate-800/80 bg-slate-950/40">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
             <nav
               className="flex items-stretch gap-0.5 overflow-x-auto py-0 scrollbar-none -mb-px"
