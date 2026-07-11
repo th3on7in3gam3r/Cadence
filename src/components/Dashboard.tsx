@@ -29,6 +29,7 @@ interface DashboardProps {
   onNavigateToSeoAgent?: () => void;
   onNavigateToCalendar?: () => void;
   onNewAudit?: () => void;
+  onOpenHelp?: (section: 'overview' | 'start' | 'post' | 'map') => void;
   savedRunsCount?: number;
   onExportCampaignBundle?: () => void;
   isExportingBundle?: boolean;
@@ -52,6 +53,7 @@ export default function Dashboard({
   onNavigateToSeoAgent,
   onNavigateToCalendar,
   onNewAudit,
+  onOpenHelp,
   savedRunsCount = 0,
   onExportCampaignBundle,
   isExportingBundle,
@@ -122,8 +124,20 @@ export default function Dashboard({
       <div className="p-4 md:p-5 bg-gradient-to-r from-emerald-950/40 to-slate-900 border border-emerald-500/20 rounded-xl">
         <div className="flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-          <div>
-            <h3 className="text-sm font-display font-bold text-white">New here? Start in 3 steps</h3>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-display font-bold text-white">New here? Start in 3 steps</h3>
+              {onOpenHelp && (
+                <button
+                  type="button"
+                  onClick={() => onOpenHelp('post')}
+                  className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  How to post a blog
+                </button>
+              )}
+            </div>
             <ol className="mt-2 space-y-1.5 text-xs text-slate-300 list-decimal list-inside">
               <li>Read your brand summary and score below — that’s your starting point.</li>
               <li>

@@ -7,6 +7,7 @@ import { useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MarketingAssetType } from '../types';
 import { AppView, buildAppPath, parseAppPath, slugifyBrandId } from '../lib/appPaths';
+import type { HelpSectionId } from '../lib/helpSections';
 
 export function useAppNavigation(
   brandUrl: string,
@@ -27,12 +28,15 @@ export function useAppNavigation(
   }, [location.pathname, setActiveView, setActiveAssetType]);
 
   const navigateTo = useCallback(
-    (view: AppView, opts?: { assetType?: MarketingAssetType; replace?: boolean }) => {
+    (view: AppView, opts?: { assetType?: MarketingAssetType; replace?: boolean; helpSection?: HelpSectionId }) => {
       setActiveView(view);
       if (opts?.assetType && setActiveAssetType) {
         setActiveAssetType(opts.assetType);
       }
-      const path = buildAppPath(view, brandId, { assetType: opts?.assetType });
+      const path = buildAppPath(view, brandId, {
+        assetType: opts?.assetType,
+        helpSection: opts?.helpSection,
+      });
       navigate(path, { replace: opts?.replace });
     },
     [brandId, navigate, setActiveView, setActiveAssetType]

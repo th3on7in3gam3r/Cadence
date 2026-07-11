@@ -21,6 +21,7 @@ import {
   DataRetentionPage,
 } from './pages/LegalPages';
 import StudioHubPage from './pages/StudioHubPage';
+import HelpPage from './pages/HelpPage';
 
 function hasSavedWorkspace(): boolean {
   try {
@@ -88,6 +89,7 @@ export default function Root() {
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/security" element={<SecurityPage />} />
               <Route path="/data-retention" element={<DataRetentionPage />} />
+              <Route path="/help" element={<HelpPage variant="public" />} />
               <Route path="/app/*" element={<AppGate />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

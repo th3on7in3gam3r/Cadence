@@ -81,6 +81,7 @@ interface AssetWorkspaceProps {
   onUpdateAssetContent?: (type: MarketingAssetType, content: string) => void;
   onExportCampaignBundle?: () => void;
   isExportingBundle?: boolean;
+  onOpenHelp?: () => void;
   onUpdateApproval?: (index: number, status: ApprovalStatus, comment?: string) => void;
   assigneeName?: string;
   currentApprovalStatus?: ApprovalStatus;
@@ -105,6 +106,7 @@ export default function AssetWorkspace({
   onUpdateAssetContent,
   onExportCampaignBundle,
   isExportingBundle,
+  onOpenHelp,
   onUpdateApproval,
   assigneeName = 'Reviewer',
   currentApprovalStatus = 'draft',
@@ -951,6 +953,17 @@ export default function AssetWorkspace({
                     </>
                   )}
                 </button>
+                {assetType === 'blog_post' && onOpenHelp && (
+                  <button
+                    type="button"
+                    onClick={onOpenHelp}
+                    className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold text-slate-500 hover:text-emerald-400 cursor-pointer"
+                    title="WordPress publishing guide"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Publishing guide</span>
+                  </button>
+                )}
               </div>
             </div>
 

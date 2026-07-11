@@ -16,6 +16,7 @@ import {
   Plus,
   Grid3X3,
   Menu,
+  HelpCircle,
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { AppView } from '../lib/appPaths';
@@ -55,6 +56,7 @@ const NAV_ITEMS: {
   { view: 'history-scans', label: 'Document Scans', shortLabel: 'Scans', icon: <History className="w-3.5 h-3.5 shrink-0" /> },
   { view: 'profile', label: 'Marketer Profile', shortLabel: 'Profile', icon: <User className="w-3.5 h-3.5 shrink-0" /> },
   { view: 'settings', label: 'Settings', shortLabel: 'Settings', icon: <Sliders className="w-3.5 h-3.5 shrink-0" /> },
+  { view: 'help', label: 'Help', shortLabel: 'Help', icon: <HelpCircle className="w-3.5 h-3.5 shrink-0" /> },
 ];
 
 function isNavActive(activeView: AppView, item: (typeof NAV_ITEMS)[0]): boolean {
@@ -77,7 +79,7 @@ export default function AppHeader({
   goTo,
 }: AppHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const showNav = activeView !== 'onboarding' && !!brandAnalysis;
+  const showNav = activeView !== 'onboarding' && (!!brandAnalysis || activeView === 'help');
   const stackUi = showGrowthStackUi();
   const navItems = stackUi ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.view !== 'studio');
   const closeMenu = () => setMobileMenuOpen(false);
@@ -120,6 +122,15 @@ export default function AppHeader({
               Sign out
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => goTo('help')}
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-emerald-400 px-2 py-1.5 cursor-pointer"
+            title="Help & guides"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden md:inline">Help</span>
+          </button>
           <NotificationCenter />
           {showNav && (
             <button

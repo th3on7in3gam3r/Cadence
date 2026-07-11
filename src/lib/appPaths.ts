@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { HelpSectionId } from './helpSections';
+
 export type AppView =
   | 'onboarding'
   | 'dashboard'
@@ -13,7 +15,8 @@ export type AppView =
   | 'history-scans'
   | 'campaign-history'
   | 'seo-agent'
-  | 'calendar';
+  | 'calendar'
+  | 'help';
 
 export function slugifyBrandId(brandUrl: string): string {
   if (!brandUrl) return 'workspace';
@@ -53,6 +56,7 @@ export function parseAppPath(pathname: string): {
   if (p === '/app/profile') return { view: 'profile' };
   if (p === '/app/campaign-history') return { view: 'campaign-history' };
   if (p === '/app/history-scans') return { view: 'history-scans' };
+  if (p === '/app/help' || p.startsWith('/app/help')) return { view: 'help' };
 
   return { view: 'dashboard' };
 }
@@ -60,7 +64,7 @@ export function parseAppPath(pathname: string): {
 export function buildAppPath(
   view: AppView,
   brandId: string,
-  opts?: { assetType?: string }
+  opts?: { assetType?: string; helpSection?: HelpSectionId },
 ): string {
   const bid = brandId || 'workspace';
   switch (view) {
@@ -84,6 +88,8 @@ export function buildAppPath(
       return '/app/campaign-history';
     case 'history-scans':
       return '/app/history-scans';
+    case 'help':
+      return opts?.helpSection ? `/app/help?section=${opts.helpSection}` : '/app/help';
     default:
       return `/app/brands/${bid}`;
   }

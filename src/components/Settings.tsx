@@ -8,7 +8,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Sliders, Bell, Sparkles, RefreshCw, Cpu, Check, ShieldAlert,
   KeyRound, HardDrive, Plug, Wifi, WifiOff, ExternalLink,
-  CreditCard, Users, Building2, Globe, Cloud, Grid3X3,
+  CreditCard, Users, Building2, Globe, Cloud, Grid3X3, BookOpen,
 } from 'lucide-react';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { useAuth } from '../contexts/AuthContext';
@@ -127,6 +127,7 @@ interface SettingsProps {
   brandName?: string;
   brandUrl?: string;
   onResetWorkspace?: () => void;
+  onOpenHelp?: (section: 'overview' | 'start' | 'post' | 'map') => void;
 }
 
 // ─── IntegrationCard ──────────────────────────────────────────────────────────
@@ -249,7 +250,7 @@ function LegacyIntegrationsTab() {
 
 type SettingsTab = 'general' | 'integrations' | 'studio' | 'brand-kit' | 'notifications' | 'billing' | 'team' | 'agency';
 
-export default function Settings({ brandName, brandUrl, onResetWorkspace }: SettingsProps) {
+export default function Settings({ brandName, brandUrl, onResetWorkspace, onOpenHelp }: SettingsProps) {
   const { user } = useAuth();
   const cloudEnabled = isCloudEnabled();
   const [searchParams] = useSearchParams();
@@ -313,6 +314,36 @@ export default function Settings({ brandName, brandUrl, onResetWorkspace }: Sett
           War room controls, billing, team, integrations, and brand kit
         </p>
       </div>
+
+      {onOpenHelp && (
+        <div className="p-4 bg-emerald-950/30 border border-emerald-500/20 rounded-xl flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <BookOpen className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-white">User guide</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Step-by-step help — especially publishing blogs to WordPress and connecting Kit.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onOpenHelp('post')}
+              className="text-xs font-bold px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg cursor-pointer"
+            >
+              How to post
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenHelp('overview')}
+              className="text-xs font-bold px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 rounded-lg cursor-pointer"
+            >
+              All guides
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Workspace context — replaces the AI team panel on this page */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

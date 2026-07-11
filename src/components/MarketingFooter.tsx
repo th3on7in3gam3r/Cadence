@@ -100,6 +100,7 @@ export default function MarketingFooter({
           scrollLink('how-it-works', 'How it works'),
           scrollLink('pricing', 'Pricing'),
           scrollLink('faq', 'FAQ'),
+          { label: 'User guide', to: '/help' },
           ...(onGetStarted
             ? [{ label: 'Open workspace', onClick: onGetStarted }]
             : [{ label: 'Open workspace', to: '/app' }]),
@@ -145,6 +146,7 @@ export default function MarketingFooter({
   ];
 
   const legalLinks: FooterLink[] = [
+    { label: 'User guide', to: '/help' },
     { label: 'Privacy', to: '/privacy' },
     { label: 'Terms', to: '/terms' },
     { label: 'Security', to: '/security' },

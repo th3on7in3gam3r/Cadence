@@ -26,6 +26,7 @@ import NewRunModal from './components/NewRunModal';
 import CampaignCalendar from './components/CampaignCalendar';
 import AppHeader from './components/AppHeader';
 import StudioDashboard from './pages/StudioDashboard';
+import HelpPage from './pages/HelpPage';
 import { PRODUCT_NAME } from './lib/brand';
 import { syncWorkspaceBrand, resolveActiveBrandOnLoad, saveCurrentBrandSnapshot } from './lib/teamsApi';
 import { normalizeBrandUrl } from './utils/websiteUrl';
@@ -36,6 +37,7 @@ import {
 import { loadBrandKit } from './utils/brandKit';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import type { AppView } from './lib/appPaths';
+import type { HelpSectionId } from './lib/helpSections';
 import { buildAppPath, slugifyBrandId } from './lib/appPaths';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -119,7 +121,7 @@ export default function App({ onGoHome }: AppProps) {
 
   const goTo = (
     view: AppView,
-    opts?: { assetType?: MarketingAssetType; replace?: boolean }
+    opts?: { assetType?: MarketingAssetType; replace?: boolean; helpSection?: HelpSectionId }
   ) => {
     navigateTo(view, opts);
     if (view === 'workspace') {
@@ -862,6 +864,11 @@ export default function App({ onGoHome }: AppProps) {
                 hostedAi={hostedAi}
               />
             </motion.div>
+          ) : activeView === 'help' ? (
+            <HelpPage
+              variant="app"
+              onBack={() => goTo(brandAnalysis ? 'dashboard' : 'onboarding')}
+            />
           ) : (
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 min-w-0 overflow-x-hidden">
               {brandAnalysis && (
@@ -885,6 +892,7 @@ export default function App({ onGoHome }: AppProps) {
                       onNavigateToSeoAgent={() => goTo('seo-agent')}
                       onNavigateToCalendar={() => goTo('calendar')}
                       onNewAudit={() => setShowNewRunModal(true)}
+                      onOpenHelp={(section) => goTo('help', { helpSection: section })}
                       savedRunsCount={campaignRuns.length}
                       onExportCampaignBundle={handleExportCampaignBundle}
                       isExportingBundle={isExportingBundle}
@@ -917,6 +925,7 @@ export default function App({ onGoHome }: AppProps) {
                       onUpdateAssetContent={handleUpdateAssetContent}
                       onExportCampaignBundle={handleExportCampaignBundle}
                       isExportingBundle={isExportingBundle}
+                      onOpenHelp={() => goTo('help', { helpSection: 'post' })}
                     />
                   ) : activeView === 'calendar' ? (
                     <CampaignCalendar
@@ -960,6 +969,7 @@ export default function App({ onGoHome }: AppProps) {
                       brandName={brandAnalysis.brandName}
                       brandUrl={brandUrl}
                       onResetWorkspace={handleResetWorkspace}
+                      onOpenHelp={(section) => goTo('help', { helpSection: section })}
                     />
                   ) : activeView === 'studio' ? (
                     <StudioDashboard onBackToDashboard={() => goTo('dashboard')} />
@@ -987,6 +997,13 @@ export default function App({ onGoHome }: AppProps) {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span>{PRODUCT_NAME} © {new Date().getFullYear()}</span>
           <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => goTo('help')}
+              className="text-slate-500 hover:text-emerald-400 transition-colors cursor-pointer"
+            >
+              User guide
+            </button>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               API Status: Online
