@@ -7,6 +7,7 @@ Canonical cross-product URLs for Phase 1. Update production hosts here when doma
 | CitePilot | https://getcitepilot.com | GrowthEngineAI dev server |
 | Kerygma Social | https://kerygmasocial.com | native-landing `:3001` |
 | Aegis Loop | https://aegis-loop.com (→ aegisloop.dev) | `:3847` |
+| Pulse | https://pulse-5o1m.onrender.com | http://localhost:3020 |
 | **Cadence** | `https://growth.biblefunland.com` | http://localhost:3000 |
 | Studio | https://www.biblefunlandstudios.com/ | — |
 
@@ -63,12 +64,23 @@ https://growth.biblefunland.com/app/settings?tab=billing&bundle={growth|social|d
 https://aegis-loop.com/
 ```
 
+### Pulse analytics
+
+```
+https://pulse-5o1m.onrender.com/?site={siteId}
+```
+
+- `{siteId}` = pixel `data-site` id derived from domain (e.g. `biblefunlandstudios.com` → `biblefunlandstudios-com`)
+- Implemented in: `ai-cmo/src/lib/growthStack.ts` → `pulseDashboardUrl()`, `pulseSiteIdFromBrandUrl()`
+- Used in: Cadence Dashboard + SEO Agent overview (`GrowthStackInsights`)
+
 ## API proxy (Cadence server)
 
 | Endpoint | Upstream |
 |----------|----------|
 | `GET /api/integrations/growth-stack/citepilot/citations?domain=` | `{CITEPILOT_API_URL}/api/v1/citations` |
 | `GET /api/integrations/growth-stack/aegis/url-check?url=` | `{AEGIS_API_URL}/api/v1/url-check` |
+| `GET /api/integrations/growth-stack/pulse/stats?domain=` | `{PULSE_API_URL}/api/stats?siteId=` |
 
 Optional header: `X-CitePilot-Api-Key` (user Fleet key from Settings → Integrations).
 
@@ -87,6 +99,8 @@ Optional header: `X-CitePilot-Api-Key` (user Fleet key from Settings → Integra
 # Cadence (.env.local)
 APP_URL=https://growth.biblefunland.com/
 VITE_APP_URL=https://growth.biblefunland.com
+PULSE_API_URL=https://pulse-5o1m.onrender.com
+VITE_PULSE_URL=https://pulse-5o1m.onrender.com
 
 # Kerygma + CitePilot (.env.local)
 NEXT_PUBLIC_AI_CMO_APP_URL=https://growth.biblefunland.com/app

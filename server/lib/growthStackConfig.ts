@@ -10,3 +10,10 @@ export function citePilotApiBase(): string {
 export function aegisApiBase(): string {
   return (process.env.AEGIS_API_URL || 'https://aegis-loop.com').replace(/\/+$/, '');
 }
+
+export function pulseApiBase(): string {
+  return (process.env.PULSE_API_URL || 'https://pulse-5o1m.onrender.com').replace(
+    /\/+$/,
+    '',
+  );
+}

@@ -4,7 +4,8 @@
  */
 
 import { Router } from 'express';
-import { aegisApiBase, citePilotApiBase } from '../lib/growthStackConfig';
+import { aegisApiBase, citePilotApiBase, pulseApiBase } from '../lib/growthStackConfig';
+import { pulseSiteIdFromDomain } from '../lib/pulseSite';
 import { domainFromBrandUrl, normalizeBrandUrl } from '../lib/websiteUrl';
 
 const router = Router();
@@ -169,6 +170,46 @@ router.get('/aegis/url-check', async (req, res) => {
     return res.status(502).json({
       error: e instanceof Error ? e.message : 'Aegis Loop unavailable',
       connected: false,
+    });
+  }
+});
+
+router.get('/pulse/stats', async (req, res) => {
+  try {
+    const domain = normalizeDomain(String(req.query.domain || ''));
+    if (!domain) {
+      return res.status(400).json({ error: 'domain query parameter is required' });
+    }
+
+    const siteId = pulseSiteIdFromDomain(domain);
+    const base = pulseApiBase();
+    const upstream = await fetch(
+      `${base}/api/stats?siteId=${encodeURIComponent(siteId)}`,
+      { headers: { Accept: 'application/json' } },
+    );
+
+    if (!upstream.ok) {
+      const err = await upstream.json().catch(() => ({}));
+      return res.status(upstream.status === 404 ? 502 : upstream.status).json({
+        connected: false,
+        error: (err as { error?: string }).error || 'Pulse request failed',
+        siteId,
+        dashboardUrl: `${base}/?site=${encodeURIComponent(siteId)}`,
+      });
+    }
+
+    const stats = await upstream.json();
+    return res.json({
+      connected: true,
+      source: 'pulse-api',
+      siteId,
+      dashboardUrl: `${base}/?site=${encodeURIComponent(siteId)}`,
+      ...stats,
+    });
+  } catch (e: unknown) {
+    return res.status(502).json({
+      connected: false,
+      error: e instanceof Error ? e.message : 'Pulse unavailable',
     });
   }
 });

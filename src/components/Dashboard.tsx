@@ -257,7 +257,7 @@ export default function Dashboard({
         <CollapsibleSection
           id="growth-stack-insights"
           title="AI visibility this week"
-          subtitle="Citation score from CitePilot and security headers from Aegis Loop"
+          subtitle="Citation score, security headers, and on-site traffic from Pulse"
           defaultOpen
         >
           <GrowthStackInsights brandUrl={brandUrl} compact />

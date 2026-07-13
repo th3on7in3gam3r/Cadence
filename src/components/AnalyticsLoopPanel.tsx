@@ -4,11 +4,13 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Minus, RefreshCw, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, RefreshCw, BarChart3, Activity, ExternalLink, Loader2 } from 'lucide-react';
 import { PageUplift, SeoAgentAuditResult } from '../types';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { fetchLiveSeoData } from '../lib/workspaceApi';
 import { loadAnalyticsBaseline, saveAnalyticsBaseline } from '../utils/analyticsLoop';
+import { GROWTH_STACK_PRODUCTS, normalizeDomainForAudit, pulseDashboardUrl, pulseSiteIdFromBrandUrl } from '../lib/growthStack';
+import { fetchPulseStats, type PulseStatsResponse } from '../lib/growthStackApi';
 
 interface AnalyticsLoopPanelProps {
   siteUrl: string;
@@ -19,9 +21,36 @@ interface AnalyticsLoopPanelProps {
 export default function AnalyticsLoopPanel({ siteUrl, audit, ga4PropertyId }: AnalyticsLoopPanelProps) {
   const [uplifts, setUplifts] = useState<PageUplift[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pulse, setPulse] = useState<PulseStatsResponse | null>(null);
+  const [pulseLoading, setPulseLoading] = useState(true);
+  const pulseSiteId = siteUrl ? pulseSiteIdFromBrandUrl(siteUrl) : '';
   const [baselineDate, setBaselineDate] = useState<string | null>(
     () => loadAnalyticsBaseline()?.capturedAt || null
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!siteUrl) {
+      setPulse(null);
+      setPulseLoading(false);
+      return;
+    }
+    const domain = normalizeDomainForAudit(siteUrl);
+    if (!domain) {
+      setPulseLoading(false);
+      return;
+    }
+    setPulseLoading(true);
+    fetchPulseStats(domain).then((res) => {
+      if (!cancelled) {
+        setPulse(res);
+        setPulseLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [siteUrl]);
 
   const captureBaseline = async () => {
     if (!isCloudEnabled() || !siteUrl) return;
@@ -115,6 +144,43 @@ export default function AnalyticsLoopPanel({ siteUrl, audit, ga4PropertyId }: An
 
   return (
     <div className="space-y-4">
+      <div className="p-4 bg-slate-900 border border-emerald-800/40 rounded-xl">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5" />
+              {GROWTH_STACK_PRODUCTS.pulse.name} · 7d on-site
+            </p>
+            {pulseLoading ? (
+              <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Loading Pulse stats…
+              </p>
+            ) : pulse?.live ? (
+              <p className="text-sm text-slate-300 mt-2">
+                <span className="text-2xl font-display font-bold text-white">{pulse.visitors ?? 0}</span>
+                <span className="text-slate-500"> visitors · </span>
+                {pulse.views ?? 0} views · {pulse.conversions ?? 0} conversions
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                No Pulse traffic yet. Install the pixel with{' '}
+                <code className="text-emerald-300">data-site="{pulseSiteId}"</code> to measure
+                visits after Kerygma/CitePilot campaigns land.
+              </p>
+            )}
+          </div>
+          <a
+            href={pulse?.dashboardUrl || pulseDashboardUrl(siteUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-bold text-emerald-400 inline-flex items-center gap-1 shrink-0"
+          >
+            Open Pulse <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-white flex items-center gap-2">

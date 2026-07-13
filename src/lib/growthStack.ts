@@ -27,6 +27,11 @@ export const GROWTH_STACK_PRODUCTS = {
     tagline: 'Find vulnerabilities before you ship',
     url: 'https://aegis-loop.com',
   },
+  pulse: {
+    name: 'Pulse',
+    tagline: 'Measure what happens after campaigns land',
+    url: 'https://pulse-5o1m.onrender.com',
+  },
   aiCmo: {
     name: PRODUCT_NAME,
     tagline: PRODUCT_SUBTITLE,
@@ -77,6 +82,29 @@ export function aiCmoStudioBillingUrl(bundle?: StudioBundleId): string {
 
 export function aiCmoStudioHubUrl(): string {
   return `${aiCmoPublicOrigin()}/studio`;
+}
+
+export function pulsePublicOrigin(): string {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_PULSE_URL) {
+    return String(import.meta.env.VITE_PULSE_URL).replace(/\/+$/, '');
+  }
+  return GROWTH_STACK_PRODUCTS.pulse.url;
+}
+
+/** Pixel `data-site` for a brand domain — must match Pulse `siteIdFromDomain`. */
+export function pulseSiteIdFromBrandUrl(brandUrl: string): string {
+  const domain = normalizeDomainForAudit(brandUrl);
+  const cleaned = domain
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return cleaned.slice(0, 48) || 'demo';
+}
+
+export function pulseDashboardUrl(brandUrl: string): string {
+  const siteId = pulseSiteIdFromBrandUrl(brandUrl);
+  return `${pulsePublicOrigin()}/?site=${encodeURIComponent(siteId)}`;
 }
 
 /** In-app router path for Settings → Billing (use with React Router Link). */

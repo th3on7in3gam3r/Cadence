@@ -38,6 +38,19 @@ export interface AegisUrlCheckResponse {
   error?: string;
 }
 
+export interface PulseStatsResponse {
+  connected: boolean;
+  siteId?: string;
+  dashboardUrl?: string;
+  live?: boolean;
+  visitors?: number;
+  views?: number;
+  conversions?: number;
+  conversionRate?: number;
+  totalEvents?: number;
+  error?: string;
+}
+
 export async function fetchCitePilotCitations(
   domain: string,
   citePilotApiKey?: string,
@@ -72,4 +85,18 @@ export async function fetchAegisUrlCheck(url: string): Promise<AegisUrlCheckResp
     };
   }
   return data as AegisUrlCheckResponse;
+}
+
+export async function fetchPulseStats(domain: string): Promise<PulseStatsResponse> {
+  const res = await apiFetch(
+    `/api/integrations/growth-stack/pulse/stats?domain=${encodeURIComponent(domain)}`,
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return {
+      connected: false,
+      error: (data as { error?: string }).error || 'Could not load Pulse stats',
+    };
+  }
+  return data as PulseStatsResponse;
 }

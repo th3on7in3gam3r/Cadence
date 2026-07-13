@@ -12,18 +12,23 @@ import {
   TrendingDown,
   TrendingUp,
   Minus,
+  Activity,
 } from 'lucide-react';
 import {
   citePilotAuditUrl,
   GROWTH_STACK_PRODUCTS,
   kerygmaSignUpUrl,
   normalizeDomainForAudit,
+  pulseDashboardUrl,
+  pulseSiteIdFromBrandUrl,
 } from '../lib/growthStack';
 import {
   fetchAegisUrlCheck,
   fetchCitePilotCitations,
+  fetchPulseStats,
   type AegisUrlCheckResponse,
   type CitePilotCitationsResponse,
+  type PulseStatsResponse,
 } from '../lib/growthStackApi';
 import {
   loadGrowthStackSettings,
@@ -40,16 +45,19 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
   const [loading, setLoading] = useState(true);
   const [citations, setCitations] = useState<CitePilotCitationsResponse | null>(null);
   const [security, setSecurity] = useState<AegisUrlCheckResponse | null>(null);
+  const [pulse, setPulse] = useState<PulseStatsResponse | null>(null);
   const domain = normalizeDomainForAudit(brandUrl);
+  const pulseSiteId = domain ? pulseSiteIdFromBrandUrl(brandUrl) : '';
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       const settings = loadGrowthStackSettings();
-      const [citeRes, secRes] = await Promise.all([
+      const [citeRes, secRes, pulseRes] = await Promise.all([
         domain ? fetchCitePilotCitations(domain, settings.citePilotApiKey) : Promise.resolve(null),
         brandUrl ? fetchAegisUrlCheck(brandUrl) : Promise.resolve(null),
+        domain ? fetchPulseStats(domain) : Promise.resolve(null),
       ]);
       if (cancelled) return;
       if (citeRes?.score != null && domain) {
@@ -57,6 +65,7 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
       }
       setCitations(citeRes);
       setSecurity(secRes);
+      setPulse(pulseRes);
       setLoading(false);
     })();
     return () => {
@@ -79,7 +88,11 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
 
   return (
     <div className={compact ? 'space-y-3' : 'space-y-4'}>
-      <div className={`grid gap-4 ${compact ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
+      <div
+        className={`grid gap-4 ${
+          compact ? 'grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-3'
+        }`}
+      >
         <CitationCard
           domain={domain}
           brandUrl={brandUrl}
@@ -88,10 +101,17 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
           compact={compact}
         />
         <SecurityCard data={security} brandUrl={brandUrl} compact={compact} />
+        <PulseCard
+          domain={domain}
+          siteId={pulseSiteId}
+          brandUrl={brandUrl}
+          data={pulse}
+          compact={compact}
+        />
       </div>
 
       {!compact && (
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-3 gap-4">
           <a
             href={citePilotAuditUrl(brandUrl || domain)}
             target="_blank"
@@ -116,6 +136,19 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
             </p>
             <p className="text-sm font-bold text-white mt-2 group-hover:text-amber-100">
               Generate social posts on autopilot →
+            </p>
+          </a>
+          <a
+            href={pulseDashboardUrl(brandUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-4 bg-slate-900 border border-emerald-800/40 rounded-xl hover:border-emerald-600/50 transition-colors group"
+          >
+            <p className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+              Measure · Pulse
+            </p>
+            <p className="text-sm font-bold text-white mt-2 group-hover:text-emerald-100">
+              Open site analytics →
             </p>
           </a>
         </div>
@@ -292,6 +325,96 @@ function SecurityCard({
         className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-violet-400/90"
       >
         Full scan in Aegis Loop <ExternalLink className="w-3 h-3" />
+      </a>
+    </InsightShell>
+  );
+}
+
+function PulseCard({
+  domain,
+  siteId,
+  brandUrl,
+  data,
+  compact,
+}: {
+  domain: string;
+  siteId: string;
+  brandUrl: string;
+  data: PulseStatsResponse | null;
+  compact?: boolean;
+}) {
+  const dashboard = data?.dashboardUrl || pulseDashboardUrl(brandUrl);
+
+  if (!data?.connected && data?.error) {
+    return (
+      <InsightShell
+        icon={<Activity className="w-4 h-4 text-emerald-400" />}
+        title="Site analytics"
+        compact={compact}
+      >
+        <p className="text-xs text-slate-500">{data.error}</p>
+        <a
+          href={dashboard}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-emerald-400"
+        >
+          Open Pulse <ExternalLink className="w-3 h-3" />
+        </a>
+      </InsightShell>
+    );
+  }
+
+  if (!data?.live) {
+    return (
+      <InsightShell
+        icon={<Activity className="w-4 h-4 text-emerald-400" />}
+        title="Site analytics"
+        compact={compact}
+      >
+        <p className="text-xs text-slate-400 leading-relaxed">
+          No Pulse traffic for <strong className="text-slate-300">{domain}</strong> yet.
+          Install the pixel with <code className="text-emerald-300">data-site="{siteId}"</code>.
+        </p>
+        <a
+          href={dashboard}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-emerald-400"
+        >
+          Open Pulse dashboard <ExternalLink className="w-3 h-3" />
+        </a>
+      </InsightShell>
+    );
+  }
+
+  return (
+    <InsightShell
+      icon={<Activity className="w-4 h-4 text-emerald-400" />}
+      title="Site analytics · 7d"
+      compact={compact}
+    >
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-3xl font-display font-bold text-white">
+            {data.visitors ?? 0}
+            <span className="text-sm text-slate-500 font-normal ml-1">visitors</span>
+          </p>
+          <p className="text-[10px] text-slate-500 mt-1">
+            {data.views ?? 0} views · {data.conversions ?? 0} conversions
+          </p>
+        </div>
+      </div>
+      <p className="text-[10px] text-slate-600 mt-2">
+        {data.totalEvents ?? 0} events · site <span className="font-mono">{siteId}</span>
+      </p>
+      <a
+        href={dashboard}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-emerald-400/90"
+      >
+        Full report in {GROWTH_STACK_PRODUCTS.pulse.name} <ExternalLink className="w-3 h-3" />
       </a>
     </InsightShell>
   );
