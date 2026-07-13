@@ -16,5 +16,5 @@ export function isSchemaNotReadyError(e: unknown): boolean {
 }
 
 export function schemaSetupHint(): string {
-  return 'Run supabase/schema.sql through schema-v5-pulse-claims.sql in your Supabase SQL Editor.';
+  return 'Run supabase/schema.sql through schema-v6-growth-stack-keys.sql in your Supabase SQL Editor.';
 }

@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import { aegisApiBase, citePilotApiBase, pulseApiBase, pulseReadKeyForSite } from '../lib/growthStackConfig';
+import { getGrowthStackKeysForUser } from '../lib/growthStackKeys';
 import { getPulseReadKeyForUser } from '../lib/pulseClaim';
 import type { AuthedRequest } from '../middleware/requireUser';
 import { pulseSiteIdFromDomain } from '../lib/pulseSite';
@@ -94,7 +95,7 @@ async function localUrlSecurityCheck(rawUrl: string) {
   };
 }
 
-router.get('/citepilot/citations', async (req, res) => {
+router.get('/citepilot/citations', async (req: AuthedRequest, res) => {
   try {
     const domain = normalizeDomain(String(req.query.domain || ''));
     if (!domain) {
@@ -103,9 +104,12 @@ router.get('/citepilot/citations', async (req, res) => {
 
     const base = citePilotApiBase();
     const headers: Record<string, string> = { Accept: 'application/json' };
-    const partnerKey =
-      (req.headers['x-citepilot-api-key'] as string | undefined)?.trim() ||
-      process.env.CITEPILOT_PARTNER_API_KEY?.trim();
+    const clientKey = (req.headers['x-citepilot-api-key'] as string | undefined)?.trim();
+    let partnerKey = clientKey || process.env.CITEPILOT_PARTNER_API_KEY?.trim();
+    if (!partnerKey && req.userId) {
+      const stored = await getGrowthStackKeysForUser(req.userId);
+      partnerKey = stored.citePilotApiKey || partnerKey;
+    }
     if (partnerKey) {
       headers.Authorization = `Bearer ${partnerKey}`;
     }
@@ -138,7 +142,7 @@ router.get('/citepilot/citations', async (req, res) => {
   }
 });
 
-router.get('/aegis/url-check', async (req, res) => {
+router.get('/aegis/url-check', async (req: AuthedRequest, res) => {
   try {
     const url = normalizeBrandUrl(String(req.query.url || '').trim());
     if (!url) {
@@ -148,7 +152,11 @@ router.get('/aegis/url-check', async (req, res) => {
     const base = aegisApiBase();
     const headers: Record<string, string> = { Accept: 'application/json' };
     const clientKey = (req.headers['x-aegis-api-key'] as string | undefined)?.trim();
-    const partnerKey = clientKey || process.env.AEGIS_PARTNER_API_KEY?.trim();
+    let partnerKey = clientKey || process.env.AEGIS_PARTNER_API_KEY?.trim();
+    if (!partnerKey && req.userId) {
+      const stored = await getGrowthStackKeysForUser(req.userId);
+      partnerKey = stored.aegisApiKey || partnerKey;
+    }
     if (partnerKey) {
       headers.Authorization = `Bearer ${partnerKey}`;
     }
