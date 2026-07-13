@@ -6,8 +6,16 @@
 import crypto from 'node:crypto';
 import { getSupabaseAdmin } from '../db/supabaseAdmin';
 import { pulseApiBase } from './growthStackConfig';
+import { pulseSitesLimit, type PlanId } from './plans';
+import { getUserPlan } from './usage';
 import { pulseSiteIdFromDomain } from './pulseSite';
 import { domainFromBrandUrl } from './websiteUrl';
+
+export interface WorkspacePulseMeta {
+  siteId: string;
+  domain: string;
+  enabledAt: string;
+}
 
 export function generatePulseReadKey(): string {
   return `psk_${crypto.randomBytes(24).toString('base64url')}`;
@@ -77,6 +85,53 @@ export async function getPulseClaimForUser(userId: string, domain: string) {
   return data;
 }
 
+export async function countPulseSitesForUser(userId: string): Promise<number> {
+  const sb = getSupabaseAdmin();
+  if (!sb) return 0;
+  const { count, error } = await sb
+    .from('pulse_site_claims')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function syncPulseToWorkspacePayload(
+  userId: string,
+  pulse: WorkspacePulseMeta,
+): Promise<void> {
+  const sb = getSupabaseAdmin();
+  if (!sb) return;
+
+  const { data: ws } = await sb
+    .from('workspaces')
+    .select('id, payload')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const payload =
+    ws?.payload && typeof ws.payload === 'object' && !Array.isArray(ws.payload)
+      ? { ...(ws.payload as Record<string, unknown>) }
+      : {};
+
+  payload.pulse = pulse;
+
+  await sb
+    .from('workspaces')
+    .update({ payload, updated_at: new Date().toISOString() })
+    .eq('user_id', userId);
+}
+
+export async function getPulseQuotaForUser(userId: string): Promise<{
+  plan: PlanId;
+  sitesUsed: number;
+  sitesLimit: number;
+}> {
+  const plan = await getUserPlan(userId);
+  const sitesUsed = await countPulseSitesForUser(userId);
+  return { plan, sitesUsed, sitesLimit: pulseSitesLimit(plan) };
+}
+
 export async function getPulseReadKeyForUser(userId: string, siteId: string): Promise<string | null> {
   const sb = getSupabaseAdmin();
   if (!sb) return null;
@@ -92,7 +147,7 @@ export async function getPulseReadKeyForUser(userId: string, siteId: string): Pr
   return data?.pulse_read_key?.trim() || null;
 }
 
-export async function claimPulseSiteForUser(
+export async function enablePulseForBrand(
   userId: string,
   brandUrl: string,
 ): Promise<{
@@ -110,6 +165,18 @@ export async function claimPulseSiteForUser(
   }
 
   const siteId = pulseSiteIdFromDomain(domain);
+  const existing = await getPulseClaimForUser(userId, domain);
+  if (!existing) {
+    const { sitesUsed, sitesLimit, plan } = await getPulseQuotaForUser(userId);
+    if (sitesUsed >= sitesLimit) {
+      throw new Error(
+        plan === 'free'
+          ? 'Free plan includes Pulse for 1 site. Upgrade to Pro or add Pulse via a Growth Stack bundle for more brands.'
+          : 'Pulse site limit reached for your plan.',
+      );
+    }
+  }
+
   const readKey = generatePulseReadKey();
   const sb = getSupabaseAdmin();
   if (!sb) throw new Error('Cloud database is not configured.');
@@ -135,6 +202,12 @@ export async function claimPulseSiteForUser(
 
   if (error) throw error;
 
+  await syncPulseToWorkspacePayload(userId, {
+    siteId,
+    domain,
+    enabledAt: claimedAt,
+  });
+
   const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
   const origin = pulsePublicOrigin();
 
@@ -147,4 +220,9 @@ export async function claimPulseSiteForUser(
     claimedAt,
     registeredOnPulse,
   };
+}
+
+/** @deprecated Use enablePulseForBrand */
+export async function claimPulseSiteForUser(userId: string, brandUrl: string) {
+  return enablePulseForBrand(userId, brandUrl);
 }

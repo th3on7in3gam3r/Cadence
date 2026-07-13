@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { requireUser, type AuthedRequest } from '../middleware/requireUser';
 import { getSupabaseAdmin } from '../db/supabaseAdmin';
 import { isSchemaNotReadyError, schemaSetupHint } from '../lib/dbErrors';
 import { domainFromBrandUrl } from '../lib/websiteUrl';
 import {
-  claimPulseSiteForUser,
+  enablePulseForBrand,
   getPulseClaimForUser,
+  getPulseQuotaForUser,
   pulseIdeInstallPrompt,
   pulseInstallSnippet,
   pulsePublicOrigin,
@@ -49,16 +50,23 @@ router.get('/install', requireUser, async (req: AuthedRequest, res) => {
 
     const siteId = pulseSiteIdFromDomain(domain);
     const claim = await getPulseClaimForUser(req.userId!, domain);
+    const quota = await getPulseQuotaForUser(req.userId!);
     const origin = pulsePublicOrigin();
+    const enabled = Boolean(claim);
 
     return res.json({
       domain,
       siteId,
-      claimed: Boolean(claim),
+      enabled,
+      claimed: enabled,
       claimedAt: claim?.claimed_at ?? null,
+      enabledAt: claim?.claimed_at ?? null,
       snippet: pulseInstallSnippet(siteId, origin),
       idePrompt: pulseIdeInstallPrompt(siteId, origin),
       dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
+      sitesUsed: quota.sitesUsed,
+      sitesLimit: quota.sitesLimit,
+      plan: quota.plan,
     });
   } catch (e: unknown) {
     if (isSchemaNotReadyError(e)) {
@@ -69,7 +77,7 @@ router.get('/install', requireUser, async (req: AuthedRequest, res) => {
   }
 });
 
-router.post('/claim', requireUser, async (req: AuthedRequest, res) => {
+async function handleEnable(req: AuthedRequest, res: Response) {
   try {
     const brandUrl = await resolveBrandUrl(req.userId!, req.body?.brandUrl);
     if (!brandUrl) {
@@ -78,20 +86,32 @@ router.post('/claim', requireUser, async (req: AuthedRequest, res) => {
       });
     }
 
-    const result = await claimPulseSiteForUser(req.userId!, brandUrl);
+    const result = await enablePulseForBrand(req.userId!, brandUrl);
+    const quota = await getPulseQuotaForUser(req.userId!);
     return res.json({
       ok: true,
       ...result,
+      enabled: true,
+      claimed: true,
+      enabledAt: result.claimedAt,
+      sitesUsed: quota.sitesUsed,
+      sitesLimit: quota.sitesLimit,
+      plan: quota.plan,
       message:
-        'Site claimed. Copy the snippet below — Pulse analytics is included with Cadence (no separate key purchase).',
+        'Pulse enabled for this brand. Copy the snippet below — no separate key purchase; billing can bundle Pulse later.',
     });
   } catch (e: unknown) {
     if (isSchemaNotReadyError(e)) {
       return res.status(503).json({ error: 'Database tables not set up', setupHint: schemaSetupHint() });
     }
-    const msg = e instanceof Error ? e.message : 'Failed to claim site';
-    return res.status(500).json({ error: msg });
+    const msg = e instanceof Error ? e.message : 'Failed to enable Pulse';
+    const status = msg.includes('Free plan includes') || msg.includes('limit reached') ? 403 : 500;
+    return res.status(status).json({ error: msg });
   }
-});
+}
+
+router.post('/enable', requireUser, (req, res) => handleEnable(req, res));
+
+router.post('/claim', requireUser, (req, res) => handleEnable(req, res));
 
 export default router;

@@ -9,8 +9,9 @@ import { PageUplift, SeoAgentAuditResult } from '../types';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { fetchLiveSeoData } from '../lib/workspaceApi';
 import { loadAnalyticsBaseline, saveAnalyticsBaseline } from '../utils/analyticsLoop';
-import { GROWTH_STACK_PRODUCTS, normalizeDomainForAudit, pulseDashboardUrl, pulseSiteIdFromBrandUrl } from '../lib/growthStack';
+import { GROWTH_STACK_PRODUCTS, normalizeDomainForAudit, pulseDashboardUrl } from '../lib/growthStack';
 import { fetchPulseStats, type PulseStatsResponse } from '../lib/growthStackApi';
+import PulseEnableCard from './PulseEnableCard';
 
 interface AnalyticsLoopPanelProps {
   siteUrl: string;
@@ -23,7 +24,6 @@ export default function AnalyticsLoopPanel({ siteUrl, audit, ga4PropertyId }: An
   const [loading, setLoading] = useState(false);
   const [pulse, setPulse] = useState<PulseStatsResponse | null>(null);
   const [pulseLoading, setPulseLoading] = useState(true);
-  const pulseSiteId = siteUrl ? pulseSiteIdFromBrandUrl(siteUrl) : '';
   const [baselineDate, setBaselineDate] = useState<string | null>(
     () => loadAnalyticsBaseline()?.capturedAt || null
   );
@@ -163,13 +163,12 @@ export default function AnalyticsLoopPanel({ siteUrl, audit, ga4PropertyId }: An
                 {pulse.views ?? 0} views · {pulse.conversions ?? 0} conversions
               </p>
             ) : (
-              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                No Pulse traffic yet.{' '}
-                <a href="/app/settings?tab=integrations" className="text-emerald-400 hover:underline font-semibold">
-                  Claim your site
-                </a>{' '}
-                in Settings to get the pixel snippet (included with Cadence).
-              </p>
+              <div className="mt-2 space-y-3">
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  No Pulse traffic yet for this brand.
+                </p>
+                <PulseEnableCard brandUrl={siteUrl} compact />
+              </div>
             )}
           </div>
           <a

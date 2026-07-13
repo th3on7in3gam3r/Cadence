@@ -35,6 +35,7 @@ import {
   loadCitationHistory,
   recordCitationScore,
 } from '../utils/growthStackSettings';
+import PulseEnableCard from './PulseEnableCard';
 
 interface GrowthStackInsightsProps {
   brandUrl: string;
@@ -373,12 +374,11 @@ function PulseCard({
         compact={compact}
       >
         <p className="text-xs text-slate-400 leading-relaxed">
-          No Pulse traffic for <strong className="text-slate-300">{domain}</strong> yet.{' '}
-          <a href="/app/settings?tab=integrations" className="text-emerald-400 hover:underline font-semibold">
-            Claim your site
-          </a>{' '}
-          to get the pixel snippet.
+          No Pulse traffic for <strong className="text-slate-300">{domain}</strong> yet.
         </p>
+        <div className="mt-3">
+          <PulseEnableCard brandUrl={brandUrl} compact />
+        </div>
         <a
           href={dashboard}
           target="_blank"

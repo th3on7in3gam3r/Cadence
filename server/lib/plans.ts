@@ -69,6 +69,12 @@ export function limitsForPlan(plan: PlanId): PlanLimits {
   return PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 }
 
+/** Pulse pixel sites per plan — no Stripe gate yet; free tier gets one brand. */
+export function pulseSitesLimit(plan: PlanId): number {
+  if (plan === 'free') return 1;
+  return 999;
+}
+
 export function isUnlimited(n: number): boolean {
   return n >= 999;
 }

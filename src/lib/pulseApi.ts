@@ -8,14 +8,20 @@ import { apiFetch } from './api';
 export interface PulseInstallInfo {
   domain: string;
   siteId: string;
+  enabled: boolean;
+  /** @deprecated use enabled */
   claimed: boolean;
   claimedAt: string | null;
+  enabledAt?: string | null;
   snippet: string;
   idePrompt: string;
   dashboardUrl: string;
+  sitesUsed: number;
+  sitesLimit: number;
+  plan: string;
 }
 
-export interface PulseClaimResult extends PulseInstallInfo {
+export interface PulseEnableResult extends PulseInstallInfo {
   ok: boolean;
   registeredOnPulse: boolean;
   message: string;
@@ -32,14 +38,19 @@ export async function fetchPulseInstall(brandUrl?: string): Promise<PulseInstall
   return res.json() as Promise<PulseInstallInfo>;
 }
 
-export async function claimPulseSite(brandUrl?: string): Promise<PulseClaimResult> {
-  const res = await apiFetch('/api/pulse/claim', {
+export async function enablePulseForBrand(brandUrl?: string): Promise<PulseEnableResult> {
+  const res = await apiFetch('/api/pulse/enable', {
     method: 'POST',
     body: JSON.stringify(brandUrl ? { brandUrl } : {}),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error || 'Failed to claim site');
+    throw new Error((data as { error?: string }).error || 'Failed to enable Pulse');
   }
-  return data as PulseClaimResult;
+  return data as PulseEnableResult;
+}
+
+/** @deprecated Use enablePulseForBrand */
+export async function claimPulseSite(brandUrl?: string): Promise<PulseEnableResult> {
+  return enablePulseForBrand(brandUrl);
 }
