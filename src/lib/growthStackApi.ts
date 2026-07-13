@@ -73,9 +73,17 @@ export async function fetchCitePilotCitations(
   return data as CitePilotCitationsResponse;
 }
 
-export async function fetchAegisUrlCheck(url: string): Promise<AegisUrlCheckResponse> {
+export async function fetchAegisUrlCheck(
+  url: string,
+  aegisApiKey?: string,
+): Promise<AegisUrlCheckResponse> {
+  const headers: Record<string, string> = {};
+  if (aegisApiKey?.trim()) {
+    headers['X-Aegis-Api-Key'] = aegisApiKey.trim();
+  }
   const res = await apiFetch(
     `/api/integrations/growth-stack/aegis/url-check?url=${encodeURIComponent(url)}`,
+    { headers },
   );
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

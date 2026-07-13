@@ -7,19 +7,27 @@ const SETTINGS_KEY = 'ai_cmo_growth_stack_settings';
 
 export interface GrowthStackSettings {
   citePilotApiKey: string;
-  aegisApiUrl: string;
+  kerygmaApiKey: string;
+  aegisApiKey: string;
 }
 
 const DEFAULTS: GrowthStackSettings = {
   citePilotApiKey: '',
-  aegisApiUrl: '',
+  kerygmaApiKey: '',
+  aegisApiKey: '',
 };
 
 export function loadGrowthStackSettings(): GrowthStackSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return { ...DEFAULTS };
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw) as Partial<GrowthStackSettings & { aegisApiUrl?: string }>;
+    return {
+      ...DEFAULTS,
+      citePilotApiKey: parsed.citePilotApiKey ?? '',
+      kerygmaApiKey: parsed.kerygmaApiKey ?? '',
+      aegisApiKey: parsed.aegisApiKey ?? '',
+    };
   } catch {
     return { ...DEFAULTS };
   }

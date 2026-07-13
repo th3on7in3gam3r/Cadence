@@ -57,7 +57,7 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
       const settings = loadGrowthStackSettings();
       const [citeRes, secRes, pulseRes] = await Promise.all([
         domain ? fetchCitePilotCitations(domain, settings.citePilotApiKey) : Promise.resolve(null),
-        brandUrl ? fetchAegisUrlCheck(brandUrl) : Promise.resolve(null),
+        brandUrl ? fetchAegisUrlCheck(brandUrl, settings.aegisApiKey) : Promise.resolve(null),
         domain ? fetchPulseStats(domain) : Promise.resolve(null),
       ]);
       if (cancelled) return;

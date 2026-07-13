@@ -146,9 +146,16 @@ router.get('/aegis/url-check', async (req, res) => {
     }
 
     const base = aegisApiBase();
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const clientKey = (req.headers['x-aegis-api-key'] as string | undefined)?.trim();
+    const partnerKey = clientKey || process.env.AEGIS_PARTNER_API_KEY?.trim();
+    if (partnerKey) {
+      headers.Authorization = `Bearer ${partnerKey}`;
+    }
+
     const upstream = await fetch(
       `${base}/api/v1/url-check?url=${encodeURIComponent(url)}`,
-      { headers: { Accept: 'application/json' } },
+      { headers },
     );
 
     if (upstream.ok) {
