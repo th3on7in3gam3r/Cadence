@@ -39,8 +39,8 @@ export default function GrowthStackIntegrationsPanel() {
         </h3>
         <p className="text-[11px] text-slate-400 mt-1 leading-relaxed max-w-2xl">
           Pull AI citation scores and lightweight security header checks into SEO Agent and your
-          dashboard. CitePilot works without a key when a public audit exists; add a Fleet API key
-          for private workspace data.
+          dashboard. CitePilot works without a key when a public audit exists; paste a Fleet API key
+          below only if you need private workspace data from CitePilot.
         </p>
       </div>
 
@@ -66,7 +66,8 @@ export default function GrowthStackIntegrationsPanel() {
             className="mt-1.5 w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white font-mono"
           />
           <p className="text-[10px] text-slate-500 mt-1.5">
-            Leave blank to use the latest public citation audit for your brand domain.
+            Saved in this browser only. Leave blank to use the latest public citation audit for your
+            brand domain.
           </p>
         </div>
 
@@ -75,9 +76,9 @@ export default function GrowthStackIntegrationsPanel() {
             type="submit"
             className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 text-xs font-bold rounded-lg cursor-pointer"
           >
-            Save growth stack settings
+            Save CitePilot key
           </button>
-          {saved && <span className="text-xs text-emerald-400">Saved</span>}
+          {saved && <span className="text-xs text-emerald-400">CitePilot key saved</span>}
         </div>
       </form>
 

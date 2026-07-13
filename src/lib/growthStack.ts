@@ -93,9 +93,10 @@ export function pulsePublicOrigin(): string {
 
 /** Pixel `data-site` for a brand domain — must match Pulse `siteIdFromDomain`. */
 export function pulseSiteIdFromBrandUrl(brandUrl: string): string {
-  const domain = normalizeDomainForAudit(brandUrl);
-  const cleaned = domain
+  const domain = normalizeDomainForAudit(brandUrl)
     .toLowerCase()
+    .replace(/^www\./, '');
+  const cleaned = domain
     .replace(/[^a-z0-9-_]/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
