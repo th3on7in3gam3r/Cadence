@@ -99,6 +99,7 @@ export default function MarketingFooter({
           scrollLink('features', 'Features'),
           scrollLink('how-it-works', 'How it works'),
           scrollLink('pricing', 'Pricing'),
+          scrollLink('growth-stack', 'Growth Stack'),
           scrollLink('faq', 'FAQ'),
           { label: 'User guide', to: '/help' },
           ...(onGetStarted

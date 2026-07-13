@@ -22,6 +22,7 @@ import {
   Menu,
 } from 'lucide-react';
 import CadencePricingSection from './CadencePricingSection';
+import GrowthStackCta from './GrowthStackCta';
 import MarketingFooter from './MarketingFooter';
 import MobileNavDrawer, { MobileNavItem } from './MobileNavDrawer';
 import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCT_TAGLINE, showGrowthStackUi } from '../lib/brand';
@@ -132,6 +133,9 @@ export default function LandingPage({
             <button type="button" onClick={() => scrollTo('pricing')} className="hover:text-white transition cursor-pointer">
               Pricing
             </button>
+            <button type="button" onClick={() => scrollTo('growth-stack')} className="hover:text-white transition cursor-pointer">
+              Growth Stack
+            </button>
             {stackUi && (
               <Link to="/studio" className="hover:text-white transition">
                 Studio hub
@@ -185,6 +189,7 @@ export default function LandingPage({
         <MobileNavItem label="Features" onClick={() => scrollTo('features')} />
         <MobileNavItem label="How it works" onClick={() => scrollTo('how-it-works')} />
         <MobileNavItem label="Pricing" onClick={() => scrollTo('pricing')} />
+        <MobileNavItem label="Growth Stack" onClick={() => scrollTo('growth-stack')} />
         {stackUi && (
           <Link
             to="/studio"
@@ -387,6 +392,8 @@ export default function LandingPage({
       </section>
 
       <CadencePricingSection cloudEnabled={cloudEnabled} onGetStarted={primaryCta} />
+
+      <GrowthStackCta cloudEnabled={cloudEnabled} onGetStarted={primaryCta} />
 
       {/* Value props */}
       <section className="py-20 md:py-28 border-b border-slate-800">
