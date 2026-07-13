@@ -876,8 +876,20 @@ app.get("/robots.txt", (_req, res) => {
 
 // Favicon (browsers request /favicon.ico by default)
 app.get("/favicon.ico", (_req, res) => {
+  const icoInDist = path.join(process.cwd(), "dist", "favicon.ico");
+  const icoInPublic = path.join(process.cwd(), "public", "favicon.ico");
   const svgInDist = path.join(process.cwd(), "dist", "favicon.svg");
   const svgInPublic = path.join(process.cwd(), "public", "favicon.svg");
+  if (existsSync(icoInDist)) {
+    res.type("image/x-icon");
+    res.sendFile(icoInDist);
+    return;
+  }
+  if (existsSync(icoInPublic)) {
+    res.type("image/x-icon");
+    res.sendFile(icoInPublic);
+    return;
+  }
   const file = existsSync(svgInDist) ? svgInDist : svgInPublic;
   res.type("image/svg+xml");
   res.sendFile(file);
