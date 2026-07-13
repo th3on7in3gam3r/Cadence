@@ -76,7 +76,7 @@ export async function getPulseClaimForUser(userId: string, domain: string) {
 
   const { data, error } = await sb
     .from('pulse_site_claims')
-    .select('id, site_id, domain, claimed_at')
+    .select('id, site_id, domain, claimed_at, pulse_read_key')
     .eq('user_id', userId)
     .eq('site_id', siteId)
     .maybeSingle();
@@ -150,6 +150,7 @@ export async function getPulseReadKeyForUser(userId: string, siteId: string): Pr
 export async function enablePulseForBrand(
   userId: string,
   brandUrl: string,
+  opts?: { rotateKey?: boolean },
 ): Promise<{
   siteId: string;
   domain: string;
@@ -175,6 +176,30 @@ export async function enablePulseForBrand(
           : 'Pulse site limit reached for your plan.',
       );
     }
+  }
+
+  const origin = pulsePublicOrigin();
+  const reuseExisting =
+    Boolean(existing?.pulse_read_key) && !opts?.rotateKey;
+
+  if (reuseExisting && existing) {
+    const readKey = String(existing.pulse_read_key).trim();
+    const claimedAt = existing.claimed_at || new Date().toISOString();
+    await syncPulseToWorkspacePayload(userId, {
+      siteId,
+      domain,
+      enabledAt: claimedAt,
+    });
+    const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
+    return {
+      siteId,
+      domain,
+      snippet: pulseInstallSnippet(siteId, origin),
+      idePrompt: pulseIdeInstallPrompt(siteId, origin),
+      dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
+      claimedAt,
+      registeredOnPulse,
+    };
   }
 
   const readKey = generatePulseReadKey();
@@ -209,7 +234,6 @@ export async function enablePulseForBrand(
   });
 
   const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
-  const origin = pulsePublicOrigin();
 
   return {
     siteId,

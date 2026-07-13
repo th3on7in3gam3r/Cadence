@@ -4,7 +4,16 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Activity, Check, Copy, ExternalLink, Loader2, Sparkles } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  Check,
+  Copy,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import {
   enablePulseForBrand,
@@ -27,8 +36,10 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
   const [info, setInfo] = useState<PulseInstallInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [enabling, setEnabling] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<CopyTarget>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!isCloudEnabled()) {
@@ -55,13 +66,34 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
   async function handleEnable() {
     setEnabling(true);
     setError(null);
+    setMessage(null);
     try {
       const result = await enablePulseForBrand(brandUrl);
       setInfo(result);
+      setMessage(result.message);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not enable Pulse');
     } finally {
       setEnabling(false);
+    }
+  }
+
+  async function handleRetrySync() {
+    setSyncing(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await enablePulseForBrand(brandUrl);
+      setInfo(result);
+      setMessage(
+        result.registeredOnPulse
+          ? 'Synced to Pulse successfully.'
+          : result.message,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not sync with Pulse');
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -76,6 +108,7 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
   }
 
   const enabled = info?.enabled ?? info?.claimed;
+  const syncFailed = Boolean(enabled && info?.registeredOnPulse === false);
 
   if (!isCloudEnabled()) {
     return null;
@@ -105,10 +138,16 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
             </p>
           )}
         </div>
-        {enabled && (
+        {enabled && !syncFailed && (
           <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-2 py-1 rounded-full">
             <Check className="w-3 h-3" />
             Enabled
+          </span>
+        )}
+        {syncFailed && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 border border-amber-800/50 px-2 py-1 rounded-full">
+            <AlertTriangle className="w-3 h-3" />
+            Sync needed
           </span>
         )}
       </div>
@@ -131,6 +170,33 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
             {' · '}
             <code className="text-emerald-300">{info.siteId}</code>
           </p>
+
+          {syncFailed ? (
+            <div className="space-y-2 rounded-lg border border-amber-800/50 bg-amber-950/20 px-3 py-2.5">
+              <p className="text-xs text-amber-200/90 leading-relaxed">
+                Cadence saved this site, but the key did not sync to Pulse. Set matching{' '}
+                <code className="text-amber-100">PULSE_PARTNER_SECRET</code> on Cadence and Pulse, then
+                retry.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleRetrySync()}
+                disabled={syncing}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white cursor-pointer disabled:opacity-50"
+              >
+                {syncing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" />
+                )}
+                Retry sync
+              </button>
+            </div>
+          ) : null}
+
+          {message && !syncFailed ? (
+            <p className="text-xs text-slate-400">{message}</p>
+          ) : null}
 
           {!enabled ? (
             <button
@@ -164,6 +230,23 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
                   {info.snippet}
                 </pre>
               </div>
+              {!compact && info.idePrompt ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+                      AI assistant
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void copyText(info.idePrompt, 'prompt')}
+                      className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3" />
+                      {copied === 'prompt' ? 'Copied' : 'Copy prompt'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               {!compact && (
                 <div className="flex flex-wrap gap-3">
                   <a

@@ -13,6 +13,7 @@ export interface PulseInstallInfo {
   claimed: boolean;
   claimedAt: string | null;
   enabledAt?: string | null;
+  registeredOnPulse?: boolean | null;
   snippet: string;
   idePrompt: string;
   dashboardUrl: string;
@@ -38,10 +39,16 @@ export async function fetchPulseInstall(brandUrl?: string): Promise<PulseInstall
   return res.json() as Promise<PulseInstallInfo>;
 }
 
-export async function enablePulseForBrand(brandUrl?: string): Promise<PulseEnableResult> {
+export async function enablePulseForBrand(
+  brandUrl?: string,
+  opts?: { rotateKey?: boolean },
+): Promise<PulseEnableResult> {
   const res = await apiFetch('/api/pulse/enable', {
     method: 'POST',
-    body: JSON.stringify(brandUrl ? { brandUrl } : {}),
+    body: JSON.stringify({
+      ...(brandUrl ? { brandUrl } : {}),
+      ...(opts?.rotateKey ? { rotateKey: true } : {}),
+    }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

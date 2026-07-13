@@ -15,6 +15,7 @@ import {
   pulseIdeInstallPrompt,
   pulseInstallSnippet,
   pulsePublicOrigin,
+  registerPulseSiteKeyOnPulse,
 } from '../lib/pulseClaim';
 import { pulseSiteIdFromDomain } from '../lib/pulseSite';
 
@@ -53,6 +54,13 @@ router.get('/install', requireUser, async (req: AuthedRequest, res) => {
     const quota = await getPulseQuotaForUser(req.userId!);
     const origin = pulsePublicOrigin();
     const enabled = Boolean(claim);
+    let registeredOnPulse: boolean | null = null;
+    if (enabled && claim?.pulse_read_key) {
+      registeredOnPulse = await registerPulseSiteKeyOnPulse(
+        siteId,
+        String(claim.pulse_read_key).trim(),
+      );
+    }
 
     return res.json({
       domain,
@@ -61,6 +69,7 @@ router.get('/install', requireUser, async (req: AuthedRequest, res) => {
       claimed: enabled,
       claimedAt: claim?.claimed_at ?? null,
       enabledAt: claim?.claimed_at ?? null,
+      registeredOnPulse,
       snippet: pulseInstallSnippet(siteId, origin),
       idePrompt: pulseIdeInstallPrompt(siteId, origin),
       dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
@@ -86,7 +95,9 @@ async function handleEnable(req: AuthedRequest, res: Response) {
       });
     }
 
-    const result = await enablePulseForBrand(req.userId!, brandUrl);
+    const result = await enablePulseForBrand(req.userId!, brandUrl, {
+      rotateKey: Boolean(req.body?.rotateKey),
+    });
     const quota = await getPulseQuotaForUser(req.userId!);
     return res.json({
       ok: true,
@@ -97,8 +108,9 @@ async function handleEnable(req: AuthedRequest, res: Response) {
       sitesUsed: quota.sitesUsed,
       sitesLimit: quota.sitesLimit,
       plan: quota.plan,
-      message:
-        'Pulse enabled for this brand. Copy the snippet below — no separate key purchase; billing can bundle Pulse later.',
+      message: result.registeredOnPulse
+        ? 'Pulse enabled for this brand. Copy the snippet below.'
+        : 'Pulse saved in Cadence, but key sync to Pulse failed. Check PULSE_PARTNER_SECRET on both services, then Retry sync.',
     });
   } catch (e: unknown) {
     if (isSchemaNotReadyError(e)) {
