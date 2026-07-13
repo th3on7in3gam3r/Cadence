@@ -373,8 +373,11 @@ function PulseCard({
         compact={compact}
       >
         <p className="text-xs text-slate-400 leading-relaxed">
-          No Pulse traffic for <strong className="text-slate-300">{domain}</strong> yet.
-          Install the pixel with <code className="text-emerald-300">data-site="{siteId}"</code>.
+          No Pulse traffic for <strong className="text-slate-300">{domain}</strong> yet.{' '}
+          <a href="/app/settings?tab=integrations" className="text-emerald-400 hover:underline font-semibold">
+            Claim your site
+          </a>{' '}
+          to get the pixel snippet.
         </p>
         <a
           href={dashboard}

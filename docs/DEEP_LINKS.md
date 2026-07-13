@@ -80,7 +80,7 @@ https://pulse-5o1m.onrender.com/?site={siteId}
 |----------|----------|
 | `GET /api/integrations/growth-stack/citepilot/citations?domain=` | `{CITEPILOT_API_URL}/api/v1/citations` |
 | `GET /api/integrations/growth-stack/aegis/url-check?url=` | `{AEGIS_API_URL}/api/v1/url-check` |
-| `GET /api/integrations/growth-stack/pulse/stats?domain=` | `{PULSE_API_URL}/api/stats?siteId=` |
+| `GET /api/integrations/growth-stack/pulse/stats?domain=` | `{PULSE_API_URL}/api/stats?siteId=` (+ `X-Pulse-Key` from `PULSE_API_KEY` / `PULSE_SITE_KEYS`) |
 
 Optional header: `X-CitePilot-Api-Key` (user Fleet key from Settings → Integrations).
 
@@ -101,6 +101,9 @@ APP_URL=https://growth.biblefunland.com/
 VITE_APP_URL=https://growth.biblefunland.com
 PULSE_API_URL=https://pulse-5o1m.onrender.com
 VITE_PULSE_URL=https://pulse-5o1m.onrender.com
+# Match Pulse PULSE_READ_KEY or PULSE_SITE_KEYS
+# PULSE_API_KEY=
+# PULSE_SITE_KEYS={"biblefunlandstudios-com":"psk_…"}
 
 # Kerygma + CitePilot (.env.local)
 NEXT_PUBLIC_AI_CMO_APP_URL=https://growth.biblefunland.com/app

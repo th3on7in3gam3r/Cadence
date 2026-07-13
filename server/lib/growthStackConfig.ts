@@ -17,3 +17,26 @@ export function pulseApiBase(): string {
     '',
   );
 }
+
+/**
+ * Read key for Pulse /api/stats.
+ * Prefer per-site PULSE_SITE_KEYS JSON; fall back to PULSE_API_KEY / PULSE_READ_KEY.
+ * Later: resolve from Cadence workspace → site ownership table.
+ */
+export function pulseReadKeyForSite(siteId: string): string | undefined {
+  const raw = process.env.PULSE_SITE_KEYS?.trim();
+  if (raw) {
+    try {
+      const map = JSON.parse(raw) as Record<string, unknown>;
+      if (map && typeof map === 'object' && !Array.isArray(map)) {
+        const siteKey = map[siteId];
+        if (typeof siteKey === 'string' && siteKey.trim()) return siteKey.trim();
+      }
+    } catch {
+      /* ignore bad JSON */
+    }
+  }
+  const shared =
+    process.env.PULSE_API_KEY?.trim() || process.env.PULSE_READ_KEY?.trim();
+  return shared || undefined;
+}

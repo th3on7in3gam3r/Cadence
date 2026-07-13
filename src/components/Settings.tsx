@@ -14,6 +14,7 @@ import { isCloudEnabled } from '../lib/cloudConfig';
 import { useAuth } from '../contexts/AuthContext';
 import CloudIntegrationsPanel from './settings/CloudIntegrationsPanel';
 import GrowthStackIntegrationsPanel from './settings/GrowthStackIntegrationsPanel';
+import PulseInstallPanel from './settings/PulseInstallPanel';
 import ConnectedProductsPanel from './settings/ConnectedProductsPanel';
 import BrandKitTab from './settings/BrandKitTab';
 import NotificationPrefsTab from './settings/NotificationPrefsTab';
@@ -179,9 +180,10 @@ function IntegrationCard({
 
 // ─── IntegrationsTab ──────────────────────────────────────────────────────────
 
-function IntegrationsTab() {
+function IntegrationsTab({ brandUrl }: { brandUrl?: string }) {
   return (
     <div className="space-y-10">
+      <PulseInstallPanel brandUrl={brandUrl} />
       <GrowthStackIntegrationsPanel />
       {isCloudEnabled() ? <CloudIntegrationsPanel /> : <LegacyIntegrationsTab />}
     </div>
@@ -412,7 +414,7 @@ export default function Settings({ brandName, brandUrl, onResetWorkspace, onOpen
 
 
       {/* Integrations tab */}
-      {activeTab === 'integrations' && <IntegrationsTab />}
+      {activeTab === 'integrations' && <IntegrationsTab brandUrl={brandUrl} />}
       {activeTab === 'studio' && <ConnectedProductsPanel />}
       {activeTab === 'brand-kit' && <BrandKitTab />}
       {activeTab === 'notifications' && <NotificationPrefsTab />}

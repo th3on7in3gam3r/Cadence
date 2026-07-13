@@ -21,6 +21,7 @@ import notificationsRouter from "./server/routes/notifications";
 import billingRouter, { handleStripeWebhook } from "./server/routes/billing";
 import teamsRouter from "./server/routes/teams";
 import studioRouter from "./server/routes/studio";
+import pulseRouter from "./server/routes/pulse";
 import reportsRouter from "./server/routes/reports";
 import { canRunSeoAudit, recordUsageEvent } from "./server/lib/usage";
 import { emitStudioOpsEvent } from "./server/lib/studioOps";
@@ -237,6 +238,7 @@ app.get("/api/metrics", metricsHandler);
 
 // Cloud workspace & integrations (Supabase auth required)
 app.use("/api/workspace", workspaceRouter);
+app.use("/api/pulse", pulseRouter);
 app.use("/api/integrations/growth-stack", requireApiAccess, growthStackRouter);
 app.use("/api/integrations", integrationsRouter);
 app.use("/api/publish", publishRouter);

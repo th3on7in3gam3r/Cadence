@@ -4,7 +4,9 @@
  */
 
 import { Router } from 'express';
-import { aegisApiBase, citePilotApiBase, pulseApiBase } from '../lib/growthStackConfig';
+import { aegisApiBase, citePilotApiBase, pulseApiBase, pulseReadKeyForSite } from '../lib/growthStackConfig';
+import { getPulseReadKeyForUser } from '../lib/pulseClaim';
+import type { AuthedRequest } from '../middleware/requireUser';
 import { pulseSiteIdFromDomain } from '../lib/pulseSite';
 import { domainFromBrandUrl, normalizeBrandUrl } from '../lib/websiteUrl';
 
@@ -174,7 +176,7 @@ router.get('/aegis/url-check', async (req, res) => {
   }
 });
 
-router.get('/pulse/stats', async (req, res) => {
+router.get('/pulse/stats', async (req: AuthedRequest, res) => {
   try {
     const domain = normalizeDomain(String(req.query.domain || ''));
     if (!domain) {
@@ -183,9 +185,14 @@ router.get('/pulse/stats', async (req, res) => {
 
     const siteId = pulseSiteIdFromDomain(domain);
     const base = pulseApiBase();
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const claimedKey = req.userId ? await getPulseReadKeyForUser(req.userId, siteId) : null;
+    const readKey = claimedKey || pulseReadKeyForSite(siteId);
+    if (readKey) headers['X-Pulse-Key'] = readKey;
+
     const upstream = await fetch(
       `${base}/api/stats?siteId=${encodeURIComponent(siteId)}`,
-      { headers: { Accept: 'application/json' } },
+      { headers },
     );
 
     if (!upstream.ok) {

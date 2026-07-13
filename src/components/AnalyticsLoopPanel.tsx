@@ -164,9 +164,11 @@ export default function AnalyticsLoopPanel({ siteUrl, audit, ga4PropertyId }: An
               </p>
             ) : (
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                No Pulse traffic yet. Install the pixel with{' '}
-                <code className="text-emerald-300">data-site="{pulseSiteId}"</code> to measure
-                visits after Kerygma/CitePilot campaigns land.
+                No Pulse traffic yet.{' '}
+                <a href="/app/settings?tab=integrations" className="text-emerald-400 hover:underline font-semibold">
+                  Claim your site
+                </a>{' '}
+                in Settings to get the pixel snippet (included with Cadence).
               </p>
             )}
           </div>
