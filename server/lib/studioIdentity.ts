@@ -6,6 +6,7 @@
 import { getSupabaseAdmin } from '../db/supabaseAdmin';
 import { PRODUCT_NAME, serverPublicOrigin } from './brand';
 import { emitStudioOpsEvent } from './studioOps';
+import { growthStackOutboundUrl } from './utm';
 
 export type StudioProductId = 'ai_cmo' | 'kerygma' | 'citepilot' | 'aegis';
 
@@ -123,7 +124,12 @@ export function productPayload(account: StudioAccountRow) {
     id: p.id,
     name: p.name,
     tagline: p.tagline,
-    url: p.id === 'ai_cmo' ? `${p.url}/app` : p.url,
+    url:
+      p.id === 'kerygma'
+        ? growthStackOutboundUrl(p.url, 'studio-identity')
+        : p.id === 'ai_cmo'
+          ? `${p.url}/app`
+          : p.url,
     authNote: p.authNote,
     linked: linked[p.id],
     externalId:

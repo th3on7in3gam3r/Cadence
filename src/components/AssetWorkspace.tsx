@@ -37,7 +37,9 @@ import {
   saveImagePrompt,
 } from '../utils/imagePrompts';
 import { generateStudioImage } from '../lib/studioImageApi';
-import { resolveSubscribeUrl } from '../utils/newsletterSettings';
+import { resolveTaggedSubscribeUrl } from '../utils/newsletterSettings';
+import { campaignSlugForAssetType } from '../lib/utm';
+import { taggedCampaignLandingUrl } from '../lib/growthStack';
 import ScrollToTopButton from './ScrollToTopButton';
 
 import EmailMockupViewport from './EmailMockupViewport';
@@ -197,7 +199,10 @@ export default function AssetWorkspace({
       prompt: promptOverride ?? customImagePrompt,
     });
 
-  const subscribeUrl = resolveSubscribeUrl(brandUrl);
+  const subscribeUrl = resolveTaggedSubscribeUrl(brandUrl, `${campaignSlugForAssetType(assetType)}-subscribe`);
+  const productLandingUrl = brandUrl
+    ? taggedCampaignLandingUrl(brandUrl, campaignSlugForAssetType(assetType), { medium: 'referral' })
+    : undefined;
 
   const buildWordPressSeoMeta = (featuredImageUrl: string) => ({
     title: asset.title,
@@ -212,6 +217,7 @@ export default function AssetWorkspace({
     subscribeButtonLabel: 'Subscribe',
     includeSubscribe: assetType === 'blog_post',
     productCta: asset.taglineOrCTA,
+    productLandingUrl,
   });
 
   useEffect(() => {

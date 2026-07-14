@@ -13,6 +13,7 @@ import {
   STUDIO_PRODUCTS,
   type StudioProductId,
 } from '../lib/studioIdentity';
+import { growthStackOutboundUrl } from '../lib/utm';
 import { PRODUCT_NAME, serverPublicOrigin } from '../lib/brand';
 
 const router = Router();
@@ -89,7 +90,12 @@ router.get('/catalog', (_req, res) => {
       id: p.id,
       name: p.name,
       tagline: p.tagline,
-      href: p.id === 'ai_cmo' ? `${origin}/app` : p.url,
+      href:
+        p.id === 'kerygma'
+          ? growthStackOutboundUrl(p.url, 'studio-catalog')
+          : p.id === 'ai_cmo'
+            ? `${origin}/app`
+            : p.url,
       category: 'growth',
     })),
     churchProducts: CHURCH_PRODUCTS,

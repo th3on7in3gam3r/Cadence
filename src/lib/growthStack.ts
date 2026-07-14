@@ -8,6 +8,7 @@
 
 import { domainFromBrandUrl } from '../utils/websiteUrl';
 import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCTION_ORIGIN } from './brand';
+import { campaignLandingUrl, withUtm } from './utm';
 
 export const BIBLEFUNLAND_STUDIOS_URL = 'https://www.biblefunlandstudios.com/';
 
@@ -58,17 +59,53 @@ export function normalizeDomainForAudit(websiteUrl: string): string {
   return domainFromBrandUrl(websiteUrl);
 }
 
-export function citePilotAuditUrl(websiteUrlOrDomain: string): string {
+export function citePilotAuditUrl(
+  websiteUrlOrDomain: string,
+  campaign = 'cite-audit',
+): string {
   const domain = normalizeDomainForAudit(websiteUrlOrDomain);
-  return `${GROWTH_STACK_PRODUCTS.citePilot.url}/audit?domain=${encodeURIComponent(domain)}`;
+  const base = `${GROWTH_STACK_PRODUCTS.citePilot.url}/audit?domain=${encodeURIComponent(domain)}`;
+  return withUtm(base, { source: 'cadence', campaign, medium: 'referral' });
 }
 
-export function kerygmaSignUpUrl(websiteUrl: string): string {
+export function kerygmaHomeUrl(campaign = 'growth-stack'): string {
+  return withUtm(GROWTH_STACK_PRODUCTS.kerygma.url, {
+    source: 'cadence',
+    campaign,
+    medium: 'referral',
+  });
+}
+
+export function kerygmaPricingUrl(campaign = 'studio-pricing'): string {
+  return withUtm(`${GROWTH_STACK_PRODUCTS.kerygma.url}/pricing`, {
+    source: 'cadence',
+    campaign,
+    medium: 'referral',
+  });
+}
+
+export function kerygmaSignUpUrl(websiteUrl: string, campaign = 'kerygma-signup'): string {
   const params = new URLSearchParams({
     url: websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`,
     redirect_url: '/onboarding',
   });
-  return `${GROWTH_STACK_PRODUCTS.kerygma.url}/sign-up?${params.toString()}`;
+  const base = `${GROWTH_STACK_PRODUCTS.kerygma.url}/sign-up?${params.toString()}`;
+  return withUtm(base, { source: 'cadence', campaign, medium: 'referral' });
+}
+
+/** Tag a brand / public landing URL for Cadence campaign attribution in Pulse. */
+export function taggedCampaignLandingUrl(
+  landingUrl: string,
+  campaign: string,
+  opts?: { medium?: 'email' | 'social' | 'cpc' | 'referral'; content?: string },
+): string {
+  return campaignLandingUrl(landingUrl, {
+    campaign,
+    source: 'cadence',
+    medium: opts?.medium,
+    content: opts?.content,
+    force: true,
+  });
 }
 
 export type StudioBundleId = 'growth' | 'social' | 'devsec' | 'studio';

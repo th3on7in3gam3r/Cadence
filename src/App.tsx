@@ -530,6 +530,7 @@ export default function App({ onGoHome }: AppProps) {
         body: JSON.stringify({
           assetType: type,
           companyInfo: brandAnalysis,
+          brandUrl,
           customRequirements: customChallenge,
           brandKit: loadBrandKit(),
         }),

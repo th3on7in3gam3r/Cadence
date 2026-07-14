@@ -10,6 +10,7 @@ import {
   GROWTH_STACK_PRODUCTS,
   aiCmoAppUrl,
   aiCmoStudioHubUrl,
+  kerygmaHomeUrl,
 } from '../lib/growthStack';
 import { PRODUCT_NAME } from '../lib/brand';
 
@@ -89,10 +90,14 @@ export default function GrowthStackSection() {
 
           {SISTER_PRODUCTS.map((item) => {
             const product = GROWTH_STACK_PRODUCTS[item.key];
+            const href =
+              item.key === 'kerygma'
+                ? kerygmaHomeUrl('growth-stack-card')
+                : product.url;
             return (
               <a
                 key={item.key}
-                href={product.url}
+                href={href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`p-5 rounded-2xl bg-slate-900 border transition-colors group ${item.border}`}

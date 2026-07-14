@@ -16,6 +16,7 @@ import {
   type MarketingBundle,
 } from '../lib/bundles';
 import { PRODUCT_NAME } from '../lib/brand';
+import { kerygmaPricingUrl } from '../lib/growthStack';
 
 interface StudioBundlesPricingSectionProps {
   id?: string;
@@ -184,7 +185,7 @@ export default function StudioBundlesPricingSection({
           </a>
           {' · '}
           <a
-            href="https://kerygmasocial.com/pricing"
+            href={kerygmaPricingUrl('bundle-pricing')}
             target="_blank"
             rel="noopener noreferrer"
             className="text-slate-500 hover:text-slate-400 inline-flex items-center gap-1"

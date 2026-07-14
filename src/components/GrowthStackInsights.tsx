@@ -127,7 +127,7 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
             </p>
           </a>
           <a
-            href={kerygmaSignUpUrl(brandUrl)}
+            href={kerygmaSignUpUrl(brandUrl, 'growth-insights')}
             target="_blank"
             rel="noopener noreferrer"
             className="p-4 bg-slate-900 border border-amber-800/40 rounded-xl hover:border-amber-600/50 transition-colors group"

@@ -8,6 +8,7 @@ import {
   GROWTH_STACK_PRODUCTS,
   aiCmoAppUrl,
   aiCmoStudioBillingUrl,
+  kerygmaHomeUrl,
   type StudioBundleId,
 } from './growthStack';
 
@@ -57,7 +58,7 @@ export const STUDIO_HUB_PRODUCTS: StudioHubProduct[] = [
     id: 'kerygma',
     name: GROWTH_STACK_PRODUCTS.kerygma.name,
     tagline: GROWTH_STACK_PRODUCTS.kerygma.tagline,
-    href: GROWTH_STACK_PRODUCTS.kerygma.url,
+    href: kerygmaHomeUrl('studio-hub'),
     category: 'growth',
     bundleId: 'social',
   },

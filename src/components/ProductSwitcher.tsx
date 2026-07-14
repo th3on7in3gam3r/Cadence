@@ -12,7 +12,7 @@ import {
   type StudioIdentityResponse,
   type StudioProductStatus,
 } from '../lib/studioApi';
-import { GROWTH_STACK_PRODUCTS, aiCmoAppUrl, aiCmoStudioHubUrl } from '../lib/growthStack';
+import { GROWTH_STACK_PRODUCTS, aiCmoAppUrl, aiCmoStudioHubUrl, kerygmaHomeUrl } from '../lib/growthStack';
 import { STUDIO_HUB_PRODUCTS } from '../lib/studioHub';
 
 const PRODUCT_COLORS: Record<string, string> = {
@@ -37,7 +37,7 @@ function fallbackProducts(): StudioProductStatus[] {
       id: 'kerygma',
       name: GROWTH_STACK_PRODUCTS.kerygma.name,
       tagline: GROWTH_STACK_PRODUCTS.kerygma.tagline,
-      url: GROWTH_STACK_PRODUCTS.kerygma.url,
+      url: kerygmaHomeUrl('product-switcher'),
       authNote: 'Separate Clerk account',
       linked: false,
       externalId: null,

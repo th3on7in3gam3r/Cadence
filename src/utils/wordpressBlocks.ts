@@ -136,10 +136,14 @@ function heroImageInstructionBlock(): string {
 <!-- /wp:paragraph -->`;
 }
 
-function productCtaBlock(cta: string): string {
+function productCtaBlock(cta: string, landingUrl?: string): string {
+  const label = escapeHtml(cta);
+  const linkInner = landingUrl?.trim()
+    ? `<a class="wp-block-button__link wp-element-button has-vivid-cyan-blue-background-color has-background" href="${escapeHtml(landingUrl.trim())}">${label}</a>`
+    : `<span class="wp-block-button__link wp-element-button has-vivid-cyan-blue-background-color has-background">${label}</span>`;
   return `<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
 <div class="wp-block-buttons"><!-- wp:button {"backgroundColor":"vivid-cyan-blue"} -->
-<div class="wp-block-button"><span class="wp-block-button__link wp-element-button has-vivid-cyan-blue-background-color has-background">${escapeHtml(cta)}</span></div>
+<div class="wp-block-button">${linkInner}</div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->`;
 }
@@ -161,6 +165,7 @@ export interface WordPressSeoMeta {
   featuredImagePending?: boolean;
   /** Product CTA shown separately from newsletter subscribe */
   productCta?: string;
+  productLandingUrl?: string;
 }
 
 function slugify(title: string): string {
@@ -337,7 +342,7 @@ export function toWordPressBlocks(markdown: string, seo?: WordPressSeoMeta): str
   }
 
   if (seo?.productCta?.trim()) {
-    parts.push(productCtaBlock(seo.productCta.trim()));
+    parts.push(productCtaBlock(seo.productCta.trim(), seo.productLandingUrl));
   }
 
   if (seo && hasSeoContent(seo)) {

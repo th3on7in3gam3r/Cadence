@@ -29,6 +29,7 @@ import { emitStudioOpsEvent } from "./server/lib/studioOps";
 import { getSupabaseAdmin } from "./server/db/supabaseAdmin";
 import type { AuthedRequest } from "./server/middleware/requireUser";
 import { formatBrandKitBlock } from "./server/lib/brandKitPrompt";
+import { campaignLandingUrl, campaignSlugForAssetType } from "./server/lib/utm";
 import { generateStudioImage } from "./server/lib/imagen";
 import { isSupabaseConfigured, isHostedAiMode } from "./server/lib/config";
 import { requestLogger, metricsHandler } from "./server/lib/metrics";
@@ -387,7 +388,7 @@ Task: Produce a complete, detailed growth strategy summary. If the scrap text wa
 // 3. Generate Deliverable API
 app.post("/api/generate-asset", ...protectedApi, async (req, res) => {
   try {
-    const { assetType, companyInfo, customRequirements, brandKit } = req.body;
+    const { assetType, companyInfo, customRequirements, brandKit, brandUrl } = req.body;
     if (!assetType || !companyInfo) {
       return res.status(400).json({ error: "Missing assetType or companyInfo mapping." });
     }
@@ -447,7 +448,28 @@ Company Strategy Background:
 - Voice Guideline: ${companyInfo.inferredBrandVoice}
 
 User requirements or custom context: ${customRequirements || "Strictly leverage company strategy and brand tone."}
-${formatBrandKitBlock(brandKit)}`;
+${formatBrandKitBlock(brandKit)}${
+      brandUrl &&
+      (assetType === "social_posts" ||
+        assetType === "email_sequence" ||
+        assetType === "blog_post" ||
+        assetType === "lead_magnet")
+        ? `
+
+Campaign landing URL — use this exact link for every CTA, button, and "learn more" in the asset (do not shorten or change query params):
+${campaignLandingUrl(String(brandUrl), {
+  campaign: campaignSlugForAssetType(assetType),
+  source: "cadence",
+  medium:
+    assetType === "email_sequence"
+      ? "email"
+      : assetType === "social_posts"
+        ? "social"
+        : "referral",
+  force: true,
+})}`
+        : ""
+    }`;
 
     const assetSchema = {
       type: Type.OBJECT,
