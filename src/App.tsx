@@ -28,7 +28,7 @@ import AppHeader from './components/AppHeader';
 import StudioDashboard from './pages/StudioDashboard';
 import HelpPage from './pages/HelpPage';
 import { PRODUCT_NAME } from './lib/brand';
-import { syncWorkspaceBrand, resolveActiveBrandOnLoad, saveCurrentBrandSnapshot } from './lib/teamsApi';
+import { syncWorkspaceBrand, resolveActiveBrandOnLoad, saveCurrentBrandSnapshot, ensureWorkspaceBrand } from './lib/teamsApi';
 import { normalizeBrandUrl } from './utils/websiteUrl';
 import {
   shouldShowOnboarding,
@@ -205,6 +205,13 @@ export default function App({ onGoHome }: AppProps) {
       if (cancelled) return;
       if (payload) {
         payload = await resolveActiveBrandOnLoad(payload);
+        if (payload.brandUrl && payload.brandAnalysis) {
+          await ensureWorkspaceBrand(
+            payload.brandAnalysis.brandName || 'My brand',
+            payload.brandUrl,
+            payload,
+          ).catch(() => undefined);
+        }
         const localSnapshot = buildPayloadFromLocal();
         const merged = mergeWorkspacePayload(payload, localSnapshot);
         hydrateLocalFromPayload(merged);

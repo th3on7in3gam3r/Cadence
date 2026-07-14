@@ -9,17 +9,26 @@ import { limitsForPlan, maxPagesForCrawl } from './plans';
 import { applyOwnerPlanGrantForUser } from './ownerGrant';
 
 export async function getUserPlan(userId: string): Promise<PlanId> {
-  await applyOwnerPlanGrantForUser(userId);
+  try {
+    await applyOwnerPlanGrantForUser(userId);
+  } catch {
+    /* billing tables may not be migrated yet */
+  }
 
   const sb = getSupabaseAdmin();
   if (!sb) return 'free';
-  const { data } = await sb
-    .from('subscriptions')
-    .select('plan, status')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (data?.status === 'active' && data.plan) {
-    return data.plan as PlanId;
+  try {
+    const { data, error } = await sb
+      .from('subscriptions')
+      .select('plan, status')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.status === 'active' && data.plan) {
+      return data.plan as PlanId;
+    }
+  } catch {
+    return 'free';
   }
   return 'free';
 }

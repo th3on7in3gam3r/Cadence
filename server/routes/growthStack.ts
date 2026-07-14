@@ -200,10 +200,22 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
 
     const siteId = pulseSiteIdFromDomain(domain);
     const base = pulseApiBase();
+    const dashboardUrl = `${base}/?site=${encodeURIComponent(siteId)}`;
     const headers: Record<string, string> = { Accept: 'application/json' };
     const claimedKey = req.userId ? await getPulseReadKeyForUser(req.userId, siteId) : null;
     const readKey = claimedKey || pulseReadKeyForSite(siteId);
-    if (readKey) headers['X-Pulse-Key'] = readKey;
+
+    if (!readKey) {
+      return res.json({
+        connected: false,
+        live: false,
+        siteId,
+        dashboardUrl,
+        error: 'Enable Pulse for this brand in Settings → Integrations.',
+      });
+    }
+
+    headers['X-Pulse-Key'] = readKey;
 
     const upstream = await fetch(
       `${base}/api/stats?siteId=${encodeURIComponent(siteId)}`,
@@ -212,11 +224,25 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
 
     if (!upstream.ok) {
       const err = await upstream.json().catch(() => ({}));
+      const authFailed = upstream.status === 401 || upstream.status === 403;
+      if (authFailed || upstream.status === 404) {
+        return res.json({
+          connected: false,
+          live: false,
+          siteId,
+          dashboardUrl,
+          error: authFailed
+            ? claimedKey
+              ? 'Pulse key is out of sync — open Settings → Integrations and use Retry sync.'
+              : 'Enable Pulse for this brand in Settings → Integrations.',
+          : (err as { error?: string }).error || 'No Pulse data for this site yet.',
+        });
+      }
       return res.status(upstream.status === 404 ? 502 : upstream.status).json({
         connected: false,
         error: (err as { error?: string }).error || 'Pulse request failed',
         siteId,
-        dashboardUrl: `${base}/?site=${encodeURIComponent(siteId)}`,
+        dashboardUrl,
       });
     }
 

@@ -33,6 +33,7 @@ export default function BrandSwitcher({
   const [newName, setNewName] = useState('');
   const [newUrl, setNewUrl] = useState('');
   const [busy, setBusy] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const refreshBrands = () => {
     fetchBrands()
@@ -80,6 +81,7 @@ export default function BrandSwitcher({
     e.preventDefault();
     if (!newName.trim()) return;
     setBusy(true);
+    setAddError(null);
     try {
       const url = newUrl.trim() ? normalizeBrandUrl(newUrl.trim()) : undefined;
       await createBrand(newName.trim(), url);
@@ -87,6 +89,8 @@ export default function BrandSwitcher({
       setNewUrl('');
       setAdding(false);
       refreshBrands();
+    } catch (e) {
+      setAddError(e instanceof Error ? e.message : 'Failed to add brand');
     } finally {
       setBusy(false);
     }
@@ -200,6 +204,9 @@ export default function BrandSwitcher({
               Cancel
             </button>
           </div>
+          {addError ? (
+            <p className="text-[11px] text-rose-400 leading-snug">{addError}</p>
+          ) : null}
         </form>
       )}
     </div>

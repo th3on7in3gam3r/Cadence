@@ -156,11 +156,51 @@ export async function createBrand(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Failed to create brand');
+    const hint = (err as { setupHint?: string }).setupHint;
+    throw new Error(
+      hint || (err as { error?: string }).error || 'Failed to create brand',
+    );
   }
   const data = await res.json();
   setActiveBrandId(data.brand.id);
   return data.brand;
+}
+
+/** Create or reuse the cloud brand row for the current workspace URL. */
+export async function ensureWorkspaceBrand(
+  name: string,
+  brandUrl: string,
+  payload: WorkspacePayload,
+): Promise<BrandSummary | null> {
+  if (!isCloudEnabled()) return null;
+
+  const normalized = normalizeBrandUrl(brandUrl);
+  if (!normalized) return null;
+
+  const brands = await fetchBrands();
+  const slug = slugifyBrandId(normalized || name);
+  const existing =
+    brands.find((b) => b.brand_url && normalizeBrandUrl(b.brand_url) === normalized) ||
+    brands.find((b) => b.slug === slug);
+
+  if (existing) {
+    if (!getActiveBrandId()) setActiveBrandId(existing.id);
+    return existing;
+  }
+
+  try {
+    return await createBrand(name, normalized, payload);
+  } catch {
+    const retry = await fetchBrands();
+    const match =
+      retry.find((b) => b.brand_url && normalizeBrandUrl(b.brand_url) === normalized) ||
+      retry.find((b) => b.slug === slug);
+    if (match) {
+      setActiveBrandId(match.id);
+      return match;
+    }
+    return null;
+  }
 }
 
 /** After a site audit, keep the brand list and active brand aligned with the analyzed URL. */
@@ -181,9 +221,10 @@ export async function syncWorkspaceBrand(
   }
 
   const brands = await fetchBrands();
-  const existing = brands.find(
-    (b) => b.brand_url && normalizeBrandUrl(b.brand_url) === normalized,
-  );
+  const slug = slugifyBrandId(normalized || name);
+  const existing =
+    brands.find((b) => b.brand_url && normalizeBrandUrl(b.brand_url) === normalized) ||
+    brands.find((b) => b.slug === slug);
 
   if (existing) {
     const updated = await updateBrand(existing.id, { name, brandUrl: normalized, payload });

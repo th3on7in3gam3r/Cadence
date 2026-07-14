@@ -15,6 +15,10 @@ export function isSchemaNotReadyError(e: unknown): boolean {
   );
 }
 
+export function isUniqueViolationError(e: unknown): boolean {
+  return (e as { code?: string })?.code === '23505';
+}
+
 export function schemaSetupHint(): string {
   return 'Run supabase/schema.sql through schema-v6-growth-stack-keys.sql in your Supabase SQL Editor.';
 }

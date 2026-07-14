@@ -9,7 +9,7 @@ import { getSupabaseAdmin } from '../db/supabaseAdmin';
 import { getOrCreateOrg, getUserPlan, countBrandsForUser } from '../lib/usage';
 import { limitsForPlan } from '../lib/plans';
 import { slugifyBrandId } from '../lib/slugify';
-import { isSchemaNotReadyError, schemaSetupHint } from '../lib/dbErrors';
+import { isSchemaNotReadyError, isUniqueViolationError, schemaSetupHint } from '../lib/dbErrors';
 
 const router = Router();
 
@@ -110,9 +110,24 @@ router.post('/brands', requireUser, async (req: AuthedRequest, res) => {
       })
       .select('*')
       .single();
-    if (error) throw error;
+    if (error) {
+      if (isUniqueViolationError(error)) {
+        const { data: existing, error: lookupError } = await sb
+          .from('brands')
+          .select('*')
+          .eq('org_id', org.id)
+          .eq('slug', slug)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+        if (existing) return res.json({ brand: existing });
+      }
+      throw error;
+    }
     res.json({ brand: data });
   } catch (e: unknown) {
+    if (isSchemaNotReadyError(e)) {
+      return res.status(503).json({ error: 'Database tables not set up', setupHint: schemaSetupHint() });
+    }
     res.status(500).json({ error: e instanceof Error ? e.message : 'Failed to create brand' });
   }
 });
