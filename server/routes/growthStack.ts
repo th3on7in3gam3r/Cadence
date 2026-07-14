@@ -234,8 +234,8 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
           error: authFailed
             ? claimedKey
               ? 'Pulse key is out of sync — open Settings → Integrations and use Retry sync.'
-              : 'Enable Pulse for this brand in Settings → Integrations.',
-          : (err as { error?: string }).error || 'No Pulse data for this site yet.',
+              : 'Enable Pulse for this brand in Settings → Integrations.'
+            : (err as { error?: string }).error || 'No Pulse data for this site yet.',
         });
       }
       return res.status(upstream.status === 404 ? 502 : upstream.status).json({
