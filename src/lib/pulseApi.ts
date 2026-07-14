@@ -59,6 +59,19 @@ export async function enablePulseForBrand(
   return data as PulseEnableResult;
 }
 
+/** Re-register the existing Cadence read key on Pulse (Retry sync). */
+export async function resyncPulseForBrand(brandUrl?: string): Promise<PulseEnableResult> {
+  const res = await apiFetch('/api/pulse/resync', {
+    method: 'POST',
+    body: JSON.stringify(brandUrl ? { brandUrl } : {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error((data as { error?: string }).error || 'Failed to sync Pulse key');
+  }
+  return data as PulseEnableResult;
+}
+
 /** @deprecated Use enablePulseForBrand */
 export async function claimPulseSite(brandUrl?: string): Promise<PulseEnableResult> {
   return enablePulseForBrand(brandUrl);

@@ -249,6 +249,41 @@ export async function enablePulseForBrand(
   };
 }
 
+/** Re-push the existing Cadence read key to Pulse (after PULSE_PARTNER_SECRET is configured). */
+export async function resyncPulseSiteKeyForUser(
+  userId: string,
+  brandUrl: string,
+): Promise<{
+  siteId: string;
+  domain: string;
+  readKey: string;
+  registeredOnPulse: boolean;
+  dashboardUrl: string;
+}> {
+  const domain = domainFromBrandUrl(brandUrl);
+  if (!domain) {
+    throw new Error('Enter a valid website URL in your workspace first.');
+  }
+
+  const siteId = pulseSiteIdFromDomain(domain);
+  const claim = await getPulseClaimForUser(userId, domain);
+  if (!claim?.pulse_read_key) {
+    throw new Error('Enable Pulse for this brand first, then retry sync.');
+  }
+
+  const readKey = String(claim.pulse_read_key).trim();
+  const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
+  const origin = pulsePublicOrigin();
+
+  return {
+    siteId,
+    domain,
+    readKey,
+    registeredOnPulse,
+    dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
+  };
+}
+
 /** @deprecated Use enablePulseForBrand */
 export async function claimPulseSiteForUser(userId: string, brandUrl: string) {
   return enablePulseForBrand(userId, brandUrl);

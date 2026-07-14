@@ -16,6 +16,7 @@ import {
   pulseInstallSnippet,
   pulsePublicOrigin,
   registerPulseSiteKeyOnPulse,
+  resyncPulseSiteKeyForUser,
 } from '../lib/pulseClaim';
 import { pulseSiteIdFromDomain } from '../lib/pulseSite';
 
@@ -125,6 +126,46 @@ async function handleEnable(req: AuthedRequest, res: Response) {
 }
 
 router.post('/enable', requireUser, (req, res) => handleEnable(req, res));
+
+router.post('/resync', requireUser, async (req: AuthedRequest, res) => {
+  try {
+    const brandUrl = await resolveBrandUrl(req.userId!, req.body?.brandUrl);
+    if (!brandUrl) {
+      return res.status(400).json({
+        error: 'No brand URL in workspace. Analyze your site or set a URL in Settings first.',
+      });
+    }
+
+    const result = await resyncPulseSiteKeyForUser(req.userId!, brandUrl);
+    const claim = await getPulseClaimForUser(req.userId!, result.domain);
+    const quota = await getPulseQuotaForUser(req.userId!);
+    const origin = pulsePublicOrigin();
+
+    return res.json({
+      ok: true,
+      ...result,
+      enabled: true,
+      claimed: true,
+      claimedAt: claim?.claimed_at ?? null,
+      enabledAt: claim?.claimed_at ?? null,
+      snippet: pulseInstallSnippet(result.siteId, origin),
+      idePrompt: pulseIdeInstallPrompt(result.siteId, origin),
+      sitesUsed: quota.sitesUsed,
+      sitesLimit: quota.sitesLimit,
+      plan: quota.plan,
+      message: result.registeredOnPulse
+        ? 'Synced to Pulse. This site is now locked to your Cadence read key.'
+        : 'Sync failed. Set the same PULSE_PARTNER_SECRET on Cadence and Pulse, redeploy both, then retry.',
+    });
+  } catch (e: unknown) {
+    if (isSchemaNotReadyError(e)) {
+      return res.status(503).json({ error: 'Database tables not set up', setupHint: schemaSetupHint() });
+    }
+    const msg = e instanceof Error ? e.message : 'Failed to sync Pulse key';
+    const status = msg.includes('Enable Pulse') ? 400 : 500;
+    return res.status(status).json({ error: msg });
+  }
+});
 
 router.post('/claim', requireUser, (req, res) => handleEnable(req, res));
 

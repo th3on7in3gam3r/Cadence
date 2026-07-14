@@ -18,6 +18,7 @@ import { isCloudEnabled } from '../lib/cloudConfig';
 import {
   enablePulseForBrand,
   fetchPulseInstall,
+  resyncPulseForBrand,
   type PulseInstallInfo,
 } from '../lib/pulseApi';
 import { GROWTH_STACK_PRODUCTS } from '../lib/growthStack';
@@ -83,13 +84,14 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
     setError(null);
     setMessage(null);
     try {
-      const result = await enablePulseForBrand(brandUrl);
-      setInfo(result);
-      setMessage(
-        result.registeredOnPulse
-          ? 'Synced to Pulse successfully.'
-          : result.message,
-      );
+      const result = await resyncPulseForBrand(brandUrl);
+      setInfo((prev) => ({
+        ...(prev || {}),
+        ...result,
+        enabled: true,
+        claimed: true,
+      } as PulseInstallInfo));
+      setMessage(result.message);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not sync with Pulse');
     } finally {
