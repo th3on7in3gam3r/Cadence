@@ -70,6 +70,8 @@ router.get('/install', requireUser, async (req: AuthedRequest, res) => {
       claimedAt: claim?.claimed_at ?? null,
       enabledAt: claim?.claimed_at ?? null,
       registeredOnPulse,
+      /** Dashboard unlock key — paste into Pulse when prompted. Never put on the pixel. */
+      readKey: claim?.pulse_read_key ? String(claim.pulse_read_key).trim() : null,
       snippet: pulseInstallSnippet(siteId, origin),
       idePrompt: pulseIdeInstallPrompt(siteId, origin),
       dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
@@ -109,7 +111,7 @@ async function handleEnable(req: AuthedRequest, res: Response) {
       sitesLimit: quota.sitesLimit,
       plan: quota.plan,
       message: result.registeredOnPulse
-        ? 'Pulse enabled for this brand. Copy the snippet below.'
+        ? 'Pulse enabled. Copy the Dashboard read key into Pulse if the dashboard asks to unlock.'
         : 'Pulse saved in Cadence, but key sync to Pulse failed. Check PULSE_PARTNER_SECRET on both services, then Retry sync.',
     });
   } catch (e: unknown) {

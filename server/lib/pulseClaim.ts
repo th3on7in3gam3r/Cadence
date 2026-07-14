@@ -154,6 +154,7 @@ export async function enablePulseForBrand(
 ): Promise<{
   siteId: string;
   domain: string;
+  readKey: string;
   snippet: string;
   idePrompt: string;
   dashboardUrl: string;
@@ -194,6 +195,7 @@ export async function enablePulseForBrand(
     return {
       siteId,
       domain,
+      readKey,
       snippet: pulseInstallSnippet(siteId, origin),
       idePrompt: pulseIdeInstallPrompt(siteId, origin),
       dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
@@ -238,6 +240,7 @@ export async function enablePulseForBrand(
   return {
     siteId,
     domain,
+    readKey,
     snippet: pulseInstallSnippet(siteId, origin),
     idePrompt: pulseIdeInstallPrompt(siteId, origin),
     dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,

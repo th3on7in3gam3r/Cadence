@@ -14,6 +14,8 @@ export interface PulseInstallInfo {
   claimedAt: string | null;
   enabledAt?: string | null;
   registeredOnPulse?: boolean | null;
+  /** Paste into Pulse dashboard when it asks for a site read key. */
+  readKey?: string | null;
   snippet: string;
   idePrompt: string;
   dashboardUrl: string;

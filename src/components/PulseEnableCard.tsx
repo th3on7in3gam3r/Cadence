@@ -30,7 +30,7 @@ interface PulseEnableCardProps {
   className?: string;
 }
 
-type CopyTarget = 'snippet' | 'prompt' | null;
+type CopyTarget = 'snippet' | 'prompt' | 'readKey' | null;
 
 export default function PulseEnableCard({ brandUrl, compact, className = '' }: PulseEnableCardProps) {
   const [info, setInfo] = useState<PulseInstallInfo | null>(null);
@@ -214,6 +214,30 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
             </button>
           ) : (
             <>
+              {info.readKey ? (
+                <div className="space-y-1.5 rounded-lg border border-emerald-800/40 bg-emerald-950/20 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono font-bold text-emerald-400/90 uppercase">
+                      Dashboard read key
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void copyText(info.readKey!, 'readKey')}
+                      className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3" />
+                      {copied === 'readKey' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                  <code className="block text-[11px] font-mono text-slate-200 break-all select-all">
+                    {info.readKey}
+                  </code>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Paste this into Pulse when it asks to unlock the site. It is not part of the
+                    website pixel.
+                  </p>
+                </div>
+              ) : null}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">Snippet</span>
