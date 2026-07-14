@@ -11,3 +11,20 @@ services:
         value: production
       - key: NPM_CONFIG_PRODUCTION
         value: "false"
+      - key: PULSE_PARTNER_SECRET
+        sync: false
+      - key: PULSE_API_URL
+        sync: false
+      # Growth Stack → Pulse claim/sync (must match Pulse service exactly)
+      - key: PULSE_API_URL
+        value: https://pulse-5o1m.onrender.com
+      - key: PULSE_PARTNER_SECRET
+        sync: false
+      - key: PULSE_API_KEY
+        sync: false
+      - key: PULSE_SITE_KEYS
+        sync: false
+      - key: VITE_PULSE_URL
+        value: https://pulse-5o1m.onrender.com
+      - key: VITE_SHOW_GROWTH_STACK
+        value: "true"
