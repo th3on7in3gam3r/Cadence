@@ -10,8 +10,10 @@ import { isSchemaNotReadyError, schemaSetupHint } from '../lib/dbErrors';
 import { domainFromBrandUrl } from '../lib/websiteUrl';
 import {
   enablePulseForBrand,
+  ensureCollectKeyForClaim,
   getPulseClaimForUser,
   getPulseQuotaForUser,
+  mintPulseDashboardUrl,
   pulseIdeInstallPrompt,
   pulseInstallSnippet,
   pulsePublicOrigin,
@@ -55,13 +57,24 @@ router.get('/install', requireUser, async (req: AuthedRequest, res) => {
     const quota = await getPulseQuotaForUser(req.userId!);
     const origin = pulsePublicOrigin();
     const enabled = Boolean(claim);
+    let collectKey: string | null = null;
     let registeredOnPulse: boolean | null = null;
     if (enabled && claim?.pulse_read_key) {
+      collectKey = await ensureCollectKeyForClaim(
+        req.userId!,
+        siteId,
+        claim.pulse_collect_key,
+      );
       registeredOnPulse = await registerPulseSiteKeyOnPulse(
         siteId,
         String(claim.pulse_read_key).trim(),
+        collectKey,
       );
     }
+
+    const dashboardUrl = enabled
+      ? await mintPulseDashboardUrl(siteId)
+      : `${origin}/?site=${encodeURIComponent(siteId)}`;
 
     return res.json({
       domain,
@@ -73,9 +86,9 @@ router.get('/install', requireUser, async (req: AuthedRequest, res) => {
       registeredOnPulse,
       /** Dashboard unlock key — paste into Pulse when prompted. Never put on the pixel. */
       readKey: claim?.pulse_read_key ? String(claim.pulse_read_key).trim() : null,
-      snippet: pulseInstallSnippet(siteId, origin),
-      idePrompt: pulseIdeInstallPrompt(siteId, origin),
-      dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
+      snippet: pulseInstallSnippet(siteId, origin, collectKey),
+      idePrompt: pulseIdeInstallPrompt(siteId, origin, collectKey),
+      dashboardUrl,
       sitesUsed: quota.sitesUsed,
       sitesLimit: quota.sitesLimit,
       plan: quota.plan,
@@ -139,7 +152,6 @@ router.post('/resync', requireUser, async (req: AuthedRequest, res) => {
     const result = await resyncPulseSiteKeyForUser(req.userId!, brandUrl);
     const claim = await getPulseClaimForUser(req.userId!, result.domain);
     const quota = await getPulseQuotaForUser(req.userId!);
-    const origin = pulsePublicOrigin();
 
     return res.json({
       ok: true,
@@ -148,8 +160,6 @@ router.post('/resync', requireUser, async (req: AuthedRequest, res) => {
       claimed: true,
       claimedAt: claim?.claimed_at ?? null,
       enabledAt: claim?.claimed_at ?? null,
-      snippet: pulseInstallSnippet(result.siteId, origin),
-      idePrompt: pulseIdeInstallPrompt(result.siteId, origin),
       sitesUsed: quota.sitesUsed,
       sitesLimit: quota.sitesLimit,
       plan: quota.plan,
@@ -168,5 +178,34 @@ router.post('/resync', requireUser, async (req: AuthedRequest, res) => {
 });
 
 router.post('/claim', requireUser, (req, res) => handleEnable(req, res));
+
+/** Fresh Cadence → Pulse SSO dashboard link (one-time redeem URL). */
+router.get('/dashboard-link', requireUser, async (req: AuthedRequest, res) => {
+  try {
+    const brandUrl = await resolveBrandUrl(req.userId!, String(req.query.brandUrl || ''));
+    if (!brandUrl) {
+      return res.status(400).json({
+        error: 'No brand URL in workspace. Analyze your site or set a URL in Settings first.',
+      });
+    }
+    const domain = domainFromBrandUrl(brandUrl);
+    if (!domain) {
+      return res.status(400).json({ error: 'Invalid brand URL.' });
+    }
+    const claim = await getPulseClaimForUser(req.userId!, domain);
+    if (!claim?.pulse_read_key) {
+      return res.status(400).json({ error: 'Enable Pulse for this brand first.' });
+    }
+    const siteId = pulseSiteIdFromDomain(domain);
+    const url = await mintPulseDashboardUrl(siteId);
+    return res.json({ ok: true, siteId, url });
+  } catch (e: unknown) {
+    if (isSchemaNotReadyError(e)) {
+      return res.status(503).json({ error: 'Database tables not set up', setupHint: schemaSetupHint() });
+    }
+    const msg = e instanceof Error ? e.message : 'Failed to mint Pulse dashboard link';
+    return res.status(500).json({ error: msg });
+  }
+});
 
 export default router;

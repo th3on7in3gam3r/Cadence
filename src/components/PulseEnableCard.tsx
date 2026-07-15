@@ -17,6 +17,7 @@ import {
 import { isCloudEnabled } from '../lib/cloudConfig';
 import {
   enablePulseForBrand,
+  fetchPulseDashboardLink,
   fetchPulseInstall,
   resyncPulseForBrand,
   type PulseInstallInfo,
@@ -275,14 +276,27 @@ export default function PulseEnableCard({ brandUrl, compact, className = '' }: P
               ) : null}
               {!compact && (
                 <div className="flex flex-wrap gap-3">
-                  <a
-                    href={info.dashboardUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-emerald-400 inline-flex items-center gap-1"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          const { url } = await fetchPulseDashboardLink(brandUrl);
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        } catch (e: unknown) {
+                          setError(
+                            e instanceof Error ? e.message : 'Could not open Pulse',
+                          );
+                          if (info?.dashboardUrl) {
+                            window.open(info.dashboardUrl, '_blank', 'noopener,noreferrer');
+                          }
+                        }
+                      })();
+                    }}
+                    className="text-xs font-bold text-emerald-400 inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
                   >
                     Open Pulse <ExternalLink className="w-3 h-3" />
-                  </a>
+                  </button>
                   <a
                     href="/app/settings?tab=integrations"
                     className="text-xs font-bold text-slate-500 hover:text-slate-300"

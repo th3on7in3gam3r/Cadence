@@ -6,11 +6,11 @@
 import { Router } from 'express';
 import { aegisApiBase, citePilotApiBase, pulseApiBase, pulseReadKeyForSite } from '../lib/growthStackConfig';
 import { getGrowthStackKeysForUser } from '../lib/growthStackKeys';
-import { getPulseReadKeyForUser } from '../lib/pulseClaim';
-import { pushCadenceDroveToPulse } from '../lib/cadenceDrove';
+import { getPulseReadKeyForUser, mintPulseDashboardUrl } from '../lib/pulseClaim';
 import type { AuthedRequest } from '../middleware/requireUser';
 import { pulseSiteIdFromDomain } from '../lib/pulseSite';
 import { domainFromBrandUrl, normalizeBrandUrl } from '../lib/websiteUrl';
+import { pushCadenceDroveToPulse } from '../lib/cadenceDrove';
 
 const router = Router();
 
@@ -201,7 +201,7 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
 
     const siteId = pulseSiteIdFromDomain(domain);
     const base = pulseApiBase();
-    const dashboardUrl = `${base}/?site=${encodeURIComponent(siteId)}`;
+    const dashboardUrl = await mintPulseDashboardUrl(siteId);
     const headers: Record<string, string> = { Accept: 'application/json' };
     const claimedKey = req.userId ? await getPulseReadKeyForUser(req.userId, siteId) : null;
     const readKey = claimedKey || pulseReadKeyForSite(siteId);
@@ -254,7 +254,7 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
       connected: true,
       source: 'pulse-api',
       siteId,
-      dashboardUrl: `${base}/?site=${encodeURIComponent(siteId)}`,
+      dashboardUrl,
       ...stats,
     });
   } catch (e: unknown) {

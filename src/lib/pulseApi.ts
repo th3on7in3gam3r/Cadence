@@ -72,6 +72,21 @@ export async function resyncPulseForBrand(brandUrl?: string): Promise<PulseEnabl
   return data as PulseEnableResult;
 }
 
+/** Fresh Cadence SSO link into Pulse (one-time redeem → session cookie). */
+export async function fetchPulseDashboardLink(
+  brandUrl?: string,
+): Promise<{ url: string; siteId: string }> {
+  const qs = brandUrl ? `?brandUrl=${encodeURIComponent(brandUrl)}` : '';
+  const res = await apiFetch(`/api/pulse/dashboard-link${qs}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      (data as { error?: string }).error || 'Failed to open Pulse dashboard',
+    );
+  }
+  return data as { url: string; siteId: string };
+}
+
 /** @deprecated Use enablePulseForBrand */
 export async function claimPulseSite(brandUrl?: string): Promise<PulseEnableResult> {
   return enablePulseForBrand(brandUrl);

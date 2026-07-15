@@ -21,20 +21,39 @@ export function generatePulseReadKey(): string {
   return `psk_${crypto.randomBytes(24).toString('base64url')}`;
 }
 
+export function generatePulseCollectKey(): string {
+  return `pck_${crypto.randomBytes(24).toString('base64url')}`;
+}
+
 export function pulsePublicOrigin(): string {
   return pulseApiBase();
 }
 
-/** Pixel install snippet — read key is not embedded (stats auth is server-side in Cadence). */
-export function pulseInstallSnippet(siteId: string, origin = pulsePublicOrigin()): string {
+/**
+ * Pixel install snippet.
+ * Prefer per-site collect key (pck_…). Global PULSE_COLLECT_KEY is a master override fallback.
+ * Never embed the dashboard read key (psk_…).
+ */
+export function pulseInstallSnippet(
+  siteId: string,
+  origin = pulsePublicOrigin(),
+  collectKey?: string | null,
+): string {
   const base = origin.replace(/\/+$/, '');
-  const collectKey = process.env.PULSE_COLLECT_KEY?.trim();
-  const keyAttr = collectKey ? ` data-key="${collectKey}"` : '';
+  const key =
+    collectKey?.trim() ||
+    process.env.PULSE_COLLECT_KEY?.trim() ||
+    '';
+  const keyAttr = key ? ` data-key="${key}"` : '';
   return `<script defer src="${base}/pulse.js" data-site="${siteId}"${keyAttr}></script>`;
 }
 
-export function pulseIdeInstallPrompt(siteId: string, origin = pulsePublicOrigin()): string {
-  const snippet = pulseInstallSnippet(siteId, origin);
+export function pulseIdeInstallPrompt(
+  siteId: string,
+  origin = pulsePublicOrigin(),
+  collectKey?: string | null,
+): string {
+  const snippet = pulseInstallSnippet(siteId, origin, collectKey);
   return `Add Pulse website analytics to this project.
 
 Use this exact script tag on every public-facing page (before </body>, or once in the root layout):
@@ -43,6 +62,7 @@ ${snippet}
 
 Requirements:
 - Keep data-site="${siteId}" and the script src URL unchanged
+- Keep data-key if present (per-site collect key) — do not put the Dashboard read key (psk_…) on the pixel
 - Load the script once per page load (defer is required)
 - Next.js App Router: add via next/script in app/layout.tsx (strategy="afterInteractive")
 - React/Vite/SPA: put in index.html or root layout — Pulse auto-tracks client-side route changes
@@ -50,7 +70,11 @@ Requirements:
 After installing, verify events appear in Cadence → Settings → Integrations → Pulse.`;
 }
 
-export async function registerPulseSiteKeyOnPulse(siteId: string, readKey: string): Promise<boolean> {
+export async function registerPulseSiteKeyOnPulse(
+  siteId: string,
+  readKey: string,
+  collectKey?: string | null,
+): Promise<boolean> {
   const secret = process.env.PULSE_PARTNER_SECRET?.trim();
   if (!secret) return false;
 
@@ -61,11 +85,39 @@ export async function registerPulseSiteKeyOnPulse(siteId: string, readKey: strin
         'Content-Type': 'application/json',
         Authorization: `Bearer ${secret}`,
       },
-      body: JSON.stringify({ siteId, readKey }),
+      body: JSON.stringify({
+        siteId,
+        readKey,
+        ...(collectKey?.trim() ? { collectKey: collectKey.trim() } : {}),
+      }),
     });
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+/** Mint Cadence → Pulse SSO redeem URL (falls back to bare site link). */
+export async function mintPulseDashboardUrl(siteId: string): Promise<string> {
+  const origin = pulsePublicOrigin();
+  const fallback = `${origin}/?site=${encodeURIComponent(siteId)}`;
+  const secret = process.env.PULSE_PARTNER_SECRET?.trim();
+  if (!secret) return fallback;
+
+  try {
+    const res = await fetch(`${pulseApiBase()}/api/partner/sso`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({ siteId, ttlSeconds: 300 }),
+    });
+    if (!res.ok) return fallback;
+    const data = (await res.json()) as { url?: string };
+    return data.url?.trim() || fallback;
+  } catch {
+    return fallback;
   }
 }
 
@@ -76,13 +128,38 @@ export async function getPulseClaimForUser(userId: string, domain: string) {
 
   const { data, error } = await sb
     .from('pulse_site_claims')
-    .select('id, site_id, domain, claimed_at, pulse_read_key')
+    .select('id, site_id, domain, claimed_at, pulse_read_key, pulse_collect_key')
     .eq('user_id', userId)
     .eq('site_id', siteId)
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return data as {
+    id: string;
+    site_id: string;
+    domain: string;
+    claimed_at: string;
+    pulse_read_key: string;
+    pulse_collect_key?: string | null;
+  } | null;
+}
+
+/** Ensure claim has a collect key; persist if missing. */
+export async function ensureCollectKeyForClaim(
+  userId: string,
+  siteId: string,
+  existing: string | null | undefined,
+): Promise<string> {
+  if (existing?.trim()) return existing.trim();
+  const collectKey = generatePulseCollectKey();
+  const sb = getSupabaseAdmin();
+  if (!sb) return collectKey;
+  await sb
+    .from('pulse_site_claims')
+    .update({ pulse_collect_key: collectKey })
+    .eq('user_id', userId)
+    .eq('site_id', siteId);
+  return collectKey;
 }
 
 export async function countPulseSitesForUser(userId: string): Promise<number> {
@@ -155,6 +232,7 @@ export async function enablePulseForBrand(
   siteId: string;
   domain: string;
   readKey: string;
+  collectKey: string;
   snippet: string;
   idePrompt: string;
   dashboardUrl: string;
@@ -185,26 +263,42 @@ export async function enablePulseForBrand(
 
   if (reuseExisting && existing) {
     const readKey = String(existing.pulse_read_key).trim();
+    const collectKey = await ensureCollectKeyForClaim(
+      userId,
+      siteId,
+      existing.pulse_collect_key,
+    );
     const claimedAt = existing.claimed_at || new Date().toISOString();
     await syncPulseToWorkspacePayload(userId, {
       siteId,
       domain,
       enabledAt: claimedAt,
     });
-    const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
+    const registeredOnPulse = await registerPulseSiteKeyOnPulse(
+      siteId,
+      readKey,
+      collectKey,
+    );
+    if (registeredOnPulse) {
+      const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
+      void pushCadenceDroveToPulse(siteId, 7);
+    }
+    const dashboardUrl = await mintPulseDashboardUrl(siteId);
     return {
       siteId,
       domain,
       readKey,
-      snippet: pulseInstallSnippet(siteId, origin),
-      idePrompt: pulseIdeInstallPrompt(siteId, origin),
-      dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
+      collectKey,
+      snippet: pulseInstallSnippet(siteId, origin, collectKey),
+      idePrompt: pulseIdeInstallPrompt(siteId, origin, collectKey),
+      dashboardUrl,
       claimedAt,
       registeredOnPulse,
     };
   }
 
   const readKey = generatePulseReadKey();
+  const collectKey = generatePulseCollectKey();
   const sb = getSupabaseAdmin();
   if (!sb) throw new Error('Cloud database is not configured.');
 
@@ -222,6 +316,7 @@ export async function enablePulseForBrand(
       site_id: siteId,
       domain,
       pulse_read_key: readKey,
+      pulse_collect_key: collectKey,
       claimed_at: claimedAt,
     },
     { onConflict: 'user_id,site_id' },
@@ -235,19 +330,25 @@ export async function enablePulseForBrand(
     enabledAt: claimedAt,
   });
 
-  const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
+  const registeredOnPulse = await registerPulseSiteKeyOnPulse(
+    siteId,
+    readKey,
+    collectKey,
+  );
   if (registeredOnPulse) {
     const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
     void pushCadenceDroveToPulse(siteId, 7);
   }
 
+  const dashboardUrl = await mintPulseDashboardUrl(siteId);
   return {
     siteId,
     domain,
     readKey,
-    snippet: pulseInstallSnippet(siteId, origin),
-    idePrompt: pulseIdeInstallPrompt(siteId, origin),
-    dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
+    collectKey,
+    snippet: pulseInstallSnippet(siteId, origin, collectKey),
+    idePrompt: pulseIdeInstallPrompt(siteId, origin, collectKey),
+    dashboardUrl,
     claimedAt,
     registeredOnPulse,
   };
@@ -261,8 +362,11 @@ export async function resyncPulseSiteKeyForUser(
   siteId: string;
   domain: string;
   readKey: string;
+  collectKey: string;
   registeredOnPulse: boolean;
   dashboardUrl: string;
+  snippet: string;
+  idePrompt: string;
 }> {
   const domain = domainFromBrandUrl(brandUrl);
   if (!domain) {
@@ -276,19 +380,32 @@ export async function resyncPulseSiteKeyForUser(
   }
 
   const readKey = String(claim.pulse_read_key).trim();
-  const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
+  const collectKey = await ensureCollectKeyForClaim(
+    userId,
+    siteId,
+    claim.pulse_collect_key,
+  );
+  const registeredOnPulse = await registerPulseSiteKeyOnPulse(
+    siteId,
+    readKey,
+    collectKey,
+  );
   if (registeredOnPulse) {
     const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
     void pushCadenceDroveToPulse(siteId, 7);
   }
   const origin = pulsePublicOrigin();
+  const dashboardUrl = await mintPulseDashboardUrl(siteId);
 
   return {
     siteId,
     domain,
     readKey,
+    collectKey,
     registeredOnPulse,
-    dashboardUrl: `${origin}/?site=${encodeURIComponent(siteId)}`,
+    dashboardUrl,
+    snippet: pulseInstallSnippet(siteId, origin, collectKey),
+    idePrompt: pulseIdeInstallPrompt(siteId, origin, collectKey),
   };
 }
 
