@@ -236,6 +236,10 @@ export async function enablePulseForBrand(
   });
 
   const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
+  if (registeredOnPulse) {
+    const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
+    void pushCadenceDroveToPulse(siteId, 7);
+  }
 
   return {
     siteId,
@@ -273,6 +277,10 @@ export async function resyncPulseSiteKeyForUser(
 
   const readKey = String(claim.pulse_read_key).trim();
   const registeredOnPulse = await registerPulseSiteKeyOnPulse(siteId, readKey);
+  if (registeredOnPulse) {
+    const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
+    void pushCadenceDroveToPulse(siteId, 7);
+  }
   const origin = pulsePublicOrigin();
 
   return {

@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { aegisApiBase, citePilotApiBase, pulseApiBase, pulseReadKeyForSite } from '../lib/growthStackConfig';
 import { getGrowthStackKeysForUser } from '../lib/growthStackKeys';
 import { getPulseReadKeyForUser } from '../lib/pulseClaim';
+import { pushCadenceDroveToPulse } from '../lib/cadenceDrove';
 import type { AuthedRequest } from '../middleware/requireUser';
 import { pulseSiteIdFromDomain } from '../lib/pulseSite';
 import { domainFromBrandUrl, normalizeBrandUrl } from '../lib/websiteUrl';
@@ -247,6 +248,8 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
     }
 
     const stats = await upstream.json();
+    // Refresh Pulse Cadence-loop “drove” from Cadence campaign activity (best-effort).
+    void pushCadenceDroveToPulse(siteId, 7);
     return res.json({
       connected: true,
       source: 'pulse-api',
