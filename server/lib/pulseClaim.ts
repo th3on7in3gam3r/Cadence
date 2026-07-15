@@ -280,8 +280,8 @@ export async function enablePulseForBrand(
       collectKey,
     );
     if (registeredOnPulse) {
-      const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
-      void pushCadenceDroveToPulse(siteId, 7);
+      const { pushCadenceDroveWindows } = await import('./cadenceDrove');
+      void pushCadenceDroveWindows(siteId, [1, 7, 30]);
     }
     const dashboardUrl = await mintPulseDashboardUrl(siteId);
     return {
@@ -336,8 +336,8 @@ export async function enablePulseForBrand(
     collectKey,
   );
   if (registeredOnPulse) {
-    const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
-    void pushCadenceDroveToPulse(siteId, 7);
+    const { pushCadenceDroveWindows } = await import('./cadenceDrove');
+    void pushCadenceDroveWindows(siteId, [1, 7, 30]);
   }
 
   const dashboardUrl = await mintPulseDashboardUrl(siteId);
@@ -391,8 +391,8 @@ export async function resyncPulseSiteKeyForUser(
     collectKey,
   );
   if (registeredOnPulse) {
-    const { pushCadenceDroveToPulse } = await import('./cadenceDrove');
-    void pushCadenceDroveToPulse(siteId, 7);
+    const { pushCadenceDroveWindows } = await import('./cadenceDrove');
+    void pushCadenceDroveWindows(siteId, [1, 7, 30]);
   }
   const origin = pulsePublicOrigin();
   const dashboardUrl = await mintPulseDashboardUrl(siteId);

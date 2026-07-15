@@ -126,3 +126,13 @@ export async function pushCadenceDroveToPulse(
     return false;
   }
 }
+
+/** Warm Pulse cache for Overview range switches (1 / 7 / 30). */
+export async function pushCadenceDroveWindows(
+  siteId: string,
+  windows: number[] = [1, 7, 30],
+): Promise<void> {
+  await Promise.all(
+    windows.map((days) => pushCadenceDroveToPulse(siteId, days)),
+  );
+}

@@ -218,8 +218,13 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
 
     headers['X-Pulse-Key'] = readKey;
 
+    const rangeRaw = String(req.query.range || req.query.days || '7').trim();
+    const rangeDays = [1, 7, 30].includes(Number(rangeRaw))
+      ? Number(rangeRaw)
+      : 7;
+
     const upstream = await fetch(
-      `${base}/api/stats?siteId=${encodeURIComponent(siteId)}`,
+      `${base}/api/stats?siteId=${encodeURIComponent(siteId)}&range=${rangeDays}`,
       { headers },
     );
 
@@ -248,8 +253,8 @@ router.get('/pulse/stats', async (req: AuthedRequest, res) => {
     }
 
     const stats = await upstream.json();
-    // Refresh Pulse Cadence-loop “drove” from Cadence campaign activity (best-effort).
-    void pushCadenceDroveToPulse(siteId, 7);
+    // Refresh Pulse Cadence-loop “drove” for the same window as stats (best-effort).
+    void pushCadenceDroveToPulse(siteId, rangeDays);
     return res.json({
       connected: true,
       source: 'pulse-api',
