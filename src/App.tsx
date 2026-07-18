@@ -30,6 +30,8 @@ import HelpPage from './pages/HelpPage';
 import { PRODUCT_NAME } from './lib/brand';
 import { syncWorkspaceBrand, resolveActiveBrandOnLoad, saveCurrentBrandSnapshot, ensureWorkspaceBrand } from './lib/teamsApi';
 import { normalizeBrandUrl } from './utils/websiteUrl';
+import { computeCampaignReadiness } from './utils/campaignReadiness';
+import { appendReadinessScoreSnapshot } from './utils/readinessScoreHistory';
 import {
   shouldShowOnboarding,
   syncUserSetupFromMetadata,
@@ -493,6 +495,8 @@ export default function App({ onGoHome }: AppProps) {
 
       const data: WebsiteAnalysis = await response.json();
       setBrandAnalysis(data);
+      const readiness = computeCampaignReadiness(data);
+      appendReadinessScoreSnapshot(normalizedUrl, readiness.score, readiness.grade);
       const workspacePayload = {
         brandUrl: normalizedUrl,
         growthGoal: data.inferredGrowthGoal || config.goal,
@@ -536,7 +540,10 @@ export default function App({ onGoHome }: AppProps) {
   };
 
   // Handler 2: Build a specific deliverable copy
-  const handleGenerateAsset = async (type: MarketingAssetType) => {
+  const handleGenerateAsset = async (
+    type: MarketingAssetType,
+    options?: { customRequirements?: string },
+  ) => {
     if (isGuest && !cachedAssets[type]) {
       triggerToast(guestUpgradeMsg, 'error');
       return;
@@ -559,7 +566,7 @@ export default function App({ onGoHome }: AppProps) {
           assetType: type,
           companyInfo: brandAnalysis,
           brandUrl,
-          customRequirements: customChallenge,
+          customRequirements: options?.customRequirements ?? customChallenge,
           brandKit: loadBrandKit(),
         }),
       });
@@ -609,6 +616,30 @@ export default function App({ onGoHome }: AppProps) {
       triggerToast(`Generation failed: ${error.message || error}`, 'error');
     } finally {
       setGeneratingAssetType(null);
+    }
+  };
+
+  const handleSpecialistAction = (id: string) => {
+    setSelectedSpecialist(id);
+    switch (id) {
+      case 'sarah':
+        document.getElementById('war-room-plan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        break;
+      case 'kofi':
+        if (isGuest) {
+          triggerToast(guestUpgradeMsg, 'error');
+          return;
+        }
+        goTo('seo-agent');
+        break;
+      case 'maya':
+        void handleGenerateAsset('lead_magnet');
+        break;
+      case 'devon':
+        void handleGenerateAsset('blog_post');
+        break;
+      default:
+        break;
     }
   };
 
@@ -920,6 +951,7 @@ export default function App({ onGoHome }: AppProps) {
                       analysis={brandAnalysis} 
                       selectedSpecialistId={selectedSpecialist}
                       onSelectSpecialist={setSelectedSpecialist}
+                      onSpecialistAction={handleSpecialistAction}
                     />
                   )}
 

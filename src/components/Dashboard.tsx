@@ -7,7 +7,7 @@ import React, { useRef } from 'react';
 import {
   TrendingUp, Target, Calendar, Compass, Search,
   FileText, Chrome, Mail, Award, BookOpen, Clock, ChevronRight, Package, Layers,
-  Users, Radio, Sparkles, HelpCircle, Plus,
+  Users, Radio, HelpCircle, Plus,
 } from 'lucide-react';
 import { WebsiteAnalysis, MarketingAssetType } from '../types';
 import {
@@ -16,13 +16,55 @@ import {
 } from '../utils/campaignReadiness';
 import CollapsibleSection from './dashboard/CollapsibleSection';
 import ReadinessRing from './dashboard/ReadinessRing';
+import ReadinessTrend from './dashboard/ReadinessTrend';
+import BrandBriefSummary from './dashboard/BrandBriefSummary';
+import ActionPlanWeekPreview from './dashboard/ActionPlanWeekPreview';
+import GrowthOpportunityItem from './dashboard/GrowthOpportunityItem';
+import PlanWeekProgress from './dashboard/PlanWeekProgress';
+import RecentWorkRow from './dashboard/RecentWorkRow';
+import DashboardOnboardingBanner from './dashboard/DashboardOnboardingBanner';
 import GrowthStackInsights from './GrowthStackInsights';
+import { loadReadinessScoreHistory } from '../utils/readinessScoreHistory';
+import { loadSeoScoreHistory } from '../utils/notifications';
+import { recommendMarketingAsset } from '../utils/recommendMarketingAsset';
+import { ensureCalendarTasks } from '../utils/calendarTasks';
+import { computePlanProgress } from '../utils/planProgress';
 import { showGrowthStackUi } from '../lib/brand';
+
+const QUICK_ACTION_THEME = {
+  analyze: {
+    icon: 'text-sky-400',
+    border: 'border-sky-500/30',
+    hoverBorder: 'hover:border-sky-500/50',
+    link: 'text-sky-400',
+  },
+  fix: {
+    icon: 'text-rose-400',
+    border: 'border-rose-500/30',
+    hoverBorder: 'hover:border-rose-500/50',
+    link: 'text-rose-400',
+  },
+  create: {
+    icon: 'text-emerald-400',
+    border: 'border-emerald-500/30',
+    hoverBorder: 'hover:border-emerald-500/50',
+    link: 'text-emerald-400',
+  },
+  neutral: {
+    icon: 'text-slate-400',
+    border: 'border-slate-700',
+    hoverBorder: 'hover:border-slate-600',
+    link: 'text-slate-400',
+  },
+} as const;
 
 interface DashboardProps {
   analysis: WebsiteAnalysis;
   brandUrl?: string;
-  onGenerateAsset: (type: MarketingAssetType) => void;
+  onGenerateAsset: (
+    type: MarketingAssetType,
+    options?: { customRequirements?: string },
+  ) => void;
   generatingType: MarketingAssetType | null;
   assetHistory?: Record<MarketingAssetType, { timestamp: string; summary: string; asset: any; toneIntensity?: number }[]>;
   onNavigateToHistory?: () => void;
@@ -68,11 +110,20 @@ export default function Dashboard({
   const audienceCount = analysis.targetAudience?.length ?? 0;
   const channelCount = analysis.recommendedChannels?.length ?? 0;
   const planWeeks = analysis.thirtyDayActionPlan?.length ?? 0;
+  const currentWeek = analysis.thirtyDayActionPlan?.[0];
   const readiness = computeCampaignReadiness(analysis);
   const strokeColor = gradeRingColor(readiness.score);
+  const readinessHistory = loadReadinessScoreHistory(brandUrl);
+  const recommendation = recommendMarketingAsset(analysis, readiness, loadSeoScoreHistory());
+  const planTasks = ensureCalendarTasks(analysis);
+  const planProgress = computePlanProgress(analysis, planTasks);
 
   const scrollToCreate = () => {
     createSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const scrollToPlan = () => {
+    document.getElementById('war-room-plan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const assetPrototypes = [
@@ -120,45 +171,13 @@ export default function Dashboard({
 
   return (
     <div className="space-y-6 pb-16">
-      {/* Start here — plain-English guide */}
-      <div className="p-4 md:p-5 bg-gradient-to-r from-emerald-950/40 to-slate-900 border border-emerald-500/20 rounded-xl">
-        <div className="flex items-start gap-3">
-          <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-display font-bold text-white">New here? Start in 3 steps</h3>
-              {onOpenHelp && (
-                <button
-                  type="button"
-                  onClick={() => onOpenHelp('post')}
-                  className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer shrink-0"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  How to post a blog
-                </button>
-              )}
-            </div>
-            <ol className="mt-2 space-y-1.5 text-xs text-slate-300 list-decimal list-inside">
-              <li>Read your brand summary and score below — that’s your starting point.</li>
-              <li>
-                {onNavigateToSeoAgent ? (
-                  <>
-                    Open <button type="button" onClick={onNavigateToSeoAgent} className="text-emerald-400 hover:underline font-semibold cursor-pointer">SEO Agent</button> to check your website for search issues.
-                  </>
-                ) : (
-                  'Run an SEO check on your website.'
-                )}
-              </li>
-              <li>
-                <button type="button" onClick={scrollToCreate} className="text-emerald-400 hover:underline font-semibold cursor-pointer">
-                  Create your first marketing piece
-                </button>{' '}
-                (keywords, blog, social, email, or free download).
-              </li>
-            </ol>
-          </div>
-        </div>
-      </div>
+      <DashboardOnboardingBanner
+        assetHistory={assetHistory}
+        hasCachedAssets={hasCachedAssets}
+        onNavigateToSeoAgent={onNavigateToSeoAgent}
+        onOpenHelp={onOpenHelp}
+        onScrollToCreate={scrollToCreate}
+      />
 
       {/* Brand snapshot */}
       <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg">
@@ -170,6 +189,7 @@ export default function Dashboard({
               </div>
               <div className="md:hidden flex flex-col items-center">
                 <ReadinessRing grade={readiness.grade} score={readiness.score} strokeColor={strokeColor} size="compact" />
+                <ReadinessTrend currentScore={readiness.score} history={readinessHistory} compact />
                 <span className="text-[8px] font-mono text-slate-500 uppercase mt-1">Score</span>
               </div>
             </div>
@@ -179,9 +199,7 @@ export default function Dashboard({
             <p className="text-md md:text-lg font-medium text-slate-400 font-display mb-4">
               &ldquo;{analysis.tagline}&rdquo;
             </p>
-            <div className="text-sm md:text-base text-slate-300 leading-relaxed font-sans mb-5">
-              {analysis.strategicSummary}
-            </div>
+            <BrandBriefSummary summary={analysis.strategicSummary} />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 border-t border-slate-800 text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
                 <Compass className="w-4 h-4 text-slate-500 shrink-0" />
@@ -209,7 +227,15 @@ export default function Dashboard({
 
               <ReadinessRing grade={readiness.grade} score={readiness.score} strokeColor={strokeColor} />
 
+              <ReadinessTrend currentScore={readiness.score} history={readinessHistory} />
+
               <p className="text-xs font-display font-bold text-white mt-4 text-center">{readiness.headline}</p>
+
+              <PlanWeekProgress
+                progress={planProgress}
+                onOpenCalendar={onNavigateToCalendar}
+                onScrollToPlan={scrollToPlan}
+              />
 
               <div className="w-full mt-5 space-y-2">
                 {readiness.subscores.map((sub) => (
@@ -270,12 +296,12 @@ export default function Dashboard({
           <button
             type="button"
             onClick={onNewAudit}
-            className="p-4 bg-slate-900 border border-violet-500/30 rounded-xl text-left hover:border-violet-500/50 hover:bg-slate-850 transition cursor-pointer group"
+            className={`p-4 bg-slate-900 border ${QUICK_ACTION_THEME.analyze.border} ${QUICK_ACTION_THEME.analyze.hoverBorder} rounded-xl text-left hover:bg-slate-850 transition cursor-pointer group`}
           >
-            <Plus className="w-5 h-5 text-violet-400 mb-2" />
+            <Plus className={`w-5 h-5 ${QUICK_ACTION_THEME.analyze.icon} mb-2`} />
             <p className="text-sm font-bold text-white">New brand audit</p>
             <p className="text-[11px] text-slate-400 mt-1">Analyze another site or open a saved run</p>
-            <span className="text-[10px] text-violet-400 font-bold mt-2 inline-flex items-center gap-1">
+            <span className={`text-[10px] ${QUICK_ACTION_THEME.analyze.link} font-bold mt-2 inline-flex items-center gap-1`}>
               {savedRunsCount > 0 ? `${savedRunsCount} saved` : 'Start fresh'}
               <ChevronRight className="w-3 h-3" />
             </span>
@@ -286,12 +312,12 @@ export default function Dashboard({
             type="button"
             id="dashboard-seo-agent-btn"
             onClick={onNavigateToSeoAgent}
-            className="p-4 bg-slate-900 border border-teal-500/30 rounded-xl text-left hover:border-teal-500/50 hover:bg-slate-850 transition cursor-pointer group"
+            className={`p-4 bg-slate-900 border ${QUICK_ACTION_THEME.fix.border} ${QUICK_ACTION_THEME.fix.hoverBorder} rounded-xl text-left hover:bg-slate-850 transition cursor-pointer group`}
           >
-            <Search className="w-5 h-5 text-teal-400 mb-2" />
+            <Search className={`w-5 h-5 ${QUICK_ACTION_THEME.fix.icon} mb-2`} />
             <p className="text-sm font-bold text-white">Check my website SEO</p>
             <p className="text-[11px] text-slate-400 mt-1">Find search problems and keyword gaps</p>
-            <span className="text-[10px] text-teal-400 font-bold mt-2 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+            <span className={`text-[10px] ${QUICK_ACTION_THEME.fix.link} font-bold mt-2 inline-flex items-center gap-1 group-hover:gap-2 transition-all`}>
               Open SEO Agent <ChevronRight className="w-3 h-3" />
             </span>
           </button>
@@ -299,12 +325,12 @@ export default function Dashboard({
         <button
           type="button"
           onClick={scrollToCreate}
-          className="p-4 bg-slate-900 border border-emerald-500/30 rounded-xl text-left hover:border-emerald-500/50 hover:bg-slate-850 transition cursor-pointer group"
+          className={`p-4 bg-slate-900 border ${QUICK_ACTION_THEME.create.border} ${QUICK_ACTION_THEME.create.hoverBorder} rounded-xl text-left hover:bg-slate-850 transition cursor-pointer group`}
         >
-          <FileText className="w-5 h-5 text-emerald-400 mb-2" />
+          <FileText className={`w-5 h-5 ${QUICK_ACTION_THEME.create.icon} mb-2`} />
           <p className="text-sm font-bold text-white">Create marketing content</p>
           <p className="text-[11px] text-slate-400 mt-1">Blog, social, emails, keywords & more</p>
-          <span className="text-[10px] text-emerald-400 font-bold mt-2 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+          <span className={`text-[10px] ${QUICK_ACTION_THEME.create.link} font-bold mt-2 inline-flex items-center gap-1 group-hover:gap-2 transition-all`}>
             Jump to creators <ChevronRight className="w-3 h-3" />
           </span>
         </button>
@@ -314,12 +340,12 @@ export default function Dashboard({
             id="dashboard-export-bundle-btn"
             onClick={onExportCampaignBundle}
             disabled={!hasCachedAssets || isExportingBundle}
-            className="p-4 bg-slate-900 border border-slate-700 rounded-xl text-left hover:border-slate-600 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
+            className={`p-4 bg-slate-900 border ${QUICK_ACTION_THEME.neutral.border} ${QUICK_ACTION_THEME.neutral.hoverBorder} rounded-xl text-left transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group`}
           >
-            <Package className="w-5 h-5 text-amber-400 mb-2" />
+            <Package className={`w-5 h-5 ${QUICK_ACTION_THEME.neutral.icon} mb-2`} />
             <p className="text-sm font-bold text-white">Download everything</p>
             <p className="text-[11px] text-slate-400 mt-1">ZIP file with all your created content</p>
-            <span className="text-[10px] text-amber-400 font-bold mt-2 inline-flex items-center gap-1">
+            <span className={`text-[10px] ${QUICK_ACTION_THEME.neutral.link} font-bold mt-2 inline-flex items-center gap-1`}>
               {isExportingBundle ? 'Packaging…' : hasCachedAssets ? 'Download ZIP' : 'Create content first'}
             </span>
           </button>
@@ -341,16 +367,29 @@ export default function Dashboard({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {assetPrototypes.map((asset) => {
             const isGenerating = generatingType === asset.id;
+            const isRecommended = recommendation?.type === asset.id;
             return (
               <div
                 key={asset.id}
-                className="bg-slate-900 rounded-xl border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition"
+                className={`bg-slate-900 rounded-xl border p-5 flex flex-col justify-between transition ${
+                  isRecommended ? 'border-emerald-500/30 hover:border-emerald-500/40' : 'border-slate-800 hover:border-slate-700'
+                }`}
               >
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center gap-2.5">
                     <div className={`p-2 rounded-lg ${asset.bg}`}>{asset.icon}</div>
-                    <div>
-                      <h4 className="text-sm font-display font-extrabold text-white">{asset.simpleTitle}</h4>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h4 className="text-sm font-display font-extrabold text-white">{asset.simpleTitle}</h4>
+                        {isRecommended && (
+                          <span
+                            className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 shrink-0"
+                            title={recommendation.reason}
+                          >
+                            Recommended for you
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-slate-500">{asset.title}</p>
                     </div>
                   </div>
@@ -384,7 +423,7 @@ export default function Dashboard({
       {/* Collapsible deep-dive sections */}
       <div className="space-y-3">
         <p className="text-xs text-slate-500 font-mono uppercase tracking-wider px-1">
-          More details — tap to expand
+          Strategy & planning
         </p>
 
         <CollapsibleSection
@@ -423,12 +462,16 @@ export default function Dashboard({
             </div>
             <div className="p-4 bg-blue-950/20 border border-blue-500/20 rounded-xl">
               <h4 className="text-xs font-bold text-blue-400 uppercase mb-3">Chances to grow</h4>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {opportunitiesList.map((item, idx) => (
-                  <li key={idx} className="text-xs text-blue-100 flex items-start gap-1.5">
-                    <span className="text-blue-400 shrink-0">→</span>
-                    <span>{item}</span>
-                  </li>
+                  <React.Fragment key={idx}>
+                    <GrowthOpportunityItem
+                      text={item}
+                      fallbackType={recommendation?.type ?? 'blog_post'}
+                      disabled={!!generatingType}
+                      onCreate={onGenerateAsset}
+                    />
+                  </React.Fragment>
                 ))}
               </ul>
             </div>
@@ -467,6 +510,7 @@ export default function Dashboard({
           title="Who you’re talking to"
           subtitle="Your ideal customers — their problems and what convinces them"
           icon={<Users className="w-5 h-5" />}
+          defaultOpen
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(analysis.targetAudience || []).map((seg, idx) => (
@@ -508,6 +552,9 @@ export default function Dashboard({
           title="Your 4-week action plan"
           subtitle="Week-by-week tasks so you know exactly what to do next"
           icon={<Calendar className="w-5 h-5" />}
+          collapsedPreview={
+            currentWeek ? <ActionPlanWeekPreview week={currentWeek} weekIndex={0} compact /> : undefined
+          }
         >
           {onNavigateToCalendar && (
             <div className="mb-4">
@@ -557,6 +604,7 @@ export default function Dashboard({
             title="Save & share your work"
             subtitle="Download a ZIP or view your campaign history"
             icon={<Package className="w-5 h-5" />}
+            defaultOpen={!!hasCachedAssets}
           >
             <div className="flex flex-wrap gap-2">
               {onNavigateToHistory && (
@@ -584,66 +632,12 @@ export default function Dashboard({
         )}
       </div>
 
-      {/* Recent work */}
-      {assetHistory && Object.keys(assetHistory).length > 0 && (
-        <div className="space-y-3 pt-4 border-t border-slate-800">
-          <div className="flex justify-between items-center gap-2">
-            <div>
-              <h3 className="text-base font-display font-bold text-white flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-500" />
-                Your recent work
-              </h3>
-              <p className="text-xs text-slate-400">Stuff you already created — jump back in anytime</p>
-            </div>
-            {onNavigateToHistory && (
-              <button
-                type="button"
-                onClick={onNavigateToHistory}
-                className="text-[11px] font-bold text-amber-500 hover:text-amber-400 hover:underline cursor-pointer shrink-0"
-              >
-                See all →
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Object.entries(assetHistory)
-              .flatMap(([type, list]) => list.map((item) => ({ type: type as MarketingAssetType, ...item })))
-              .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-              .slice(0, 3)
-              .map((item, idx) => {
-                const typeLabels: Record<MarketingAssetType, string> = {
-                  seo_keywords: 'Keywords',
-                  blog_post: 'Blog',
-                  social_posts: 'Social',
-                  email_sequence: 'Emails',
-                  lead_magnet: 'Free download',
-                };
-                return (
-                  <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <div className="flex justify-between text-[9px] text-slate-500 mb-2">
-                      <span className="bg-slate-950 px-2 py-0.5 rounded text-slate-300 font-bold uppercase border border-slate-800">
-                        {typeLabels[item.type]}
-                      </span>
-                      <span>{item.timestamp}</span>
-                    </div>
-                    <h4 className="text-xs font-bold text-white truncate">{item.asset.title}</h4>
-                    <p className="text-[11px] text-slate-400 line-clamp-2 mt-1">{item.summary}</p>
-                    {onNavigateToHistory && (
-                      <button
-                        type="button"
-                        onClick={onNavigateToHistory}
-                        className="w-full mt-3 py-1.5 text-[10px] text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-800 rounded border border-slate-800 cursor-pointer"
-                      >
-                        Open in history
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
+      <RecentWorkRow
+        assetHistory={assetHistory}
+        recommendation={recommendation}
+        onGenerateAsset={onGenerateAsset}
+        onNavigateToHistory={onNavigateToHistory}
+      />
     </div>
   );
 }

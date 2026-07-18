@@ -62,6 +62,11 @@ export function clearSeoStorage(): void {
   localStorage.removeItem('ai_cmo_seo_audit');
 }
 
+/** True when the user has run an SEO crawl or audit in this workspace. */
+export function hasSeoActivity(): boolean {
+  return !!(readSeoCrawl() || readSeoAudit());
+}
+
 export function buildRunSnapshot(input: {
   brandUrl: string;
   growthGoal: string;

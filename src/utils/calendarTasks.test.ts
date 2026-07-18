@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildTasksFromPlan, loadCalendarTasks, saveCalendarTasks } from './calendarTasks';
+import { buildTasksFromPlan, inferAssetTypeFromText, loadCalendarTasks, saveCalendarTasks } from './calendarTasks';
 import type { WebsiteAnalysis } from '../types';
 
 const mockAnalysis = {
@@ -24,5 +24,11 @@ describe('calendarTasks', () => {
     const tasks = buildTasksFromPlan(mockAnalysis);
     saveCalendarTasks(tasks);
     expect(loadCalendarTasks().length).toBe(2);
+  });
+
+  it('infers asset types from text', () => {
+    expect(inferAssetTypeFromText('Keyword research for SEO')).toBe('seo_keywords');
+    expect(inferAssetTypeFromText('Share on LinkedIn daily')).toBe('social_posts');
+    expect(inferAssetTypeFromText('Expand into new markets')).toBeUndefined();
   });
 });

@@ -12,6 +12,7 @@ interface CollapsibleSectionProps {
   subtitle?: string;
   icon?: React.ReactNode;
   defaultOpen?: boolean;
+  collapsedPreview?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -21,6 +22,7 @@ export default function CollapsibleSection({
   subtitle,
   icon,
   defaultOpen = false,
+  collapsedPreview,
   children,
 }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
@@ -47,6 +49,11 @@ export default function CollapsibleSection({
           className={`w-5 h-5 text-slate-500 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
+      {!open && collapsedPreview && (
+        <div className="px-4 md:px-5 pb-5 pt-0 border-t border-slate-800/80">
+          <div className="pt-4">{collapsedPreview}</div>
+        </div>
+      )}
       {open && (
         <div className="px-4 md:px-5 pb-5 pt-0 border-t border-slate-800/80">
           <div className="pt-4">{children}</div>

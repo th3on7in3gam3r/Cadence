@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ExternalLink,
   Loader2,
@@ -36,6 +36,8 @@ import {
   recordCitationScore,
 } from '../utils/growthStackSettings';
 import PulseEnableCard from './PulseEnableCard';
+import GrowthStackEmptyPreview from './dashboard/GrowthStackEmptyPreview';
+import { helpForSecurityHeader, type SecurityHeaderLabel } from '../utils/securityHeaderHelp';
 
 interface GrowthStackInsightsProps {
   brandUrl: string;
@@ -192,22 +194,24 @@ function CitationCard({
   }
 
   if (!data?.hasAudit) {
+    const auditHref = data?.auditUrl || citePilotAuditUrl(brandUrl || domain);
     return (
       <InsightShell
         icon={<Search className="w-4 h-4 text-cyan-400" />}
         title="AI citation visibility"
         compact={compact}
       >
+        <GrowthStackEmptyPreview variant="citation" className="mb-3" />
         <p className="text-xs text-slate-400 leading-relaxed">
-          No CitePilot audit on file for <strong className="text-slate-300">{domain}</strong> yet.
+          Run a free CitePilot audit to see how often AI cites your brand on buyer prompts.
         </p>
         <a
-          href={data?.auditUrl || citePilotAuditUrl(brandUrl || domain)}
+          href={auditHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-cyan-400"
+          className="mt-3 flex w-full items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors"
         >
-          Run free citation audit <ExternalLink className="w-3 h-3" />
+          Here&apos;s what you&apos;ll see once you run your first audit →
         </a>
       </InsightShell>
     );
@@ -314,9 +318,9 @@ function SecurityCard({
         </div>
       </div>
       <ul className="mt-3 flex flex-wrap gap-2 text-[10px] font-mono">
-        <HeaderPill ok={data.https} label="HTTPS" />
-        <HeaderPill ok={data.hsts} label="HSTS" />
-        <HeaderPill ok={data.csp} label="CSP" />
+        <HeaderPill ok={data.https} label="HTTPS" {...helpForSecurityHeader('HTTPS', data.reportUrl)} />
+        <HeaderPill ok={data.hsts} label="HSTS" {...helpForSecurityHeader('HSTS', data.reportUrl)} />
+        <HeaderPill ok={data.csp} label="CSP" {...helpForSecurityHeader('CSP', data.reportUrl)} />
       </ul>
       <p className="text-[10px] text-slate-600 mt-2 leading-relaxed">{data.marketerNote}</p>
       <a
@@ -345,6 +349,13 @@ function PulseCard({
   compact?: boolean;
 }) {
   const dashboard = data?.dashboardUrl || pulseDashboardUrl(brandUrl);
+  const enableRef = useRef<HTMLDivElement>(null);
+
+  const scrollToEnable = () => {
+    enableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const focusable = enableRef.current?.querySelector<HTMLElement>('button, a, input');
+    focusable?.focus();
+  };
 
   if (!data?.connected && data?.error) {
     return (
@@ -373,17 +384,25 @@ function PulseCard({
         title="Site analytics"
         compact={compact}
       >
+        <GrowthStackEmptyPreview variant="pulse" className="mb-3" />
         <p className="text-xs text-slate-400 leading-relaxed">
-          No Pulse traffic for <strong className="text-slate-300">{domain}</strong> yet.
+          Enable Pulse to track visitors, views, and conversions from your campaigns.
         </p>
-        <div className="mt-3">
+        <button
+          type="button"
+          onClick={scrollToEnable}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+        >
+          Here&apos;s what you&apos;ll see once Pulse is tracking your site →
+        </button>
+        <div ref={enableRef} className="mt-3">
           <PulseEnableCard brandUrl={brandUrl} compact />
         </div>
         <a
           href={dashboard}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-emerald-400"
+          className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-emerald-400/80 hover:text-emerald-400"
         >
           Open Pulse dashboard <ExternalLink className="w-3 h-3" />
         </a>
@@ -449,16 +468,50 @@ function InsightShell({
   );
 }
 
-function HeaderPill({ ok, label }: { ok?: boolean; label: string }) {
+function HeaderPill({
+  ok,
+  label,
+  okHint,
+  missingHint,
+  fixUrl,
+}: {
+  ok?: boolean;
+  label: SecurityHeaderLabel;
+  okHint: string;
+  missingHint: string;
+  fixUrl: string;
+}) {
+  const pillClass = `px-2 py-0.5 rounded border ${
+    ok
+      ? 'border-emerald-800/50 text-emerald-400 bg-emerald-950/30'
+      : 'border-amber-800/50 text-amber-400 bg-amber-950/30'
+  }`;
+
+  if (ok) {
+    return (
+      <span className={pillClass} title={okHint}>
+        ✓ {label}
+      </span>
+    );
+  }
+
   return (
-    <span
-      className={`px-2 py-0.5 rounded border ${
-        ok
-          ? 'border-emerald-800/50 text-emerald-400 bg-emerald-950/30'
-          : 'border-amber-800/50 text-amber-400 bg-amber-950/30'
-      }`}
-    >
-      {ok ? '✓' : '○'} {label}
+    <span className="relative group/pill" tabIndex={0}>
+      <span className={`${pillClass} cursor-help`}>○ {label}</span>
+      <span
+        role="tooltip"
+        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52 hidden group-hover/pill:block group-focus-within/pill:block z-10 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 shadow-lg"
+      >
+        <p className="text-[10px] text-slate-300 leading-snug">{missingHint}</p>
+        <a
+          href={fixUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-0.5 mt-1.5 text-[10px] font-bold text-violet-300 hover:text-violet-200"
+        >
+          How to fix →
+        </a>
+      </span>
     </span>
   );
 }

@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { User, ShieldCheck, Search, Users, FileText, Lightbulb, Zap } from 'lucide-react';
+import { ShieldCheck, Search, Users, FileText, Lightbulb, Zap, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WebsiteAnalysis } from '../types';
 
@@ -16,6 +16,7 @@ interface Specialist {
   icon: React.ReactNode;
   color: string;
   tipGenerator: (analysis: WebsiteAnalysis) => string;
+  actionLabel: string;
 }
 
 const SPECIALISTS: Specialist[] = [
@@ -27,7 +28,8 @@ const SPECIALISTS: Specialist[] = [
     icon: <Users className="w-4 h-4" />,
     color: 'indigo',
     tipGenerator: (analysis) => 
-      `Excellent foundation! For ${analysis.brandName}, our immediate focus is the positioning statement: "${analysis.tagline}". We must align all organic social and email outreach to address our primary audience segment with high-integrity consistency.`
+      `Excellent foundation! For ${analysis.brandName}, our immediate focus is the positioning statement: "${analysis.tagline}". We must align all organic social and email outreach to address our primary audience segment with high-integrity consistency.`,
+    actionLabel: 'View your action plan',
   },
   {
     id: 'kofi',
@@ -37,7 +39,8 @@ const SPECIALISTS: Specialist[] = [
     icon: <Search className="w-4 h-4" />,
     color: 'emerald',
     tipGenerator: (analysis) => 
-      `GEO alert! To rank on Gemini and Perplexity search indexes, we should optimize our H2 tags. For ${analysis.brandName}, writing direct, long-form responses about our audience's key pain points behaves like high-value semantic honey.`
+      `GEO alert! To rank on Gemini and Perplexity search indexes, we should optimize our H2 tags. For ${analysis.brandName}, writing direct, long-form responses about our audience's key pain points behaves like high-value semantic honey.`,
+    actionLabel: 'Open SEO Agent',
   },
   {
     id: 'maya',
@@ -47,7 +50,8 @@ const SPECIALISTS: Specialist[] = [
     icon: <Zap className="w-4 h-4" />,
     color: 'amber',
     tipGenerator: (analysis) => 
-      `Let's plug the leaks. Our assessment of ${analysis.brandName} shows we can maximize conversions by pitching a highly-practical custom Lead Magnet. Let's focus on an instant outcome rather than generic brochures.`
+      `Let's plug the leaks. Our assessment of ${analysis.brandName} shows we can maximize conversions by pitching a highly-practical custom Lead Magnet. Let's focus on an instant outcome rather than generic brochures.`,
+    actionLabel: 'Create lead magnet',
   },
   {
     id: 'devon',
@@ -57,17 +61,24 @@ const SPECIALISTS: Specialist[] = [
     icon: <FileText className="w-4 h-4" />,
     color: 'red',
     tipGenerator: (analysis) => 
-      `Tone match established! I have fine-tuned our engine to speak in the elegant "${analysis.inferredBrandVoice}" voice. Every newsletter and tweet thread is optimized to convey high-concept expertise without sounding spammy.`
-  }
+      `Tone match established! I have fine-tuned our engine to speak in the elegant "${analysis.inferredBrandVoice}" voice. Every newsletter and tweet thread is optimized to convey high-concept expertise without sounding spammy.`,
+    actionLabel: 'Draft a blog post',
+  },
 ];
 
 interface CmoCardProps {
   analysis: WebsiteAnalysis;
   selectedSpecialistId: string;
   onSelectSpecialist: (id: string) => void;
+  onSpecialistAction: (id: string) => void;
 }
 
-export default function CmoCard({ analysis, selectedSpecialistId, onSelectSpecialist }: CmoCardProps) {
+export default function CmoCard({
+  analysis,
+  selectedSpecialistId,
+  onSelectSpecialist,
+  onSpecialistAction,
+}: CmoCardProps) {
   const activeSpecialist = SPECIALISTS.find(s => s.id === selectedSpecialistId) || SPECIALISTS[0];
 
   return (
@@ -78,12 +89,8 @@ export default function CmoCard({ analysis, selectedSpecialistId, onSelectSpecia
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             Your AI marketing team
           </h3>
-          <p className="text-xs text-slate-400">Tap someone for quick advice in their area</p>
+          <p className="text-xs text-slate-400">Pick a specialist — then start their recommended next step</p>
         </div>
-        <span className="text-[10px] bg-emerald-950/30 text-emerald-400 border border-emerald-500/20 font-mono font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          Online
-        </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -93,6 +100,7 @@ export default function CmoCard({ analysis, selectedSpecialistId, onSelectSpecia
             <button
               id={`specialist-tab-${s.id}`}
               key={s.id}
+              type="button"
               onClick={() => onSelectSpecialist(s.id)}
               className={`text-left p-3 rounded-xl border transition-all cursor-pointer ${
                 isSelected
@@ -132,14 +140,23 @@ export default function CmoCard({ analysis, selectedSpecialistId, onSelectSpecia
             <div className="p-2 bg-slate-900 rounded-lg border border-slate-800 text-amber-400 shadow-sm font-mono text-center flex-shrink-0">
               <Lightbulb className="w-4 h-4" />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-display font-bold text-white">{activeSpecialist.name}</span>
                 <span className="text-[10px] text-slate-500 font-mono">({activeSpecialist.title})</span>
               </div>
               <p className="text-xs text-slate-300 italic leading-relaxed">
-                "{activeSpecialist.tipGenerator(analysis)}"
+                &ldquo;{activeSpecialist.tipGenerator(analysis)}&rdquo;
               </p>
+              <button
+                type="button"
+                id={`specialist-action-${activeSpecialist.id}`}
+                onClick={() => onSpecialistAction(activeSpecialist.id)}
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition cursor-pointer"
+              >
+                {activeSpecialist.actionLabel}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </motion.div>

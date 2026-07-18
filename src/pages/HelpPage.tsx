@@ -49,7 +49,7 @@ function SectionOverview() {
           },
           {
             q: 'Where do saved audits live?',
-            a: 'Campaign History in the top nav — not the brand dropdown.',
+            a: 'Campaign History in the workspace tab bar — not the brand dropdown.',
             section: 'map' as HelpSectionId,
           },
           {

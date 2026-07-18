@@ -15,9 +15,9 @@ const ASSET_HINTS: { pattern: RegExp; type: MarketingAssetType }[] = [
   { pattern: /lead|magnet|ebook|download/i, type: 'lead_magnet' },
 ];
 
-function inferAssetType(taskTitle: string): MarketingAssetType | undefined {
+export function inferAssetTypeFromText(text: string): MarketingAssetType | undefined {
   for (const { pattern, type } of ASSET_HINTS) {
-    if (pattern.test(taskTitle)) return type;
+    if (pattern.test(text)) return type;
   }
   return undefined;
 }
@@ -39,7 +39,7 @@ export function buildTasksFromPlan(analysis: WebsiteAnalysis, startDate = new Da
         scheduledDate: date.toISOString().slice(0, 10),
         dayIndex: dayOffset + i,
         status: 'pending',
-        linkedAssetType: inferAssetType(title),
+        linkedAssetType: inferAssetTypeFromText(title),
       });
     });
     dayOffset += Math.max(weekTasks.length, 7);

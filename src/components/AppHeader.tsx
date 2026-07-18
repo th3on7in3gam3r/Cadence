@@ -11,12 +11,10 @@ import {
   Search,
   Layers,
   History,
-  User,
-  Sliders,
   Plus,
   Grid3X3,
   Menu,
-  HelpCircle,
+  LogOut,
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { AppView } from '../lib/appPaths';
@@ -25,6 +23,7 @@ import { PRODUCT_NAME, PRODUCT_TAGLINE, showGrowthStackUi } from '../lib/brand';
 import BrandSwitcher from './BrandSwitcher';
 import ProductSwitcher from './ProductSwitcher';
 import NotificationCenter from './NotificationCenter';
+import AppUserMenu, { USER_MENU_ITEMS } from './AppUserMenu';
 import MobileNavDrawer, { MobileNavItem } from './MobileNavDrawer';
 
 interface AppHeaderProps {
@@ -42,24 +41,39 @@ interface AppHeaderProps {
   goTo: (view: AppView) => void;
 }
 
-const NAV_ITEMS: {
+type NavItem = {
   view: AppView;
   label: string;
   shortLabel: string;
   icon: React.ReactNode;
   matchViews?: AppView[];
-}[] = [
-  { view: 'dashboard', label: 'Dashboard', shortLabel: 'Home', icon: <FolderKanban className="w-3.5 h-3.5 shrink-0" />, matchViews: ['dashboard', 'workspace'] },
+};
+
+const PRIMARY_NAV_ITEMS: NavItem[] = [
+  {
+    view: 'dashboard',
+    label: 'Dashboard',
+    shortLabel: 'Home',
+    icon: <FolderKanban className="w-3.5 h-3.5 shrink-0" />,
+    matchViews: ['dashboard', 'workspace'],
+  },
   { view: 'seo-agent', label: 'SEO Agent', shortLabel: 'SEO', icon: <Search className="w-3.5 h-3.5 shrink-0" /> },
-  { view: 'campaign-history', label: 'Campaign History', shortLabel: 'History', icon: <Layers className="w-3.5 h-3.5 shrink-0" /> },
+  {
+    view: 'campaign-history',
+    label: 'Campaign History',
+    shortLabel: 'History',
+    icon: <Layers className="w-3.5 h-3.5 shrink-0" />,
+  },
   { view: 'studio', label: 'Studio', shortLabel: 'Studio', icon: <Grid3X3 className="w-3.5 h-3.5 shrink-0" /> },
-  { view: 'history-scans', label: 'Document Scans', shortLabel: 'Scans', icon: <History className="w-3.5 h-3.5 shrink-0" /> },
-  { view: 'profile', label: 'Marketer Profile', shortLabel: 'Profile', icon: <User className="w-3.5 h-3.5 shrink-0" /> },
-  { view: 'settings', label: 'Settings', shortLabel: 'Settings', icon: <Sliders className="w-3.5 h-3.5 shrink-0" /> },
-  { view: 'help', label: 'Help', shortLabel: 'Help', icon: <HelpCircle className="w-3.5 h-3.5 shrink-0" /> },
+  {
+    view: 'history-scans',
+    label: 'Document Scans',
+    shortLabel: 'Scans',
+    icon: <History className="w-3.5 h-3.5 shrink-0" />,
+  },
 ];
 
-function isNavActive(activeView: AppView, item: (typeof NAV_ITEMS)[0]): boolean {
+function isNavActive(activeView: AppView, item: NavItem): boolean {
   if (item.matchViews) return item.matchViews.includes(activeView);
   return activeView === item.view;
 }
@@ -81,7 +95,9 @@ export default function AppHeader({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const showNav = activeView !== 'onboarding' && (!!brandAnalysis || activeView === 'help');
   const stackUi = showGrowthStackUi();
-  const navItems = stackUi ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.view !== 'studio');
+  const primaryNavItems = stackUi
+    ? PRIMARY_NAV_ITEMS
+    : PRIMARY_NAV_ITEMS.filter((item) => item.view !== 'studio');
   const closeMenu = () => setMobileMenuOpen(false);
   const goToView = (view: AppView) => {
     goTo(view);
@@ -112,25 +128,6 @@ export default function AppHeader({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {cloudEnabled && user && (
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="inline-flex text-[11px] font-bold text-slate-500 hover:text-red-400 px-2 py-1 cursor-pointer"
-              title={user.email || 'Sign out'}
-            >
-              Sign out
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => goTo('help')}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-emerald-400 px-2 py-1.5 cursor-pointer"
-            title="Help & guides"
-          >
-            <HelpCircle className="w-4 h-4" />
-            <span className="hidden md:inline">Help</span>
-          </button>
           <NotificationCenter />
           {showNav && (
             <button
@@ -145,20 +142,9 @@ export default function AppHeader({
           )}
           {showNav && (
             <>
-              <button
-                type="button"
-                onClick={() => goTo('profile')}
-                className="hidden sm:flex items-center gap-2 px-2 py-1.5 sm:px-2.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition-all cursor-pointer"
-                title="Marketer profile"
-              >
-                <div className={`w-5 h-5 rounded bg-gradient-to-br ${profileColor} flex items-center justify-center text-slate-950 font-bold text-[10px] shrink-0`}>
-                  {profileName.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase() || 'CM'}
-                </div>
-                <span className="max-w-[88px] truncate hidden lg:inline text-slate-300">{profileName}</span>
-              </button>
               <div className="hidden sm:block">
                 <BrandSwitcher
-                  currentBrandName={brandAnalysis.brandName}
+                  currentBrandName={brandAnalysis?.brandName}
                   brandUrl={brandUrl}
                   onViewCampaignHistory={() => goTo('campaign-history')}
                 />
@@ -168,6 +154,15 @@ export default function AppHeader({
                   <ProductSwitcher />
                 </div>
               )}
+              <AppUserMenu
+                profileName={profileName}
+                profileColor={profileColor}
+                cloudEnabled={cloudEnabled}
+                user={user}
+                activeView={activeView}
+                goTo={goTo}
+                onSignOut={onSignOut}
+              />
             </>
           )}
           {showNav && (
@@ -204,7 +199,7 @@ export default function AppHeader({
                   <span>Home</span>
                 </button>
               )}
-              {navItems.map((item) => {
+              {primaryNavItems.map((item) => {
                 const active = isNavActive(activeView, item);
                 return (
                   <button
@@ -241,7 +236,7 @@ export default function AppHeader({
               }}
             />
           )}
-          {navItems.map((item) => (
+          {primaryNavItems.map((item) => (
             <div key={item.view}>
               <MobileNavItem
                 label={item.label}
@@ -261,14 +256,20 @@ export default function AppHeader({
               }}
               variant="primary"
             />
-            <MobileNavItem
-              label="Marketer profile"
-              icon={<User className="w-4 h-4" />}
-              onClick={() => goToView('profile')}
-            />
+            {USER_MENU_ITEMS.map((item) => (
+              <div key={item.view}>
+                <MobileNavItem
+                  label={item.label}
+                  icon={item.icon}
+                  active={activeView === item.view}
+                  onClick={() => goToView(item.view)}
+                />
+              </div>
+            ))}
             {cloudEnabled && user && (
               <MobileNavItem
                 label="Sign out"
+                icon={<LogOut className="w-4 h-4" />}
                 onClick={() => {
                   closeMenu();
                   onSignOut();
