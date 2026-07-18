@@ -4,6 +4,7 @@
  */
 
 import { Router } from 'express';
+import { performAegisUrlCheck } from '../lib/aegisUrlCheck';
 import { aegisApiBase, citePilotApiBase, pulseApiBase, pulseReadKeyForSite } from '../lib/growthStackConfig';
 import { getGrowthStackKeysForUser } from '../lib/growthStackKeys';
 import { getPulseReadKeyForUser, mintPulseDashboardUrl } from '../lib/pulseClaim';
@@ -46,53 +47,6 @@ async function fetchCitePilotWidget(
     platforms: widget.platforms ?? [],
     auditUrl: `${base}/audit?domain=${encodeURIComponent(domain)}`,
     source: 'citepilot-widget-fallback',
-  };
-}
-
-async function localUrlSecurityCheck(rawUrl: string) {
-  const url = normalizeBrandUrl(rawUrl);
-  const res = await fetch(url, {
-    method: 'GET',
-    redirect: 'follow',
-    signal: AbortSignal.timeout(15000),
-    headers: { 'User-Agent': 'Cadence-GrowthStack/1.0' },
-  });
-
-  const finalUrl = res.url || url;
-  const headers = res.headers;
-  const checks = [
-    {
-      name: 'HTTPS',
-      ok: finalUrl.startsWith('https://'),
-      detail: finalUrl.startsWith('https://') ? 'Served over TLS' : 'Not served over HTTPS',
-    },
-    {
-      name: 'HSTS',
-      ok: !!headers.get('strict-transport-security'),
-      detail: headers.get('strict-transport-security') ? 'Present' : 'Missing',
-    },
-    {
-      name: 'X-Frame-Options',
-      ok: !!headers.get('x-frame-options'),
-      detail: headers.get('x-frame-options') || 'Missing',
-    },
-    {
-      name: 'CSP',
-      ok: !!headers.get('content-security-policy'),
-      detail: headers.get('content-security-policy') ? 'Present' : 'Missing',
-    },
-  ];
-
-  const passed = checks.filter((c) => c.ok).length;
-  const score = Math.round((passed / checks.length) * 100);
-
-  return {
-    url: finalUrl,
-    reachable: res.ok,
-    status: res.status,
-    score,
-    checks,
-    source: 'local-fallback',
   };
 }
 
@@ -162,28 +116,12 @@ router.get('/aegis/url-check', async (req: AuthedRequest, res) => {
       headers.Authorization = `Bearer ${partnerKey}`;
     }
 
-    const upstream = await fetch(
-      `${base}/api/v1/url-check?url=${encodeURIComponent(url)}`,
-      { headers },
-    );
-
-    if (upstream.ok) {
-      const data = await upstream.json();
-      return res.json({ connected: true, source: 'aegis-api', ...data });
-    }
-
-    try {
-      const fallback = await localUrlSecurityCheck(url);
-      return res.json({ connected: true, ...fallback });
-    } catch (fallbackErr: unknown) {
-      const err = await upstream.json().catch(() => ({}));
-      return res.status(upstream.status === 404 ? 502 : upstream.status).json({
-        error:
-          (err as { error?: string }).error ||
-          (fallbackErr instanceof Error ? fallbackErr.message : 'Aegis URL check failed'),
-        connected: false,
-      });
-    }
+    const result = await performAegisUrlCheck({
+      targetUrl: url,
+      fetchAegis: () =>
+        fetch(`${base}/api/v1/url-check?url=${encodeURIComponent(url)}`, { headers }),
+    });
+    return res.json(result);
   } catch (e: unknown) {
     return res.status(502).json({
       error: e instanceof Error ? e.message : 'Aegis Loop unavailable',

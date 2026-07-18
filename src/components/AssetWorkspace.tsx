@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   ResponsiveContainer, ComposedChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, Line, Area
@@ -48,6 +48,7 @@ import { isCloudEnabled } from '../lib/cloudConfig';
 import { PRODUCT_NAME } from '../lib/brand';
 import { publishToWordPress } from '../lib/workspaceApi';
 import { recordPublishEvent } from '../utils/analyticsLoop';
+import { getAssetContentMetrics } from '../utils/assetContentMetrics';
 
 const APPROVAL_STEPS: { id: ApprovalStatus; label: string }[] = [
   { id: 'draft', label: 'Draft' },
@@ -55,6 +56,29 @@ const APPROVAL_STEPS: { id: ApprovalStatus; label: string }[] = [
   { id: 'approved', label: 'Approved' },
   { id: 'published', label: 'Published' },
 ];
+
+function StudioPreviewImage({
+  src,
+  alt,
+  className = 'w-full h-full object-cover',
+}: {
+  src: string | null;
+  alt: string;
+  className?: string;
+}) {
+  if (!src) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 text-center p-6 w-full h-full min-h-[120px]">
+        <Image className="w-8 h-8 text-slate-600" />
+        <p className="text-[11px] font-bold text-slate-400">Generate custom image</p>
+        <p className="text-[10px] text-slate-500 font-mono max-w-[220px]">
+          Use Imagen in Campaign Studio — no stock placeholders
+        </p>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} referrerPolicy="no-referrer" className={className} />;
+}
 
 interface AssetWorkspaceProps {
   assetType: MarketingAssetType;
@@ -125,9 +149,9 @@ export default function AssetWorkspace({
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [activeCopilotTab, setActiveCopilotTab] = useState<'cursor' | 'grok' | 'claude' | 'chatgpt'>('cursor');
   const [socialMetrics, setSocialMetrics] = useState<Record<string, { likes: number; comments: number; shares: number; liked: boolean }>>({
-    LinkedIn: { likes: 142, comments: 24, shares: 12, liked: false },
-    Twitter: { likes: 89, comments: 11, shares: 35, liked: false },
-    Facebook: { likes: 210, comments: 38, shares: 18, liked: false }
+    LinkedIn: { likes: 0, comments: 0, shares: 0, liked: false },
+    Twitter: { likes: 0, comments: 0, shares: 0, liked: false },
+    Facebook: { likes: 0, comments: 0, shares: 0, liked: false },
   });
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const tomorrow = new Date();
@@ -190,14 +214,12 @@ export default function AssetWorkspace({
     setGeneratedImageUrl(loadGeneratedImageUrl(assetType));
   }, [assetType, asset.title, asset.summary, companyInfo.brandName]);
 
-  const studioImageSrc = (promptOverride?: string) =>
-    resolveStudioImageUrl({
-      generatedUrl: generatedImageUrl,
-      assetType,
-      artisticTheme,
-      imagenSeed,
-      prompt: promptOverride ?? customImagePrompt,
-    });
+  const studioImageSrc = () => resolveStudioImageUrl({ generatedUrl: generatedImageUrl });
+
+  const contentMetrics = useMemo(
+    () => getAssetContentMetrics(assetType, localAssetContent, asset),
+    [assetType, localAssetContent, asset],
+  );
 
   const subscribeUrl = resolveTaggedSubscribeUrl(brandUrl, `${campaignSlugForAssetType(assetType)}-subscribe`);
   const productLandingUrl = brandUrl
@@ -399,79 +421,6 @@ export default function AssetWorkspace({
     }
   ];
 
-  const getPerformanceMetrics = () => {
-    const wordCount = localAssetContent ? localAssetContent.split(/\s+/).filter(Boolean).length : 0;
-    
-    switch (assetType) {
-      case 'seo_keywords':
-        return {
-          metricName: 'Search Reach Multiplier',
-          val: '2.8x',
-          score: 88,
-          details: [
-            { label: 'Semantic keyword relevance', value: 'High (89/100)' },
-            { label: 'Domain search authority lift', value: '+14.5%' },
-            { label: 'Long-tail keyword volume', value: '~4,500/mo' }
-          ]
-        };
-      case 'blog_post':
-        const readTime = Math.max(1, Math.round(wordCount / 220));
-        return {
-          metricName: 'Avg. Reader Stay Time',
-          val: `${readTime} min read`,
-          score: Math.min(95, 75 + Math.round(wordCount / 100)),
-          details: [
-            { label: 'Estimated Click-Through (CTR)', value: '4.8% - 5.5%' },
-            { label: 'Reader readability index', value: 'Premium (Flesch: 72)' },
-            { label: 'Projected lead conversion factor', value: '2.1%' }
-          ]
-        };
-      case 'social_posts':
-        return {
-          metricName: 'Projected Impressions',
-          val: '12,500+',
-          score: 92,
-          details: [
-            { label: 'Viral reach coefficient', value: '1.45 (Above Avg)' },
-            { label: 'Optimal share audience score', value: '94/100' },
-            { label: 'Estimated aggregate CTR', value: '3.6%' }
-          ]
-        };
-      case 'email_sequence':
-        return {
-          metricName: 'Expected Open Rate',
-          val: '22% - 26%',
-          score: 87,
-          details: [
-            { label: 'Click-to-Open Rate (CTOR)', value: '14.2%' },
-            { label: 'Spam trigger hazard index', value: 'Clean (0.02%)' },
-            { label: 'Nurture pipeline dropoff risk', value: 'Low' }
-          ]
-        };
-      case 'lead_magnet':
-        return {
-          metricName: 'Opt-in Conversion Gate',
-          val: '8.4%',
-          score: 94,
-          details: [
-            { label: 'Opt-in submission rate', value: '8.4% (Industry avg: 3.2%)' },
-            { label: 'Valuation score of resource', value: 'Elite (96/100)' },
-            { label: 'List acceleration index', value: 'High' }
-          ]
-        };
-      default:
-        return {
-          metricName: 'Estimated Engagement Ratio',
-          val: '74%',
-          score: 85,
-          details: [
-            { label: 'Aesthetic layout score', value: 'High' },
-            { label: 'Conversion copywriting hook', value: 'Strong' }
-          ]
-        };
-    }
-  };
-
   useEffect(() => {
     // Reset conversation history and clear scheduled state when a brand new asset loads
     setChatHistory([
@@ -496,7 +445,7 @@ export default function AssetWorkspace({
   };
 
   const handleCopyWordPress = async () => {
-    const featuredImageUrl = studioImageSrc();
+    const featuredImageUrl = studioImageSrc() || '';
     const wpHtml = toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(featuredImageUrl));
     await navigator.clipboard.writeText(wpHtml);
 
@@ -509,7 +458,7 @@ export default function AssetWorkspace({
 
     setCopiedWp(true);
     setTimeout(() => setCopiedWp(false), 2000);
-    const imageNote = isGeneratedImageUrl(featuredImageUrl)
+    const imageNote = featuredImageUrl && isGeneratedImageUrl(featuredImageUrl)
       ? ' Hero image downloaded — set it as Featured image in WordPress sidebar.'
       : ' Generate a custom Imagen image in Campaign Studio for a matching hero.';
     triggerToast?.(
@@ -532,7 +481,7 @@ export default function AssetWorkspace({
     try {
       const result = await publishToWordPress({
         title: asset.title || `${companyInfo.brandName} blog post`,
-        content: toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(studioImageSrc())) || localAssetContent,
+        content: toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(studioImageSrc() || '')) || localAssetContent,
         excerpt: asset.summary || '',
         status: asDraft ? 'draft' : 'publish',
       });
@@ -751,28 +700,21 @@ export default function AssetWorkspace({
     .map(x => x[0]);
 
   const getKeywordChartData = () => {
-    const baseKeywords = sortedTargetKeywords.length > 0 
-      ? sortedTargetKeywords 
-      : ['digital transformation', 'enterprise optimization', 'organic conversions', 'marketing automation', 'growth strategies'];
+    const lines =
+      sortedTargetKeywords.length > 0
+        ? sortedTargetKeywords
+        : localAssetContent
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0 && !line.startsWith('#'));
 
-    return baseKeywords.map((kw) => {
-      let hash = 0;
-      for (let i = 0; i < kw.length; i++) {
-        hash = kw.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const val1 = Math.abs((hash % 8) + 1) * 300 + 400;
-      const val2 = Math.abs((hash % 5) + 1) * 15 + 40;
-      const ctr = parseFloat((Math.abs((hash % 4) + 1) * 1.5 + 2).toFixed(1));
-
-      const capitalizedKw = kw.split(' ')
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-
+    return lines.slice(0, 8).map((kw, index) => {
+      const words = kw.split(/\s+/).filter(Boolean).length;
+      const label = kw.length > 22 ? `${kw.slice(0, 20)}…` : kw;
       return {
-        name: capitalizedKw,
-        volume: val1,
-        visibility: val2,
-        ctr: ctr
+        name: label || `Line ${index + 1}`,
+        words,
+        chars: kw.length,
       };
     });
   };
@@ -1307,14 +1249,13 @@ export default function AssetWorkspace({
                               {assetType === 'blog_post' && (
                                 <div className="space-y-3 w-full bg-slate-900/40 p-1 rounded-2xl border border-slate-850">
                                   <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-[16/9] w-full shadow-inner flex items-center justify-center">
-                                    <img
+                                    <StudioPreviewImage
                                       src={studioImageSrc()}
-                                      alt={customImagePrompt || "Blog cover photo"}
-                                      referrerPolicy="no-referrer"
+                                      alt={customImagePrompt || 'Blog cover photo'}
                                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-102"
                                     />
                                     
-                                    {/* Top Studio Metadata Badges */}
+                                    {studioImageSrc() && (
                                     <div className="absolute top-3 left-3 flex gap-1.5 select-none z-10 pointer-events-none">
                                       <span className="flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-widest bg-slate-950/80 border border-slate-850/60 text-slate-300 px-2 py-1 rounded shadow-md backdrop-blur">
                                         <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -1324,9 +1265,10 @@ export default function AssetWorkspace({
                                         F/1.8 FIXED
                                       </span>
                                     </div>
-                                    
-                                    {/* Dark overlay gradient */}
+                                    )}
+                                    {studioImageSrc() && (
                                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent pointer-events-none" />
+                                    )}
 
                                     {/* Glassmorphic progress modifier when Imagen is active */}
                                     {isGeneratingImage && (
@@ -1361,7 +1303,7 @@ export default function AssetWorkspace({
                                   <StudioImageMetaBar
                                     assetType={assetType}
                                     generatedImageUrl={generatedImageUrl}
-                                    inspectUrl={generatedImageUrl || studioImageSrc()}
+                                    inspectUrl={generatedImageUrl}
                                     showTitleOverlay={showTitleOverlay}
                                     onTitleOverlayChange={setShowTitleOverlay}
                                   />
@@ -1428,10 +1370,9 @@ export default function AssetWorkspace({
 
                                     {/* The Dynamic Social Image Card */}
                                     <div className="relative rounded-lg overflow-hidden border border-slate-850 bg-slate-900 aspect-[1.91/1] max-h-[190px] flex items-center justify-center">
-                                      <img
-                                        src={studioImageSrc(`${activeSocialTab}-${customImagePrompt}`)}
-                                        alt="Linked social asset preview"
-                                        referrerPolicy="no-referrer"
+                                      <StudioPreviewImage
+                                        src={studioImageSrc()}
+                                        alt="Social asset preview"
                                         className="w-full h-full object-cover transition-transform duration-350"
                                       />
 
@@ -1509,7 +1450,7 @@ export default function AssetWorkspace({
                                   <StudioImageMetaBar
                                     assetType={assetType}
                                     generatedImageUrl={generatedImageUrl}
-                                    inspectUrl={generatedImageUrl || studioImageSrc(`${activeSocialTab}-${customImagePrompt}`)}
+                                    inspectUrl={generatedImageUrl}
                                   />
                                 </div>
                               )}
@@ -1521,10 +1462,9 @@ export default function AssetWorkspace({
                                       assetType === 'lead_magnet' ? 'aspect-square max-w-md mx-auto' : 'aspect-[16/9]'
                                     }`}
                                   >
-                                    <img
+                                    <StudioPreviewImage
                                       src={studioImageSrc()}
                                       alt={customImagePrompt || 'Campaign visual'}
-                                      referrerPolicy="no-referrer"
                                       className="w-full h-full object-cover"
                                     />
                                     {isGeneratingImage && (
@@ -1547,7 +1487,7 @@ export default function AssetWorkspace({
                                   <StudioImageMetaBar
                                     assetType={assetType}
                                     generatedImageUrl={generatedImageUrl}
-                                    inspectUrl={generatedImageUrl || studioImageSrc()}
+                                    inspectUrl={generatedImageUrl}
                                     showTitleOverlay={showTitleOverlay}
                                     onTitleOverlayChange={setShowTitleOverlay}
                                     className="border-0 bg-transparent px-3"
@@ -1631,7 +1571,7 @@ export default function AssetWorkspace({
                               </span>
                               {!generatedImageUrl && (
                                 <p className="text-[9px] text-amber-400/90 leading-relaxed">
-                                  Preview above is a stock placeholder until you click Generate Custom Image.
+                                  No preview image yet — generate one with Imagen below.
                                 </p>
                               )}
                               <button
@@ -1667,17 +1607,22 @@ export default function AssetWorkspace({
                         <div className="flex justify-between items-center">
                           <div>
                             <span className="text-[9px] font-mono text-emerald-400 font-bold uppercase tracking-wider block">
-                              🔍 SEARCH & VISIBILITY PERFORMANCE
+                              Keyword draft breakdown
                             </span>
                             <h4 className="text-xs font-display font-black text-white uppercase mt-0.5">
-                              Projected Search Volume & Generative Engine Visibility
+                              Lines & length from your keyword list
                             </h4>
                           </div>
                           <span className="text-[10px] bg-slate-900 border border-slate-800 text-slate-400 font-mono px-2 py-0.5 rounded">
-                            Active Forecast
+                            From copy
                           </span>
                         </div>
                         
+                        {getKeywordChartData().length === 0 ? (
+                          <p className="text-xs text-slate-500 font-mono py-8 text-center">
+                            Add keyword lines in the editor to see a breakdown chart.
+                          </p>
+                        ) : (
                         <div id="seo-rankings-recharts-container" className="h-[280px] min-h-[280px] w-full min-w-0 bg-slate-900/40 p-2 rounded-xl border border-slate-850/60">
                           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
                             <ComposedChart data={getKeywordChartData()} margin={{ top: 15, right: 10, left: -20, bottom: 5 }}>
@@ -1713,32 +1658,35 @@ export default function AssetWorkspace({
                                 itemStyle={{ fontSize: '10px' }}
                               />
                               <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '5px' }} />
-                              <Bar yAxisId="left" dataKey="volume" name="Search Volume/mo" fill="url(#volumeGrad)" stroke="#10b981" strokeWidth={1} radius={[4, 4, 0, 0]} />
-                              <Line yAxisId="right" type="monotone" dataKey="visibility" name="Generative Visibility Score" stroke="#f59e0b" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                              <Bar yAxisId="left" dataKey="words" name="Words per line" fill="url(#volumeGrad)" stroke="#10b981" strokeWidth={1} radius={[4, 4, 0, 0]} />
+                              <Line yAxisId="right" type="monotone" dataKey="chars" name="Characters" stroke="#f59e0b" strokeWidth={2.5} activeDot={{ r: 6 }} />
                             </ComposedChart>
                           </ResponsiveContainer>
                         </div>
+                        )}
                         
+                        {getKeywordChartData().length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center bg-slate-900/30 p-3 rounded-xl border border-slate-900">
                           <div className="p-2 space-y-0.5">
-                            <span className="text-[9px] font-mono text-slate-500 uppercase block">AGGREGATE MONTHLY REACH</span>
+                            <span className="text-[9px] font-mono text-slate-500 uppercase block">Keyword lines</span>
                             <span className="text-xs font-semibold text-white">
-                              {getKeywordChartData().reduce((acc, k) => acc + k.volume, 0).toLocaleString()} views
+                              {getKeywordChartData().length}
                             </span>
                           </div>
                           <div className="p-2 space-y-0.5">
-                            <span className="text-[9px] font-mono text-slate-500 uppercase block">AVG GEO CITABILITY</span>
+                            <span className="text-[9px] font-mono text-slate-500 uppercase block">Avg words / line</span>
                             <span className="text-xs font-semibold text-amber-500">
-                              {(getKeywordChartData().reduce((acc, k) => acc + k.visibility, 0) / getKeywordChartData().length).toFixed(1)}% High
+                              {(getKeywordChartData().reduce((acc, k) => acc + k.words, 0) / getKeywordChartData().length).toFixed(1)}
                             </span>
                           </div>
                           <div className="p-2 space-y-0.5">
-                            <span className="text-[9px] font-mono text-slate-500 uppercase block">PROJECTED CLICK-THROUGH RATE</span>
+                            <span className="text-[9px] font-mono text-slate-500 uppercase block">Longest line (chars)</span>
                             <span className="text-xs font-semibold text-emerald-400">
-                              {(getKeywordChartData().reduce((acc, k) => acc + k.ctr, 0) / getKeywordChartData().length).toFixed(2)}% CTR avg
+                              {Math.max(...getKeywordChartData().map((k) => k.chars))}
                             </span>
                           </div>
                         </div>
+                        )}
                       </div>
                     )}
 
@@ -1933,23 +1881,21 @@ Include personalized subject line options, preview text, and direct booking link
           {/* New Dashboard Segment: Dynamic AI Performance Projections & Campaign Publishing Scheduler */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             
-            {/* Widget A: Dynamic Performance Projections */}
+            {/* Widget A: Content metrics (factual, from draft only) */}
             <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-md flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
                   <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-emerald-400" />
-                    AI Copy Assessment & Projections
+                    Draft Content Metrics
                   </h4>
-                  <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono font-bold">
-                    Forecast Active
+                  <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-bold">
+                    From your copy
                   </span>
                 </div>
 
-                {/* Main projection display */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative w-16 h-16 shrink-0 flex items-center justify-center bg-slate-950 border border-slate-800 rounded-full">
-                    {/* SVG Progress Ring */}
                     <svg className="absolute w-full h-full -rotate-90">
                       <circle
                         cx="32"
@@ -1967,31 +1913,30 @@ Include personalized subject line options, preview text, and direct booking link
                         strokeWidth="3.5"
                         fill="transparent"
                         strokeDasharray={`${2 * Math.PI * 28}`}
-                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - getPerformanceMetrics().score / 100)}`}
+                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - contentMetrics.completenessScore / 100)}`}
                         strokeLinecap="round"
                       />
                     </svg>
                     <span className="text-xs font-mono font-bold text-white">
-                      {getPerformanceMetrics().score}%
+                      {contentMetrics.completenessScore}%
                     </span>
                   </div>
 
                   <div>
                     <span className="text-[9px] font-mono font-bold text-slate-500 block uppercase tracking-wider">
-                      PRIMARY FORECASTED METRIC:
+                      Primary metric
                     </span>
                     <span className="text-base font-display font-extrabold text-white">
-                      {getPerformanceMetrics().val}
+                      {contentMetrics.headlineValue}
                     </span>
                     <p className="text-[10px] text-emerald-400 font-mono mt-0.5">
-                      ★ {getPerformanceMetrics().metricName}
+                      {contentMetrics.headline}
                     </p>
                   </div>
                 </div>
 
-                {/* Sub metrics list breakdown */}
                 <div className="space-y-2 mt-4 bg-slate-950/40 border border-slate-850 p-3.5 rounded-lg text-xs">
-                  {getPerformanceMetrics().details.map((m, idx) => (
+                  {contentMetrics.details.map((m, idx) => (
                     <div key={idx} className="flex justify-between items-center gap-4 border-b border-slate-900 last:border-0 pb-1.5 last:pb-0">
                       <span className="text-slate-450">{m.label}</span>
                       <span className="font-mono text-white font-semibold">{m.value}</span>
@@ -2002,7 +1947,7 @@ Include personalized subject line options, preview text, and direct booking link
 
               <div className="text-[10px] text-slate-500 font-mono mt-4 flex items-center gap-1">
                 <Target className="w-3.5 h-3.5 text-slate-600" />
-                <span>Simulated based on comparative regional metrics databases.</span>
+                <span>Completeness score reflects fields filled — not traffic or conversion forecasts.</span>
               </div>
             </div>
 

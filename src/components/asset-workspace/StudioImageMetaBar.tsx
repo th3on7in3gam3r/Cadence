@@ -16,7 +16,7 @@ const RATIO_LABELS: Record<MarketingAssetType, string> = {
 interface StudioImageMetaBarProps {
   assetType: MarketingAssetType;
   generatedImageUrl: string | null;
-  inspectUrl: string;
+  inspectUrl?: string | null;
   showTitleOverlay?: boolean;
   onTitleOverlayChange?: (checked: boolean) => void;
   className?: string;
@@ -40,7 +40,7 @@ export default function StudioImageMetaBar({
         </span>
         <span className="text-slate-800">|</span>
         <span>
-          Engine: <strong>{generatedImageUrl ? 'Imagen (generated)' : 'Placeholder preview'}</strong>
+          Engine: <strong>{generatedImageUrl ? 'Imagen (generated)' : 'Awaiting Imagen generation'}</strong>
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -67,15 +67,17 @@ export default function StudioImageMetaBar({
             <span className="text-slate-800">|</span>
           </>
         )}
-        <a
-          href={inspectUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-emerald-400 hover:text-emerald-350 font-bold transition flex items-center gap-1"
-        >
-          <Eye className="w-3 h-3" />
-          <span>Inspect raw image</span>
-        </a>
+        {inspectUrl && (
+          <a
+            href={inspectUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-400 hover:text-emerald-350 font-bold transition flex items-center gap-1"
+          >
+            <Eye className="w-3 h-3" />
+            <span>Inspect raw image</span>
+          </a>
+        )}
       </div>
     </div>
   );

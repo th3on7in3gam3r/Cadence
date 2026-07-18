@@ -10,9 +10,8 @@ import { isCloudEnabled } from '../lib/cloudConfig';
 import {
   fetchStudioIdentity,
   type StudioIdentityResponse,
-  type StudioProductStatus,
 } from '../lib/studioApi';
-import { GROWTH_STACK_PRODUCTS, aiCmoAppUrl, aiCmoStudioHubUrl, kerygmaHomeUrl } from '../lib/growthStack';
+import { aiCmoStudioHubUrl } from '../lib/growthStack';
 import { STUDIO_HUB_PRODUCTS } from '../lib/studioHub';
 
 const PRODUCT_COLORS: Record<string, string> = {
@@ -22,51 +21,11 @@ const PRODUCT_COLORS: Record<string, string> = {
   aegis: 'text-rose-400',
 };
 
-function fallbackProducts(): StudioProductStatus[] {
-  return [
-    {
-      id: 'ai_cmo',
-      name: GROWTH_STACK_PRODUCTS.aiCmo.name,
-      tagline: GROWTH_STACK_PRODUCTS.aiCmo.tagline,
-      url: aiCmoAppUrl(),
-      authNote: 'Current session',
-      linked: true,
-      externalId: null,
-    },
-    {
-      id: 'kerygma',
-      name: GROWTH_STACK_PRODUCTS.kerygma.name,
-      tagline: GROWTH_STACK_PRODUCTS.kerygma.tagline,
-      url: kerygmaHomeUrl('product-switcher'),
-      authNote: 'Separate Clerk account',
-      linked: false,
-      externalId: null,
-    },
-    {
-      id: 'citepilot',
-      name: GROWTH_STACK_PRODUCTS.citePilot.name,
-      tagline: GROWTH_STACK_PRODUCTS.citePilot.tagline,
-      url: GROWTH_STACK_PRODUCTS.citePilot.url,
-      authNote: 'Separate Neon Auth account',
-      linked: false,
-      externalId: null,
-    },
-    {
-      id: 'aegis',
-      name: GROWTH_STACK_PRODUCTS.aegis.name,
-      tagline: GROWTH_STACK_PRODUCTS.aegis.tagline,
-      url: GROWTH_STACK_PRODUCTS.aegis.url,
-      authNote: 'GitHub OAuth',
-      linked: false,
-      externalId: null,
-    },
-  ];
-}
-
 export default function ProductSwitcher() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(isCloudEnabled());
   const [identity, setIdentity] = useState<StudioIdentityResponse | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,8 +34,11 @@ export default function ProductSwitcher() {
       return;
     }
     fetchStudioIdentity()
-      .then(setIdentity)
-      .catch(() => undefined)
+      .then((data) => {
+        setIdentity(data);
+        setLoadError(!data?.products?.length);
+      })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -88,8 +50,9 @@ export default function ProductSwitcher() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const products = identity?.products || fallbackProducts();
+  const products = identity?.products ?? [];
   const linkedCount = products.filter((p) => p.linked).length;
+  const cloud = isCloudEnabled();
 
   return (
     <div className="relative" ref={ref}>
@@ -105,7 +68,9 @@ export default function ProductSwitcher() {
           <Grid3X3 className="w-3.5 h-3.5 text-amber-400" />
         )}
         <span className="hidden sm:inline">Stack</span>
-        <span className="text-[10px] text-slate-500">{linkedCount}/{products.length}</span>
+        {cloud && !loading && (
+          <span className="text-[10px] text-slate-500">{linkedCount}/{products.length || 4}</span>
+        )}
         <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -115,6 +80,19 @@ export default function ProductSwitcher() {
             <p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Bible Funland growth stack</p>
           </div>
           <ul className="py-1">
+            {!cloud && (
+              <li className="px-3 py-3 text-[11px] text-slate-500">
+                Sign in with cloud mode to see linked studio products.
+              </li>
+            )}
+            {cloud && loadError && products.length === 0 && (
+              <li className="px-3 py-3 text-[11px] text-slate-500">
+                Could not load linked products.{' '}
+                <Link to="/app/settings?tab=studio" className="text-emerald-400 font-bold" onClick={() => setOpen(false)}>
+                  Open Studio settings
+                </Link>
+              </li>
+            )}
             {products.map((p) => (
               <li key={p.id}>
                 <a

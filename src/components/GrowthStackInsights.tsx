@@ -46,6 +46,7 @@ interface GrowthStackInsightsProps {
 
 export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackInsightsProps) {
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [citations, setCitations] = useState<CitePilotCitationsResponse | null>(null);
   const [security, setSecurity] = useState<AegisUrlCheckResponse | null>(null);
   const [pulse, setPulse] = useState<PulseStatsResponse | null>(null);
@@ -74,7 +75,7 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
     return () => {
       cancelled = true;
     };
-  }, [brandUrl, domain]);
+  }, [brandUrl, domain, refreshKey]);
 
   const history = domain ? loadCitationHistory(domain) : [];
   const localTrend =
@@ -103,7 +104,12 @@ export default function GrowthStackInsights({ brandUrl, compact }: GrowthStackIn
           trend={localTrend}
           compact={compact}
         />
-        <SecurityCard data={security} brandUrl={brandUrl} compact={compact} />
+        <SecurityCard
+          data={security}
+          brandUrl={brandUrl}
+          compact={compact}
+          onRetry={() => setRefreshKey((k) => k + 1)}
+        />
         <PulseCard
           domain={domain}
           siteId={pulseSiteId}
@@ -269,23 +275,58 @@ function CitationCard({
   );
 }
 
+const SECURITY_PROBE_FRIENDLY_ERROR =
+  "We couldn't reach this URL from our security probe. Check that the site is publicly accessible, then try again.";
+
+function securityProbeMessage(data: AegisUrlCheckResponse | null): string {
+  const raw = data?.error || data?.summary || '';
+  if (!raw || /fetch fail/i.test(raw)) {
+    return SECURITY_PROBE_FRIENDLY_ERROR;
+  }
+  return raw;
+}
+
 function SecurityCard({
   data,
   brandUrl,
   compact,
+  onRetry,
 }: {
   data: AegisUrlCheckResponse | null;
   brandUrl: string;
   compact?: boolean;
+  onRetry?: () => void;
 }) {
+  const aegisUrl = GROWTH_STACK_PRODUCTS.aegis.url;
+
   if (!data?.connected && data?.error) {
     return (
       <InsightShell
-        icon={<Shield className="w-4 h-4 text-violet-400" />}
+        icon={<Shield className="w-4 h-4 text-emerald-400" />}
         title="Security headers"
         compact={compact}
       >
-        <p className="text-xs text-slate-500">{data.error}</p>
+        <p className="text-xs text-slate-400 leading-relaxed">{securityProbeMessage(data)}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Retry probe
+            </button>
+          )}
+          <a
+            href={aegisUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white rounded-lg"
+          >
+            Open full scan in Aegis Loop
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
       </InsightShell>
     );
   }
@@ -293,18 +334,38 @@ function SecurityCard({
   if (!data || data.status === 'failed') {
     return (
       <InsightShell
-        icon={<Shield className="w-4 h-4 text-violet-400" />}
+        icon={<Shield className="w-4 h-4 text-emerald-400" />}
         title="Security headers"
         compact={compact}
       >
-        <p className="text-xs text-slate-400">{data?.summary || 'Could not probe this URL.'}</p>
+        <p className="text-xs text-slate-400 leading-relaxed">{securityProbeMessage(data)}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Retry probe
+            </button>
+          )}
+          <a
+            href={aegisUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white rounded-lg"
+          >
+            Open full scan in Aegis Loop
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
       </InsightShell>
     );
   }
 
   return (
     <InsightShell
-      icon={<Shield className="w-4 h-4 text-violet-400" />}
+      icon={<Shield className="w-4 h-4 text-emerald-400" />}
       title="Security headers"
       compact={compact}
     >
@@ -317,6 +378,9 @@ function SecurityCard({
           <p className="text-[10px] text-slate-500 mt-1">{data.summary}</p>
         </div>
       </div>
+      {data.source && (
+        <p className="text-[10px] font-mono text-slate-600 mt-1">Source: {data.source}</p>
+      )}
       <ul className="mt-3 flex flex-wrap gap-2 text-[10px] font-mono">
         <HeaderPill ok={data.https} label="HTTPS" {...helpForSecurityHeader('HTTPS', data.reportUrl)} />
         <HeaderPill ok={data.hsts} label="HSTS" {...helpForSecurityHeader('HSTS', data.reportUrl)} />
@@ -324,10 +388,10 @@ function SecurityCard({
       </ul>
       <p className="text-[10px] text-slate-600 mt-2 leading-relaxed">{data.marketerNote}</p>
       <a
-        href={data.reportUrl || GROWTH_STACK_PRODUCTS.aegis.url}
+        href={data.reportUrl || aegisUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-violet-400/90"
+        className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-emerald-400/90"
       >
         Full scan in Aegis Loop <ExternalLink className="w-3 h-3" />
       </a>
@@ -507,7 +571,7 @@ function HeaderPill({
           href={fixUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-0.5 mt-1.5 text-[10px] font-bold text-violet-300 hover:text-violet-200"
+          className="inline-flex items-center gap-0.5 mt-1.5 text-[10px] font-bold text-emerald-300 hover:text-emerald-200"
         >
           How to fix →
         </a>

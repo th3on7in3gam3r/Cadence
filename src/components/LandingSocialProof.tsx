@@ -10,6 +10,8 @@ import { TESTIMONIALS } from '../data/landingSocialProof';
 import StarRating from './landing/StarRating';
 
 export default function LandingSocialProof() {
+  if (TESTIMONIALS.length === 0) return null;
+
   return (
     <section className="border-b border-slate-800 bg-slate-950">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-12">

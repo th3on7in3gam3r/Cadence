@@ -22,6 +22,16 @@ export default function EmailMockupViewport({
   const [activeTab, setActiveTab] = useState(0);
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'mobile'>('desktop');
 
+  if (emails.length === 0) {
+    return (
+      <div className="mb-8 p-5 bg-slate-950/80 border border-dashed border-slate-800 rounded-2xl text-center">
+        <Mail className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+        <p className="text-sm font-bold text-slate-300">No email sequence to preview</p>
+        <p className="text-xs text-slate-500 mt-1">Generate or paste email copy in the editor to preview it here.</p>
+      </div>
+    );
+  }
+
   const active = emails[activeTab] || emails[0];
   const subjectMetrics = subjectLineScore(active?.subject || '');
 

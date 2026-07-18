@@ -1123,12 +1123,7 @@ export default function SeoAgent({
                   ...prev.googleSearchConsole,
                   connected: v,
                   propertyUrl: v ? prev.googleSearchConsole.propertyUrl || siteUrl : undefined,
-                  topQueries: v
-                    ? prev.googleSearchConsole.topQueries || [
-                        { query: 'brand + category', clicks: 120, impressions: 4500, position: 8.2 },
-                        { query: 'competitor alternative', clicks: 45, impressions: 2100, position: 14.1 },
-                      ]
-                    : undefined,
+                  topQueries: v ? prev.googleSearchConsole.topQueries : undefined,
                 },
               }))
             }
@@ -1148,8 +1143,7 @@ export default function SeoAgent({
               ) : null
             }
             description="Pull top queries, clicks, and average position into keyword gap analysis."
-            readOnly={isCloudEnabled()}
-            demoNote={!isCloudEnabled()}
+            readOnly
           />
           <IntegrationCard
             title="Google Analytics 4"
@@ -1160,13 +1154,8 @@ export default function SeoAgent({
                 ga4: {
                   ...prev.ga4,
                   connected: v,
-                  propertyId: v ? prev.ga4.propertyId || 'G-XXXXXXXX' : undefined,
-                  topPages: v
-                    ? prev.ga4.topPages || [
-                        { path: '/', sessions: 3200, bounceRate: 42 },
-                        { path: '/pricing', sessions: 890, bounceRate: 38 },
-                      ]
-                    : undefined,
+                  propertyId: v ? prev.ga4.propertyId : undefined,
+                  topPages: v ? prev.ga4.topPages : undefined,
                 },
               }))
             }
@@ -1190,8 +1179,7 @@ export default function SeoAgent({
               ) : null
             }
             description="Enrich audits with traffic, bounce rate, and landing page performance."
-            readOnly={isCloudEnabled()}
-            demoNote={!isCloudEnabled()}
+            readOnly
           />
           <IntegrationCard
             title="Keyword research tool"
@@ -1201,10 +1189,8 @@ export default function SeoAgent({
                 ...prev,
                 keywordTool: {
                   connected: v,
-                  provider: v ? prev.keywordTool.provider || 'Ahrefs / SEMrush' : undefined,
-                  seedKeywords: v
-                    ? prev.keywordTool.seedKeywords || ['generative engine optimization', 'b2b saas seo']
-                    : undefined,
+                  provider: v ? prev.keywordTool.provider : undefined,
+                  seedKeywords: v ? prev.keywordTool.seedKeywords : undefined,
                 },
               }))
             }
@@ -1262,7 +1248,6 @@ function IntegrationCard({
   onToggle,
   fields,
   readOnly,
-  demoNote,
 }: {
   title: string;
   description: string;
@@ -1270,7 +1255,6 @@ function IntegrationCard({
   onToggle: (connected: boolean) => void;
   fields?: React.ReactNode;
   readOnly?: boolean;
-  demoNote?: boolean;
 }) {
   return (
     <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
@@ -1296,11 +1280,6 @@ function IntegrationCard({
       </div>
       <p className="text-[11px] text-slate-500 leading-relaxed">{description}</p>
       {fields}
-      {connected && demoNote && (
-        <p className="text-[9px] text-amber-500/80 mt-2 font-mono">
-          Demo mode: sample data used until OAuth is configured in production.
-        </p>
-      )}
     </div>
   );
 }

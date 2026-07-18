@@ -52,22 +52,6 @@ export function saveImagePrompt(assetType: MarketingAssetType, prompt: string): 
   }
 }
 
-export function getStudioImageUrl(
-  assetType: MarketingAssetType,
-  artisticTheme: string,
-  imagenSeed: number,
-  prompt: string,
-): string {
-  const encoded = encodeURIComponent(prompt || 'marketing');
-  if (assetType === 'social_posts') {
-    return `https://picsum.photos/seed/imagen-social-${artisticTheme}-${imagenSeed}-${encoded}/800/420`;
-  }
-  if (assetType === 'lead_magnet') {
-    return `https://picsum.photos/seed/imagen-lead-${artisticTheme}-${imagenSeed}-${encoded}/900/900`;
-  }
-  return `https://picsum.photos/seed/imagen-${assetType}-${artisticTheme}-${imagenSeed}-${encoded}/1200/675`;
-}
-
 const GENERATED_IMAGES_KEY = 'ai_cmo_generated_images_by_asset';
 
 export function loadGeneratedImageUrl(assetType: MarketingAssetType): string | null {
@@ -92,21 +76,13 @@ export function saveGeneratedImageUrl(assetType: MarketingAssetType, imageDataUr
   }
 }
 
-/** Prefer a real Imagen result; otherwise show the placeholder preview. */
+/** Returns Imagen output only — no stock placeholder URLs. */
 export function resolveStudioImageUrl(input: {
   generatedUrl?: string | null;
-  assetType: MarketingAssetType;
-  artisticTheme: string;
-  imagenSeed: number;
-  prompt: string;
-}): string {
-  if (input.generatedUrl?.trim()) return input.generatedUrl.trim();
-  return getStudioImageUrl(
-    input.assetType,
-    input.artisticTheme,
-    input.imagenSeed,
-    input.prompt,
-  );
+}): string | null {
+  const url = input.generatedUrl?.trim();
+  if (!url) return null;
+  return url;
 }
 
 export function isGeneratedImageUrl(url: string): boolean {

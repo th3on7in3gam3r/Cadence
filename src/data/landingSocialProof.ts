@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Landing page social proof — edit quotes and names here without touching layout.
+ * Testimonials are empty until real verified quotes are added.
  */
 
 export interface TrustedBrand {
@@ -55,36 +56,7 @@ export const TRUSTED_BY: TrustedBrand[] = [
   },
 ];
 
-export const TESTIMONIALS: LandingTestimonial[] = [
-  {
-    quote:
-      'We run several studio brands from one Cadence workspace. Paste a URL, get a strategy brief, and ship campaigns without bouncing between five tabs.',
-    pullQuote:
-      'Paste a URL, get a strategy brief, and ship campaigns without bouncing between five tabs.',
-    name: 'Jerless M.',
-    role: 'Founder',
-    company: 'BibleFunLand Studios',
-    rating: 5,
-    featured: true,
-  },
-  {
-    quote:
-      'Kerygma handles publishing — Cadence handles the strategy and copy underneath. Our team went from blank page to a full content plan in under ten minutes.',
-    pullQuote: 'From blank page to a full content plan in under ten minutes.',
-    name: 'Studio team',
-    role: 'Marketing',
-    company: 'Kerygma Social',
-    rating: 5,
-    featured: true,
-  },
-  {
-    quote:
-      'Before we share posts to Postwick, Cadence gives us a clear brand voice and messaging angles. It’s the fastest way to know if a site is ready to promote.',
-    name: 'Growth lead',
-    role: 'Product',
-    company: 'Postwick',
-    rating: 5,
-  },
-];
+/** Add verified customer quotes here — section hidden when empty. */
+export const TESTIMONIALS: LandingTestimonial[] = [];
 
 export const FEATURED_TESTIMONIALS = TESTIMONIALS.filter((t) => t.featured);

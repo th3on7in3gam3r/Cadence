@@ -47,16 +47,7 @@ function parseBlock(block: string, label: string, id: string): EmailDraft {
 
 export function parseEmailSequence(content: string): EmailDraft[] {
   if (!content?.trim()) {
-    return [
-      {
-        id: 'email-1',
-        label: 'Email 1',
-        subject: 'Welcome — add your subject',
-        previewText: 'Preview text appears in the inbox snippet…',
-        body: 'Your welcome email body will render here once content is generated.',
-        cta: 'Get started',
-      },
-    ];
+    return [];
   }
 
   const chunks: { label: string; id: string; text: string }[] = [];

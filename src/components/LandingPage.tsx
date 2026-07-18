@@ -200,9 +200,6 @@ export default function LandingPage() {
                 <span className="text-emerald-400">→</span> Analyzing https://yourbrand.com …
               </div>
               <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
-                Campaign readiness: <span className="text-white font-bold">B+ 78%</span>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
                 Generated: SEO keywords · Blog draft · Email sequence
               </div>
             </div>

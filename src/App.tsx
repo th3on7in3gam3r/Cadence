@@ -354,18 +354,7 @@ export default function App({ onGoHome }: AppProps) {
     }
     setIsExportingBundle(true);
     try {
-      let imagenMeta = { artisticTheme: 'minimalist', imagenSeed: 101, customImagePrompt: '' };
-      try {
-        const saved = localStorage.getItem('ai_cmo_imagen_meta');
-        if (saved) imagenMeta = { ...imagenMeta, ...JSON.parse(saved) };
-      } catch { /* use defaults */ }
-
-      const images = buildDefaultCampaignImages(
-        cachedAssets,
-        imagenMeta.artisticTheme,
-        imagenMeta.imagenSeed,
-        imagenMeta.customImagePrompt
-      );
+      const images = buildDefaultCampaignImages(cachedAssets);
 
       const blob = await buildCampaignBundleZip({
         brandAnalysis,

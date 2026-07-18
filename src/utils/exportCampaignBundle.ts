@@ -11,6 +11,7 @@ import {
   AssetHistoryEntry,
   CampaignImageExportMeta,
 } from '../types';
+import { isGeneratedImageUrl, loadGeneratedImageUrl, loadImagePrompt } from './imagePrompts';
 
 const ASSET_LABELS: Record<MarketingAssetType, string> = {
   seo_keywords: 'seo-keywords',
@@ -132,30 +133,31 @@ export function downloadCampaignBundle(blob: Blob, brandName: string) {
 
 export function buildDefaultCampaignImages(
   cachedAssets: Partial<Record<MarketingAssetType, GeneratedAsset>>,
-  artisticTheme: string,
-  imagenSeed: number,
-  customImagePrompt: string
 ): CampaignImageExportMeta[] {
   const images: CampaignImageExportMeta[] = [];
-  const prompt = encodeURIComponent(customImagePrompt || 'marketing');
+  const types: MarketingAssetType[] = ['blog_post', 'social_posts', 'lead_magnet', 'email_sequence', 'seo_keywords'];
 
-  if (cachedAssets.blog_post) {
+  for (const assetType of types) {
+    if (!cachedAssets[assetType]) continue;
+    const url = loadGeneratedImageUrl(assetType);
+    if (!url || !isGeneratedImageUrl(url)) continue;
     images.push({
-      assetType: 'blog_post',
-      label: 'Blog featured banner',
-      url: `https://picsum.photos/seed/imagen-${artisticTheme}-${imagenSeed}-${prompt}/1200/675`,
-      artisticTheme,
-      prompt: customImagePrompt,
+      assetType,
+      label:
+        assetType === 'blog_post'
+          ? 'Blog featured banner'
+          : assetType === 'social_posts'
+            ? 'Social graphic'
+            : assetType === 'lead_magnet'
+              ? 'Lead magnet cover'
+              : assetType === 'email_sequence'
+                ? 'Email header'
+                : 'SEO banner',
+      url,
+      artisticTheme: 'generated',
+      prompt: loadImagePrompt(assetType) || cachedAssets[assetType]?.title || '',
     });
   }
-  if (cachedAssets.social_posts) {
-    images.push({
-      assetType: 'social_posts',
-      label: 'Social graphic',
-      url: `https://picsum.photos/seed/social-${artisticTheme}-${imagenSeed}-${prompt}/1080/1080`,
-      artisticTheme,
-      prompt: customImagePrompt,
-    });
-  }
+
   return images;
 }

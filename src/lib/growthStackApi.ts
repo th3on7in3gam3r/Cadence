@@ -23,6 +23,7 @@ export interface CitePilotCitationsResponse {
 
 export interface AegisUrlCheckResponse {
   connected: boolean;
+  source?: 'aegis-api' | 'cadence-local';
   url?: string;
   status?: 'complete' | 'failed';
   score?: number;
