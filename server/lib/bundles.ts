@@ -31,6 +31,7 @@ export interface StudioBundle {
   products: StudioProductId[];
   entitlements: BundleEntitlements;
   envKey: string;
+  annualEnvKey?: string;
   featured?: boolean;
 }
 
@@ -93,6 +94,7 @@ export const STUDIO_BUNDLES: Record<BundleId, StudioBundle> = {
     products: ['ai_cmo'],
     entitlements: { ai_cmo: { plan: 'pro' } },
     envKey: 'STRIPE_PRICE_PRO_MONTHLY',
+    annualEnvKey: 'STRIPE_PRICE_PRO_ANNUAL',
   },
   ai_cmo_team: {
     id: 'ai_cmo_team',
@@ -102,6 +104,7 @@ export const STUDIO_BUNDLES: Record<BundleId, StudioBundle> = {
     products: ['ai_cmo'],
     entitlements: { ai_cmo: { plan: 'team' } },
     envKey: 'STRIPE_PRICE_TEAM_MONTHLY',
+    annualEnvKey: 'STRIPE_PRICE_TEAM_ANNUAL',
   },
 };
 
@@ -114,16 +117,24 @@ export const BUNDLE_CATALOG_ORDER: BundleId[] = [
 
 export const AI_CMO_ONLY_BUNDLES: BundleId[] = ['ai_cmo_pro', 'ai_cmo_team'];
 
-export function bundlePriceId(bundleId: BundleId): string | null {
+export function bundlePriceId(
+  bundleId: BundleId,
+  interval: 'monthly' | 'annual' = 'monthly',
+): string | null {
   const bundle = STUDIO_BUNDLES[bundleId];
   if (!bundle) return null;
+  if (interval === 'annual' && bundle.annualEnvKey) {
+    const annual = process.env[bundle.annualEnvKey]?.trim();
+    if (annual) return annual;
+  }
   return process.env[bundle.envKey]?.trim() || null;
 }
 
 export function bundleIdFromPriceId(priceId: string): BundleId | null {
   for (const bundle of Object.values(STUDIO_BUNDLES)) {
-    const configured = process.env[bundle.envKey]?.trim();
-    if (configured && configured === priceId) return bundle.id;
+    const monthly = process.env[bundle.envKey]?.trim();
+    const annual = bundle.annualEnvKey ? process.env[bundle.annualEnvKey]?.trim() : null;
+    if ((monthly && monthly === priceId) || (annual && annual === priceId)) return bundle.id;
   }
   return null;
 }

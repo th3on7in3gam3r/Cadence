@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CreditCard, Check, Loader2, ExternalLink, Package, Sparkles } from 'lucide-react';
 import {
   fetchBillingStatus,
@@ -16,11 +17,27 @@ import { isCloudEnabled } from '../../lib/cloudConfig';
 import type { BundleCatalogItem, BundleId } from '../../lib/bundles';
 import { BUNDLE_CATALOG_ORDER, PRODUCT_LABELS, bundlePricingCaption } from '../../lib/bundles';
 import { PRODUCT_NAME } from '../../lib/brand';
+import PricingIntervalToggle from '../pricing/PricingIntervalToggle';
+import { displayPlanPrice, type BillingInterval } from '../../lib/pricingDisplay';
+import { PLAN_PRICES } from '../../lib/plans';
 
 const AI_CMO_FEATURES = {
   free: ['1 brand workspace', '3 SEO audits / month', 'Quick crawl (8 pages)', 'Dashboard & content studio'],
-  pro: ['Unlimited brands', 'Unlimited SEO audits', 'Deep crawl (100 pages/job)', '500 deep-crawl credits/mo', 'GSC & GA4 integrations', 'White-label PDF reports'],
-  team: ['Everything in Pro', 'Deep crawl (500 pages/job)', '2,000 deep-crawl credits/mo', 'Up to 10 seats', 'Team invites & roles', 'Approval workflow'],
+  pro: [
+    'Unlimited brand workspaces',
+    'Unlimited SEO audits',
+    'Deep crawl 100 pages/job',
+    'GSC, GA4 & WordPress integrations',
+    'White-label PDF reports',
+  ],
+  team: [
+    'Everything in Pro',
+    'Up to 10 seats with roles & invites',
+    'Approval workflow on blog drafts',
+    'Deep crawl 500 pages/job',
+    '2,000 deep-crawl page credits/month',
+    'Unlimited client brand workspaces',
+  ],
 };
 
 function productPills(products: string[]) {
@@ -28,11 +45,19 @@ function productPills(products: string[]) {
 }
 
 export default function BillingTab({ highlightBundle }: { highlightBundle?: string }) {
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [catalog, setCatalog] = useState<BundleCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [interval, setInterval] = useState<BillingInterval>(
+    searchParams.get('interval') === 'annual' ? 'annual' : 'monthly',
+  );
+
+  useEffect(() => {
+    if (searchParams.get('interval') === 'annual') setInterval('annual');
+  }, [searchParams]);
 
   useEffect(() => {
     Promise.all([fetchBillingStatus(), fetchBundleCatalog()])
@@ -52,7 +77,10 @@ export default function BillingTab({ highlightBundle }: { highlightBundle?: stri
     }
   }, [highlightBundle, loading]);
 
-  const handleCheckout = async (input: { bundle?: BundleId; plan?: 'pro' | 'team' }) => {
+  const handleCheckout = async (input: {
+    bundle?: BundleId;
+    plan?: 'pro' | 'team';
+  }) => {
     if (!isCloudEnabled()) {
       setError('Sign in with cloud mode to subscribe via Stripe.');
       return;
@@ -61,7 +89,7 @@ export default function BillingTab({ highlightBundle }: { highlightBundle?: stri
     setBusy(key);
     setError(null);
     try {
-      const url = await startCheckout(input);
+      const url = await startCheckout({ ...input, interval });
       if (url) window.location.href = url;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Checkout failed');
@@ -211,22 +239,41 @@ export default function BillingTab({ highlightBundle }: { highlightBundle?: stri
           <Sparkles className="w-4 h-4 text-amber-400" />
           <h3 className="text-sm font-display font-extrabold text-white">{PRODUCT_NAME} only</h3>
         </div>
+        <div className="flex justify-center py-2">
+          <PricingIntervalToggle value={interval} onChange={setInterval} />
+        </div>
         <div className="grid md:grid-cols-3 gap-4">
           {(['free', 'pro', 'team'] as const).map((plan) => {
             const isCurrent = current === plan;
-            const price = plan === 'free' ? 0 : plan === 'pro' ? 49 : 149;
+            const monthlyList = plan === 'free' ? 0 : PLAN_PRICES[plan].monthly;
+            const priceDisplay = monthlyList > 0 ? displayPlanPrice(monthlyList, interval) : null;
+            const highlightPlan =
+              highlightBundle === plan ||
+              (highlightBundle === 'ai_cmo_pro' && plan === 'pro') ||
+              (highlightBundle === 'ai_cmo_team' && plan === 'team');
             return (
               <div
                 key={plan}
                 className={`p-5 rounded-2xl border flex flex-col ${
-                  isCurrent ? 'border-amber-500/50 bg-amber-950/10' : 'border-slate-800 bg-slate-900'
-                }`}
+                  isCurrent || highlightPlan
+                    ? 'border-amber-500/50 bg-amber-950/10'
+                    : 'border-slate-800 bg-slate-900'
+                } ${highlightPlan ? 'ring-2 ring-amber-400/50' : ''}`}
               >
                 <h3 className="text-sm font-display font-extrabold text-white capitalize">{plan}</h3>
                 <p className="text-2xl font-bold text-white mt-2">
-                  {price === 0 ? 'Free' : `$${price}`}
-                  {price > 0 && <span className="text-xs text-slate-500 font-normal">/mo</span>}
+                  {priceDisplay ? (
+                    <>
+                      ${priceDisplay.amount}
+                      <span className="text-xs text-slate-500 font-normal">{priceDisplay.suffix}</span>
+                    </>
+                  ) : (
+                    'Free'
+                  )}
                 </p>
+                {priceDisplay?.subline && (
+                  <p className="text-[10px] text-slate-500 font-mono mt-1">{priceDisplay.subline}</p>
+                )}
                 <ul className="mt-4 space-y-2 flex-1">
                   {AI_CMO_FEATURES[plan].map((f) => (
                     <li key={f} className="text-[11px] text-slate-400 flex items-start gap-2">

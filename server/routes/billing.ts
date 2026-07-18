@@ -23,6 +23,7 @@ import {
   bundleCatalogForApi,
   aiCmoOnlyCatalogForApi,
   bundleIdFromPriceId,
+  bundlePriceId,
   type BundleId,
 } from '../lib/bundles';
 import { limitsForPlan, type PlanId } from '../lib/plans';
@@ -204,12 +205,19 @@ router.post('/checkout', requireUser, async (req: AuthedRequest, res) => {
       });
     }
 
+    const interval =
+      req.body?.interval === 'annual' ? ('annual' as const) : ('monthly' as const);
+
     const stripe = getStripe();
     const bundle = STUDIO_BUNDLES[bundleId];
-    const priceId = process.env[bundle.envKey]?.trim();
+    const priceId = bundlePriceId(bundleId, interval);
     if (!stripe || !priceId) {
+      const envHint =
+        interval === 'annual' && bundle.annualEnvKey
+          ? bundle.annualEnvKey
+          : bundle.envKey;
       return res.status(503).json({
-        error: `Stripe price not configured for ${bundleId}. Set ${bundle.envKey} in .env.local`,
+        error: `Stripe price not configured for ${bundleId} (${interval}). Set ${envHint} in .env.local`,
       });
     }
 

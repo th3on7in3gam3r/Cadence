@@ -17,9 +17,10 @@ export interface NavDropdownItem {
 interface NavDropdownProps {
   label: string;
   items: NavDropdownItem[];
+  active?: boolean;
 }
 
-export default function NavDropdown({ label, items }: NavDropdownProps) {
+export default function NavDropdown({ label, items, active = false }: NavDropdownProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
@@ -51,7 +52,9 @@ export default function NavDropdown({ label, items }: NavDropdownProps) {
         aria-haspopup="menu"
         aria-controls={panelId}
         className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
-          open ? 'text-white bg-slate-800/60' : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+          open || active
+            ? 'text-white bg-slate-800/60'
+            : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
         }`}
       >
         {label}

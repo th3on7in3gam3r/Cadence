@@ -4,14 +4,10 @@
  */
 
 import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ArrowRight,
-  Search,
-  FileText,
-  BarChart3,
-  Layers,
   Sparkles,
   CheckCircle2,
   ChevronRight,
@@ -21,125 +17,55 @@ import {
 } from 'lucide-react';
 import CadencePricingSection from './CadencePricingSection';
 import GrowthStackCta from './GrowthStackCta';
-import MarketingFooter from './MarketingFooter';
+import MarketingSiteShell from './marketing/MarketingSiteShell';
 import LandingHeroPreview from './LandingHeroPreview';
-import LandingNav from './landing/LandingNav';
+import LandingFeaturesSection from './landing/LandingFeaturesSection';
+import LandingHowItWorksSection from './landing/LandingHowItWorksSection';
+import LandingFaqSection from './landing/LandingFaqSection';
+import LandingTrustBar from './landing/LandingTrustBar';
 import LandingSocialProof from './LandingSocialProof';
 import LandingStackComparison from './LandingStackComparison';
 import JsonLd from './seo/JsonLd';
 import { CONTENT_STUDIO_CALLOUT, GENERATOR_STATS_SUBLINE } from '../data/landingGenerators';
 import { buildCadenceSoftwareApplicationSchema } from '../data/structuredData';
+import { useMarketingSite } from '../hooks/useMarketingSite';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PAGE_SEO } from '../lib/pageSeo';
-import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCT_TAGLINE } from '../lib/brand';
+import { PRODUCT_NAME } from '../lib/brand';
 
-interface LandingPageProps {
-  onTryFree: () => void;
-  onOpenWorkspace: () => void;
-  onSignIn: () => void;
-  hasWorkspace?: boolean;
-  cloudEnabled?: boolean;
-}
-
-const FEATURES = [
-  {
-    icon: <BarChart3 className="w-5 h-5 text-emerald-400" />,
-    title: 'Strategy dashboard',
-    desc: 'Your brand strategy in plain English — strengths, gaps, audience, and a 4-week plan.',
-  },
-  {
-    icon: <Search className="w-5 h-5 text-teal-400" />,
-    title: 'SEO AI Agent',
-    desc: 'Crawl your site, fix technical issues, find keyword gaps, and rewrite meta tags.',
-  },
-  {
-    icon: <FileText className="w-5 h-5 text-blue-400" />,
-    title: 'Content studio',
-    desc: 'Generate blogs, social posts, emails, keywords, and lead magnets — ready to edit.',
-  },
-  {
-    icon: <Layers className="w-5 h-5 text-amber-400" />,
-    title: 'Campaign history',
-    desc: 'Version every draft, compare changes, and export a full campaign ZIP.',
-  },
-];
-
-const STEPS = [
-  { n: '1', title: 'Paste your URL', desc: 'AI reads your site and builds a marketing strategy in minutes.' },
-  { n: '2', title: 'Run SEO & create content', desc: 'Audit pages, fix gaps, then generate copy your team can ship.' },
-  { n: '3', title: 'Export & iterate', desc: 'Download everything or refine with your AI marketing team.' },
-];
-
-const FAQ_BASE = [
-  {
-    q: 'Do I need a marketing team to use this?',
-    a: `No. ${PRODUCT_NAME} is built for founders and small teams who want strategy and copy without hiring a full agency.`,
-  },
-  {
-    q: 'Is this just ChatGPT with a form?',
-    a: `No. ${PRODUCT_NAME} connects brand analysis, SEO crawling, five content generators (keywords, blog, social, email, and lead magnet), version history, and campaign export in one workspace — see the comparison table above for how that differs from ChatGPT, Semrush, Jasper, and Buffer.`,
-  },
-  {
-    q: 'Can I use it for GEO / AI search?',
-    a: 'Yes. Keyword research, blog drafts, and the SEO Agent are designed for traditional SEO and generative engine visibility.',
-  },
-];
-
-function getStartedFaq(cloudEnabled?: boolean) {
-  return {
-    q: 'What do I need to get started?',
-    a: cloudEnabled
-      ? 'Paste your website URL — try one free brand analysis instantly, no signup required. Create a free account to save your workspace, generate content, and run SEO audits (3/month on Free).'
-      : 'A website URL and a Google Gemini API key. The app runs in your browser — your data stays in local storage.',
-  };
-}
-
-export default function LandingPage({
-  onTryFree,
-  onOpenWorkspace,
-  onSignIn,
-  hasWorkspace,
-  cloudEnabled,
-}: LandingPageProps) {
+export default function LandingPage() {
   const location = useLocation();
-  const faq = [FAQ_BASE[0], getStartedFaq(cloudEnabled), ...FAQ_BASE.slice(1)];
+  const marketing = useMarketingSite();
+  const { cloudEnabled, onTryFree, onSignIn } = marketing;
 
   usePageMeta(PAGE_SEO['/']);
 
   useEffect(() => {
-    if (location.hash === '#pricing') {
-      requestAnimationFrame(() => {
-        document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
+    if (!location.hash) return;
+    const id = location.hash.replace(/^#/, '');
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    });
   }, [location.hash]);
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const primaryLabel = cloudEnabled ? 'Try free — analyze your site' : 'Start free — analyze your site';
+  const primaryLabel = cloudEnabled ? 'Analyze your site free' : 'Start free — analyze your site';
   const freemiumNote = cloudEnabled
     ? 'Free plan · 1 brand · 3 SEO audits/mo · No credit card'
     : 'Self-hosted · Bring your own Gemini API key · No credit card';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 antialiased">
+    <MarketingSiteShell marketing={marketing} footerScrollTo={scrollTo}>
       <JsonLd data={buildCadenceSoftwareApplicationSchema()} />
-      <LandingNav
-        cloudEnabled={cloudEnabled}
-        hasWorkspace={hasWorkspace}
-        onTryFree={onTryFree}
-        onOpenWorkspace={onOpenWorkspace}
-        onSignIn={onSignIn}
-        scrollTo={scrollTo}
-      />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-slate-800">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/40 via-slate-950 to-slate-950" />
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
-        <div className="relative max-w-6xl mx-auto px-4 md:px-6 pt-12 pb-12 md:pt-16 md:pb-16">
+        <div className="relative max-w-6xl mx-auto px-4 md:px-6 pt-12 pb-8 md:pt-16 md:pb-10">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div className="text-center lg:text-left">
               <motion.div
@@ -184,13 +110,12 @@ export default function LandingPage({
                   {primaryLabel}
                   <ChevronRight className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => scrollTo('how-it-works')}
-                  className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold rounded-xl cursor-pointer transition"
+                <Link
+                  to="/how-it-works"
+                  className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold rounded-xl transition text-center"
                 >
                   See how it works
-                </button>
+                </Link>
               </motion.div>
               <p className="mt-4 text-xs text-slate-500 font-mono">{freemiumNote}</p>
               {cloudEnabled && (
@@ -213,9 +138,11 @@ export default function LandingPage({
         </div>
       </section>
 
+      <LandingTrustBar />
+
       {/* Proof strip */}
       <section className="border-b border-slate-800 bg-slate-900/50">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
             { label: 'Brand analysis', value: '< 2 min', subline: undefined },
             { label: 'SEO page crawl', value: 'Up to 20 pages', subline: undefined },
@@ -233,64 +160,16 @@ export default function LandingPage({
             </div>
           ))}
         </div>
-        <p className="max-w-6xl mx-auto px-4 md:px-6 pb-6 text-center text-xs text-slate-500">
+        <p className="max-w-6xl mx-auto px-4 md:px-6 pb-5 text-center text-xs text-slate-500">
           <strong className="text-slate-400 font-semibold">Content studio:</strong> {CONTENT_STUDIO_CALLOUT}
         </p>
       </section>
 
       <LandingSocialProof />
-
-      {/* Features */}
-      <section id="features" className="py-20 md:py-28 border-b border-slate-800 scroll-mt-16">
-        <div className="max-w-6xl mx-auto px-4 md:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-extrabold text-white">
-              Everything a CMO team does — in one app
-            </h2>
-            <p className="mt-4 text-slate-400">
-              No more switching between SEO tools, docs, and chatbots. Plan, create, and ship from one workspace.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-5">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition"
-              >
-                <div className="p-2.5 w-fit rounded-xl bg-slate-950 border border-slate-800 mb-4">{f.icon}</div>
-                <h3 className="text-lg font-display font-bold text-white">{f.title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section id="how-it-works" className="py-20 md:py-28 border-b border-slate-800 bg-slate-900/30 scroll-mt-16">
-        <div className="max-w-6xl mx-auto px-4 md:px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-extrabold text-white">How it works</h2>
-            <p className="mt-4 text-slate-400">Three steps from homepage to published campaign assets.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {STEPS.map((step) => (
-              <div key={step.n} className="relative text-center md:text-left">
-                <span className="inline-flex w-10 h-10 items-center justify-center rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400 font-display font-black text-lg mb-4">
-                  {step.n}
-                </span>
-                <h3 className="text-lg font-display font-bold text-white">{step.title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      <LandingFeaturesSection />
+      <LandingHowItWorksSection />
       <LandingStackComparison />
-
       <CadencePricingSection cloudEnabled={cloudEnabled} onGetStarted={onTryFree} />
-
       <GrowthStackCta cloudEnabled={cloudEnabled} onGetStarted={onTryFree} />
 
       {/* Value props */}
@@ -338,28 +217,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* FAQ */}
-      <section id="faq" className="py-20 md:py-28 border-b border-slate-800 scroll-mt-16">
-        <div className="max-w-3xl mx-auto px-4 md:px-6">
-          <h2 className="text-3xl font-display font-extrabold text-white text-center mb-12">
-            Frequently asked questions
-          </h2>
-          <div className="space-y-4">
-            {faq.map((item) => (
-              <details
-                key={item.q}
-                className="group p-5 rounded-xl bg-slate-900 border border-slate-800 open:border-slate-700"
-              >
-                <summary className="font-display font-bold text-white cursor-pointer list-none flex justify-between items-center gap-4">
-                  {item.q}
-                  <ChevronRight className="w-4 h-4 text-slate-500 group-open:rotate-90 transition shrink-0" />
-                </summary>
-                <p className="mt-3 text-sm text-slate-400 leading-relaxed">{item.a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
+      <LandingFaqSection cloudEnabled={cloudEnabled} />
 
       {/* CTA */}
       <section className="py-20 md:py-28">
@@ -380,8 +238,6 @@ export default function LandingPage({
           </button>
         </div>
       </section>
-
-      <MarketingFooter onScrollTo={scrollTo} onGetStarted={onTryFree} />
-    </div>
+    </MarketingSiteShell>
   );
 }

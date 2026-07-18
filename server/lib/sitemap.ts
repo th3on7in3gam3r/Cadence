@@ -9,6 +9,11 @@ import { serverPublicOrigin } from './brand';
 export const PUBLIC_SITEMAP_PATHS: { path: string; changefreq: string; priority: string }[] = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
   { path: '/pricing', changefreq: 'monthly', priority: '0.9' },
+  { path: '/features', changefreq: 'monthly', priority: '0.8' },
+  { path: '/how-it-works', changefreq: 'monthly', priority: '0.8' },
+  { path: '/compare', changefreq: 'monthly', priority: '0.8' },
+  { path: '/faq', changefreq: 'monthly', priority: '0.8' },
+  { path: '/growth-stack', changefreq: 'monthly', priority: '0.8' },
   { path: '/studio', changefreq: 'monthly', priority: '0.8' },
   { path: '/help', changefreq: 'monthly', priority: '0.8' },
   { path: '/privacy', changefreq: 'yearly', priority: '0.3' },

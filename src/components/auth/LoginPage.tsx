@@ -57,7 +57,7 @@ export default function LoginPage() {
           disabled={busy}
           className="w-full py-3 mb-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-lg text-sm cursor-pointer flex items-center justify-center gap-2"
         >
-          Try free — analyze your site
+          Analyze your site free
           <ArrowRight className="w-4 h-4" />
         </button>
 

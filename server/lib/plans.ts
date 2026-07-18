@@ -61,8 +61,8 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
 };
 
 export const PLAN_PRICES = {
-  pro: { monthly: 49, label: 'Pro' },
-  team: { monthly: 149, label: 'Team' },
+  pro: { monthly: 49, annualMonthly: 39, label: 'Pro' },
+  team: { monthly: 149, annualMonthly: 119, label: 'Team' },
 } as const;
 
 export function limitsForPlan(plan: PlanId): PlanLimits {

@@ -96,13 +96,13 @@ export default function MarketingFooter({
           { label: `Open ${PRODUCT_NAME}`, to: '/app' },
         ]
       : [
-          scrollLink('features', 'Features'),
-          scrollLink('how-it-works', 'How it works'),
+          { label: 'Features', to: '/features' },
+          { label: 'How it works', to: '/how-it-works' },
           { label: 'Pricing', to: '/pricing' },
-          scrollLink('growth-stack', stackUi ? 'App bundles' : 'Growth Stack'),
+          { label: stackUi ? 'App bundles' : 'Growth Stack', to: '/growth-stack' },
           ...(stackUi ? [{ label: 'Studio apps', to: '/studio' }] : []),
-          scrollLink('compare', 'Compare tools'),
-          scrollLink('faq', 'FAQ'),
+          { label: 'Compare tools', to: '/compare' },
+          { label: 'FAQ', to: '/faq' },
           { label: 'User guide', to: '/help' },
           ...(onGetStarted
             ? [{ label: 'Open workspace', onClick: onGetStarted }]

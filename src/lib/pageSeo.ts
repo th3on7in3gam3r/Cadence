@@ -27,6 +27,31 @@ export const PAGE_SEO: Record<string, PageSeoConfig> = {
     title: `${PRODUCT_NAME} Pricing — Free, Pro & Team Plans`,
     description: `Compare ${PRODUCT_NAME} plans: free brand analysis, Pro at $49/mo with integrations and deep SEO crawl, Team at $149/mo with seats and approval workflow.`,
   },
+  '/features': {
+    path: '/features',
+    title: `${PRODUCT_NAME} Features — Strategy, SEO & Content Studio`,
+    description: `Explore ${PRODUCT_NAME}: brand strategy dashboard, SEO AI Agent, five content generators, and campaign export in one workspace.`,
+  },
+  '/how-it-works': {
+    path: '/how-it-works',
+    title: `How ${PRODUCT_NAME} Works — URL to Campaign in 3 Steps`,
+    description: `Paste your URL, run SEO audits and generate content, then export your campaign — see how ${PRODUCT_NAME} works for solo founders and teams.`,
+  },
+  '/compare': {
+    path: '/compare',
+    title: `${PRODUCT_NAME} vs ChatGPT, Semrush, Jasper & Buffer`,
+    description: `Compare ${PRODUCT_NAME} to typical solo-founder stacks — brand strategy, SEO crawl, five generators, and one workspace instead of five subscriptions.`,
+  },
+  '/faq': {
+    path: '/faq',
+    title: `${PRODUCT_NAME} FAQ — Pricing, SEO, Content & Getting Started`,
+    description: `Answers about ${PRODUCT_NAME}: free plan limits, how it differs from ChatGPT, GEO/AI search, and what you need to get started.`,
+  },
+  '/growth-stack': {
+    path: '/growth-stack',
+    title: `App Bundles — ${PRODUCT_NAME} + CitePilot | ${STUDIO_PARENT}`,
+    description: `Bundle ${PRODUCT_NAME} with CitePilot and sister studio apps — one subscription, shared brand URL, and studio bundle pricing.`,
+  },
   '/studio': {
     path: '/studio',
     title: `${STUDIO_PARENT} — Growth Stack Bundles`,

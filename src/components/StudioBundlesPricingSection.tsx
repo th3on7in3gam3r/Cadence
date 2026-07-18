@@ -7,14 +7,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ExternalLink, Package, Sparkles } from 'lucide-react';
 import {
-  AI_CMO_SOLO_PLANS,
   BUNDLE_CATALOG_ORDER,
   MARKETING_BUNDLES,
+  STUDIO_BUNDLE_PRODUCT_DISPLAY_ORDER,
   bundleCheckoutHref,
+  bundleProductNamesLine,
+  bundleSavings,
   productPills,
   bundlePricingCaption,
   type MarketingBundle,
 } from '../lib/bundles';
+import CadenceSoloPlansGrid from './pricing/CadenceSoloPlansGrid';
+import StudioBundleValueBanner from './studio/StudioBundleValueBanner';
 import { PRODUCT_NAME } from '../lib/brand';
 import { kerygmaPricingUrl } from '../lib/growthStack';
 
@@ -23,10 +27,17 @@ interface StudioBundlesPricingSectionProps {
   showSoloPlans?: boolean;
   title?: string;
   subtitle?: string;
+  cloudEnabled?: boolean;
+  onGetStarted?: () => void;
 }
 
 function PricingBundleCard({ bundle }: { bundle: MarketingBundle }) {
   const pricing = bundlePricingCaption(bundle.products.length);
+  const savings = bundleSavings(bundle);
+  const productNamesLine =
+    bundle.id === 'studio'
+      ? bundleProductNamesLine(bundle.products, STUDIO_BUNDLE_PRODUCT_DISPLAY_ORDER)
+      : null;
   const priceHint =
     bundle.products.length > 1
       ? `One subscription for all ${bundle.products.length} products — not $${bundle.monthlyListPrice} each`
@@ -47,16 +58,27 @@ function PricingBundleCard({ bundle }: { bundle: MarketingBundle }) {
         </span>
       )}
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h3 className="text-lg font-display font-extrabold text-white">{bundle.name}</h3>
+          {productNamesLine && (
+            <p className="mt-2 text-sm font-semibold text-slate-200 leading-snug">{productNamesLine}</p>
+          )}
           <p className="text-sm text-slate-400 mt-1">{bundle.tagline}</p>
         </div>
         <div className="text-right shrink-0">
           <p className="text-3xl font-display font-black text-white">${bundle.monthlyListPrice}</p>
           <p className="text-[10px] font-mono text-slate-500">{pricing.priceSuffix}</p>
+          {bundle.separateListPrice && bundle.id === 'studio' && (
+            <p className="text-[10px] text-slate-500 mt-1 line-through">~${bundle.separateListPrice}</p>
+          )}
         </div>
       </div>
-      {priceHint && (
+      {savings && bundle.id === 'studio' && (
+        <p className="text-[11px] text-emerald-400/90 mt-2 leading-snug">
+          Save ~${savings.amount}/mo vs buying separately ({savings.percent}% off)
+        </p>
+      )}
+      {priceHint && bundle.id !== 'studio' && (
         <p className="text-[11px] text-emerald-400/90 mt-2 leading-snug">{priceHint}</p>
       )}
       <p className="mt-2 text-[11px] font-mono text-violet-300/80">{productPills(bundle.products)}</p>
@@ -86,11 +108,16 @@ export default function StudioBundlesPricingSection({
   id = 'pricing',
   showSoloPlans = true,
   title = 'Studio bundles — one bill, multiple products',
-  subtitle = `Checkout on ${PRODUCT_NAME}. Entitlements sync to Kerygma, CitePilot, and Aegis when you use the same email (link accounts in Settings → Studio after purchase).`,
+  subtitle,
+  cloudEnabled,
+  onGetStarted,
 }: StudioBundlesPricingSectionProps) {
   const ordered = BUNDLE_CATALOG_ORDER.map(
     (id) => MARKETING_BUNDLES.find((b) => b.id === id)!,
   ).filter(Boolean);
+
+  const defaultSubtitle = `Aegis Loop + CitePilot + ${PRODUCT_NAME} + Kerygma Social — $199/mo total for the full Studio Bundle (vs ~$350 separately). Checkout on ${PRODUCT_NAME}; link sister accounts in Settings → Studio after purchase.`;
+  const resolvedSubtitle = subtitle ?? defaultSubtitle;
 
   return (
     <section id={id} className="py-20 md:py-28 border-b border-slate-800 scroll-mt-20 bg-slate-950">
@@ -101,9 +128,10 @@ export default function StudioBundlesPricingSection({
             Bible Funland studio pricing
           </p>
           <h2 className="mt-3 text-3xl md:text-4xl font-display font-extrabold text-white">{title}</h2>
-          <p className="mt-4 text-slate-400 text-sm md:text-base leading-relaxed">{subtitle}</p>
+          <p className="mt-4 text-slate-400 text-sm md:text-base leading-relaxed">{resolvedSubtitle}</p>
         </div>
 
+        <StudioBundleValueBanner />
         <div className="grid md:grid-cols-2 gap-5 lg:gap-6">
           {ordered.map((bundle) => (
             <div key={String(bundle.id)}>
@@ -131,45 +159,10 @@ export default function StudioBundlesPricingSection({
             <p className="text-center text-sm text-slate-500 max-w-xl mx-auto mb-8">
               Don&apos;t need the full stack? Start free or upgrade {PRODUCT_NAME} alone — add sister products later.
             </p>
-            <div className="grid md:grid-cols-3 gap-4">
-              {AI_CMO_SOLO_PLANS.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`p-6 rounded-2xl border flex flex-col ${
-                    plan.id === 'pro' ? 'border-amber-500/40 bg-amber-950/10' : 'border-slate-800 bg-slate-900'
-                  }`}
-                >
-                  <h4 className="font-display font-bold text-white capitalize">{plan.name}</h4>
-                  <p className="mt-2 text-3xl font-black text-white">
-                    {plan.price === 0 ? 'Free' : `$${plan.price}`}
-                    {plan.price > 0 && <span className="text-sm font-normal text-slate-500">/mo</span>}
-                  </p>
-                  <ul className="mt-4 space-y-2 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="text-xs text-slate-400 flex gap-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  {plan.id === 'free' ? (
-                    <Link
-                      to="/app"
-                      className="mt-5 py-2.5 text-center text-xs font-bold text-emerald-400 border border-emerald-800/50 rounded-lg hover:bg-emerald-950/30"
-                    >
-                      Start free
-                    </Link>
-                  ) : (
-                    <Link
-                      to={bundleCheckoutHref(plan.id === 'pro' ? 'ai_cmo_pro' : 'ai_cmo_team')}
-                      className="mt-5 py-2.5 text-center text-xs font-bold bg-amber-500 text-slate-900 rounded-lg hover:bg-amber-400"
-                    >
-                      Upgrade to {plan.name}
-                    </Link>
-                  )}
-                </div>
-              ))}
-            </div>
+            <CadenceSoloPlansGrid
+              cloudEnabled={cloudEnabled}
+              onGetStarted={onGetStarted ?? (() => {})}
+            />
           </div>
         )}
 

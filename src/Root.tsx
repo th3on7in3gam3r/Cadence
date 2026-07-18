@@ -22,41 +22,12 @@ import {
 import StudioHubPage from './pages/StudioHubPage';
 import HelpPage from './pages/HelpPage';
 import PricingPage from './pages/PricingPage';
+import FeaturesPage from './pages/marketing/FeaturesPage';
+import HowItWorksPage from './pages/marketing/HowItWorksPage';
+import ComparePage from './pages/marketing/ComparePage';
+import FaqPage from './pages/marketing/FaqPage';
+import GrowthStackPage from './pages/marketing/GrowthStackPage';
 import ScrollToTopOnNavigate from './components/ScrollToTopOnNavigate';
-import { useTryFree } from './hooks/useTryFree';
-
-function hasSavedWorkspace(): boolean {
-  try {
-    return !!localStorage.getItem('ai_cmo_brand_analysis');
-  } catch {
-    return false;
-  }
-}
-
-function LandingPageRoute() {
-  const navigate = useNavigate();
-  const { cloudEnabled } = useAuth();
-  const onTryFree = useTryFree();
-
-  return (
-    <LandingPage
-      cloudEnabled={cloudEnabled}
-      hasWorkspace={hasSavedWorkspace()}
-      onTryFree={() => void onTryFree()}
-      onSignIn={() => navigate('/app')}
-      onOpenWorkspace={() => {
-        const url = localStorage.getItem('ai_cmo_brand_url') || '';
-        const slug = url
-          .replace(/^https?:\/\//i, '')
-          .replace(/\/$/, '')
-          .replace(/[^a-z0-9]+/gi, '-')
-          .slice(0, 48)
-          .toLowerCase() || 'workspace';
-        navigate(`/app/brands/${slug}`);
-      }}
-    />
-  );
-}
 
 function AppGate() {
   const { cloudEnabled, session, loading } = useAuth();
@@ -88,8 +59,13 @@ export default function Root() {
             <OfflineBanner />
             <ScrollToTopOnNavigate />
             <Routes>
-              <Route path="/" element={<LandingPageRoute />} />
+              <Route path="/" element={<LandingPage />} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/features" element={<FeaturesPage />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/compare" element={<ComparePage />} />
+              <Route path="/faq" element={<FaqPage />} />
+              <Route path="/growth-stack" element={<GrowthStackPage />} />
               <Route path="/studio" element={<StudioHubPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />

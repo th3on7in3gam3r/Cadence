@@ -11,7 +11,7 @@ AI-CMO is the **Stripe checkout hub** for the Bible Funland growth stack. One cu
 | `devsec` | Aegis | — | — | — | Team |
 | `studio` | All four | Team | Fleet | Pro | Team |
 
-Legacy single-app checkout still works: `plan=pro` → `ai_cmo_pro`, `plan=team` → `ai_cmo_team`.
+Legacy single-app checkout still works: `plan=pro` → `ai_cmo_pro`, `plan=team` → `ai_cmo_team`. Pass `interval=annual` on checkout (or `?interval=annual` in Settings → Billing) to use annual price IDs when configured.
 
 ## Stripe Dashboard setup
 
@@ -22,9 +22,13 @@ Legacy single-app checkout still works: `plan=pro` → `ai_cmo_pro`, `plan=team`
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# AI CMO only
+# AI CMO only (monthly)
 STRIPE_PRICE_PRO_MONTHLY=price_...
 STRIPE_PRICE_TEAM_MONTHLY=price_...
+
+# AI CMO only (annual — 20% off; Pro $39/mo billed yearly, Team $119/mo billed yearly)
+STRIPE_PRICE_PRO_ANNUAL=price_...
+STRIPE_PRICE_TEAM_ANNUAL=price_...
 
 # Studio bundles
 STRIPE_PRICE_BUNDLE_GROWTH_MONTHLY=price_...

@@ -170,9 +170,14 @@ export function pulseDashboardUrl(brandUrl: string): string {
 }
 
 /** In-app router path for Settings → Billing (use with React Router Link). */
-export function aiCmoBillingPath(opts?: { bundle?: StudioBundleId; plan?: 'pro' | 'team' }): string {
+export function aiCmoBillingPath(opts?: {
+  bundle?: StudioBundleId;
+  plan?: 'pro' | 'team';
+  interval?: 'monthly' | 'annual';
+}): string {
   const params = new URLSearchParams({ tab: 'billing' });
   if (opts?.bundle) params.set('bundle', opts.bundle);
   if (opts?.plan) params.set('plan', opts.plan);
+  if (opts?.interval && opts.interval !== 'monthly') params.set('interval', opts.interval);
   return `/app/settings?${params.toString()}`;
 }

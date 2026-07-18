@@ -131,6 +131,7 @@ export async function fetchBillingStatus(): Promise<BillingStatus> {
 export async function startCheckout(input: {
   plan?: 'pro' | 'team';
   bundle?: BundleId;
+  interval?: 'monthly' | 'annual';
 }): Promise<string | null> {
   const res = await apiFetch('/api/billing/checkout', {
     method: 'POST',

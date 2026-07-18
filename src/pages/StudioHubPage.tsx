@@ -9,7 +9,6 @@ import {
   ArrowRight,
   CheckCircle2,
   ExternalLink,
-  Layers,
   Search,
   Share2,
   Shield,
@@ -22,7 +21,7 @@ import {
   Globe2,
 } from 'lucide-react';
 import StudioBundlesPricingSection from '../components/StudioBundlesPricingSection';
-import MarketingFooter from '../components/MarketingFooter';
+import MarketingSiteShell from '../components/marketing/MarketingSiteShell';
 import {
   PERSONA_OPTIONS,
   STUDIO_HUB_PRODUCTS,
@@ -30,8 +29,14 @@ import {
   type PersonaId,
   type StudioHubProductId,
 } from '../lib/studioHub';
+import {
+  STUDIO_BUNDLE,
+  STUDIO_BUNDLE_PRODUCT_DISPLAY_ORDER,
+  bundleProductNamesLine,
+} from '../lib/bundles';
 import { aiCmoAppUrl, aiCmoBillingPath } from '../lib/growthStack';
 import { PRODUCT_NAME } from '../lib/brand';
+import { useMarketingSite } from '../hooks/useMarketingSite';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PAGE_SEO } from '../lib/pageSeo';
 
@@ -45,6 +50,11 @@ const ICONS: Record<StudioHubProductId, React.ReactNode> = {
   rhemanote: <BookOpen className="w-5 h-5" />,
   pulpit: <LayoutGrid className="w-5 h-5" />,
 };
+
+const STUDIO_PRODUCT_LINE = bundleProductNamesLine(
+  STUDIO_BUNDLE.products,
+  STUDIO_BUNDLE_PRODUCT_DISPLAY_ORDER,
+);
 
 const BILLING_STEPS = [
   {
@@ -81,6 +91,8 @@ const HUB_FAQ = [
 
 export default function StudioHubPage() {
   const navigate = useNavigate();
+  const marketing = useMarketingSite();
+  const { cloudEnabled, onTryFree } = marketing;
   const [persona, setPersona] = useState<PersonaId | null>(null);
 
   usePageMeta(PAGE_SEO['/studio']);
@@ -102,74 +114,40 @@ export default function StudioHubPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          <Link to="/" className="text-sm font-display font-extrabold text-white flex items-center gap-2">
-            <Layers className="w-4 h-4 text-amber-400" />
-            Bible Funland Studio
-          </Link>
-          <nav className="hidden md:flex items-center gap-5 text-xs text-slate-400">
-            <button type="button" onClick={() => scrollTo('pricing')} className="hover:text-white cursor-pointer">
-              Pricing
-            </button>
-            <button type="button" onClick={() => scrollTo('products')} className="hover:text-white cursor-pointer">
-              Products
-            </button>
-            <button type="button" onClick={() => scrollTo('persona')} className="hover:text-white cursor-pointer">
-              Find your fit
-            </button>
-            <Link to="/" className="hover:text-white">
-              {PRODUCT_NAME} home
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollTo('pricing')}
-              className="hidden sm:inline-flex text-xs font-bold text-violet-300 hover:text-white px-3 py-2 cursor-pointer"
-            >
-              View bundles
-            </button>
-            <Link
-              to="/app"
-              className="px-3 py-2 bg-amber-500 text-slate-900 text-xs font-bold rounded-lg"
-            >
-              Open {PRODUCT_NAME}
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <MarketingSiteShell marketing={marketing} footerScrollTo={scrollTo}>
       {/* Hero */}
       <section className="relative border-b border-slate-800 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-950/50 via-slate-950 to-slate-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/30 via-slate-950 to-slate-950" />
+        <div className="absolute top-0 right-1/4 w-[400px] h-[200px] bg-violet-500/5 blur-[80px] rounded-full pointer-events-none" />
         <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28 text-center">
-          <p className="text-xs font-mono text-violet-400 uppercase tracking-wider">
-            Bible Funland Studios · Growth stack
+          <p className="text-xs font-mono text-emerald-400 uppercase tracking-wider">
+            Bible Funland Studio · Growth stack bundles
           </p>
           <h1 className="mt-4 text-4xl sm:text-5xl md:text-6xl font-display font-extrabold text-white max-w-4xl mx-auto leading-tight">
             Find it. Get cited. Strategize. Publish.{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-amber-300">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
               Secure it.
             </span>
           </h1>
-          <p className="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Aegis Loop, CitePilot, {PRODUCT_NAME}, Kerygma Social, and Postwick — plus church media tools — in one
-            studio family. Bundle pricing with a single Stripe checkout on {PRODUCT_NAME}.
+          <p className="mt-6 text-lg font-semibold text-white max-w-3xl mx-auto leading-relaxed">
+            {STUDIO_PRODUCT_LINE} — ${STUDIO_BUNDLE.monthlyListPrice}/mo total
+          </p>
+          <p className="mt-2 text-base text-slate-400 max-w-2xl mx-auto">
+            vs ~${STUDIO_BUNDLE.separateListPrice} if bought separately. One subscription, one Stripe checkout on{' '}
+            {PRODUCT_NAME}.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => scrollTo('pricing')}
-              className="w-full sm:w-auto px-8 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl cursor-pointer"
+              className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer shadow-lg shadow-emerald-900/25 transition"
             >
-              See studio bundle pricing
+              See bundle pricing
             </button>
             <button
               type="button"
               onClick={() => scrollTo('persona')}
-              className="w-full sm:w-auto px-8 py-3.5 border border-slate-700 text-slate-200 font-bold rounded-xl cursor-pointer hover:bg-slate-900"
+              className="w-full sm:w-auto px-8 py-3.5 border border-slate-700 text-slate-200 font-bold rounded-xl cursor-pointer hover:bg-slate-900 transition"
             >
               Help me choose
             </button>
@@ -177,10 +155,9 @@ export default function StudioHubPage() {
         </div>
       </section>
 
-      {/* Pricing — above the fold on scroll */}
       <StudioBundlesPricingSection
-        title="Studio bundles — visible pricing, one checkout"
-        subtitle="Four bundles for the marketing growth stack. Subscribe below (sign in required). Sister products activate when you link the same email in Settings → Studio."
+        cloudEnabled={cloudEnabled}
+        onGetStarted={onTryFree}
       />
 
       {/* How billing works */}
@@ -190,7 +167,7 @@ export default function StudioHubPage() {
           <div className="mt-10 grid md:grid-cols-3 gap-6">
             {BILLING_STEPS.map((step, i) => (
               <div key={step.title} className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-                <div className="flex items-center gap-3 text-violet-400">
+                <div className="flex items-center gap-3 text-emerald-400">
                   {step.icon}
                   <span className="text-xs font-mono text-slate-500">Step {i + 1}</span>
                 </div>
@@ -277,7 +254,7 @@ export default function StudioHubPage() {
                     navigate('/app');
                   }
                 }}
-                className="group p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-violet-500/40 transition-colors"
+                className="group p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/30 transition-colors"
               >
                 <div className="text-amber-400 mb-2">{ICONS[product.id]}</div>
                 <h3 className="font-bold text-white">{product.name}</h3>
@@ -286,7 +263,7 @@ export default function StudioHubPage() {
                   <Link
                     to={aiCmoBillingPath({ bundle: product.bundleId })}
                     onClick={(e) => e.stopPropagation()}
-                    className="inline-block mt-3 text-[11px] font-bold text-violet-400 hover:underline"
+                    className="inline-block mt-3 text-[11px] font-bold text-emerald-400 hover:underline"
                   >
                     View bundle pricing →
                   </Link>
@@ -340,7 +317,7 @@ export default function StudioHubPage() {
 
       {/* Connect CTA */}
       <section className="py-16 md:py-20">
-        <div className="max-w-3xl mx-auto px-4 text-center p-8 rounded-2xl border border-violet-500/30 bg-violet-950/10">
+        <div className="max-w-3xl mx-auto px-4 text-center p-8 rounded-2xl border border-emerald-500/30 bg-emerald-950/10">
           <h2 className="text-xl font-bold text-white">Ready to connect your stack?</h2>
           <p className="text-sm text-slate-400 mt-2">
             Sign in to {PRODUCT_NAME}, link sister products, and manage billing in one place.
@@ -348,21 +325,19 @@ export default function StudioHubPage() {
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               to="/app/settings?tab=studio"
-              className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-lg"
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg transition"
             >
               Connect products
             </Link>
             <Link
               to="/app/settings?tab=billing"
-              className="px-6 py-3 border border-slate-700 text-sm font-bold rounded-lg text-slate-200 hover:bg-slate-800"
+              className="px-6 py-3 border border-slate-700 text-sm font-bold rounded-lg text-slate-200 hover:bg-slate-800 transition"
             >
               Manage billing
             </Link>
           </div>
         </div>
       </section>
-
-      <MarketingFooter variant="studio" onScrollTo={scrollTo} />
-    </div>
+    </MarketingSiteShell>
   );
 }

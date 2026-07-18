@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BrainCircuit, Menu, Package } from 'lucide-react';
 import MobileNavDrawer, { MobileNavItem } from '../MobileNavDrawer';
 import NavDropdown from './NavDropdown';
@@ -16,11 +16,13 @@ interface LandingNavProps {
   onTryFree: () => void;
   onOpenWorkspace: () => void;
   onSignIn: () => void;
-  scrollTo: (id: string) => void;
 }
 
-const navLinkClass =
-  'px-3 py-2 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-slate-800/40 transition-colors';
+function navLinkClass(active: boolean) {
+  return `px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+    active ? 'text-white bg-slate-800/60' : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+  }`;
+}
 
 export default function LandingNav({
   cloudEnabled,
@@ -28,21 +30,17 @@ export default function LandingNav({
   onTryFree,
   onOpenWorkspace,
   onSignIn,
-  scrollTo,
 }: LandingNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { pathname } = useLocation();
   const stackUi = showGrowthStackUi();
 
   const closeMenu = () => setMobileMenuOpen(false);
-  const scrollAndClose = (id: string) => {
-    scrollTo(id);
-    closeMenu();
-  };
 
   const productItems = [
-    { label: 'Features', description: 'Strategy, SEO, and content studio', onClick: () => scrollTo('features') },
-    { label: 'How it works', description: 'URL to campaign in three steps', onClick: () => scrollTo('how-it-works') },
-    { label: 'Compare tools', description: 'Cadence vs. ChatGPT, Semrush & more', onClick: () => scrollTo('compare') },
+    { label: 'Features', description: 'Strategy, SEO, and content studio', to: '/features' },
+    { label: 'How it works', description: 'URL to campaign in three steps', to: '/how-it-works' },
+    { label: 'Compare tools', description: 'Cadence vs. ChatGPT, Semrush & more', to: '/compare' },
   ];
 
   const studioItems = stackUi
@@ -50,7 +48,7 @@ export default function LandingNav({
         {
           label: 'App bundles',
           description: 'Cadence + CitePilot — one subscription',
-          onClick: () => scrollTo('growth-stack'),
+          to: '/growth-stack',
         },
         {
           label: 'Studio apps',
@@ -62,16 +60,17 @@ export default function LandingNav({
         {
           label: 'Growth stack',
           description: 'Bundled studio subscriptions',
-          onClick: () => scrollTo('growth-stack'),
+          to: '/growth-stack',
         },
       ];
+
+  const studioActive = pathname === '/studio' || pathname === '/growth-stack';
 
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-slate-950/85 backdrop-blur-xl supports-[backdrop-filter]:bg-slate-950/75">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-[1fr_auto] xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center h-16 gap-4">
-            {/* Brand */}
             <Link to="/" className="flex items-center gap-2.5 min-w-0 group w-fit">
               <div className="shrink-0 p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-emerald-400 group-hover:border-slate-700 transition">
                 <BrainCircuit className="w-5 h-5" />
@@ -86,22 +85,17 @@ export default function LandingNav({
               </div>
             </Link>
 
-            {/* Center nav — desktop */}
-            <nav
-              className="hidden xl:flex items-center justify-center gap-0.5"
-              aria-label="Primary"
-            >
+            <nav className="hidden xl:flex items-center justify-center gap-0.5" aria-label="Primary">
               <NavDropdown label="Product" items={productItems} />
-              <Link to="/pricing" className={navLinkClass}>
+              <Link to="/pricing" className={navLinkClass(pathname === '/pricing')}>
                 Pricing
               </Link>
-              <NavDropdown label={stackUi ? 'Studio' : 'Stack'} items={studioItems} />
-              <button type="button" onClick={() => scrollTo('faq')} className={`${navLinkClass} cursor-pointer`}>
+              <NavDropdown label={stackUi ? 'Studio' : 'Stack'} items={studioItems} active={studioActive} />
+              <Link to="/faq" className={navLinkClass(pathname === '/faq')}>
                 FAQ
-              </button>
+              </Link>
             </nav>
 
-            {/* Actions */}
             <div className="flex items-center justify-end gap-1 sm:gap-2">
               {hasWorkspace && (
                 <button
@@ -147,9 +141,27 @@ export default function LandingNav({
         <p className="px-3 pt-1 pb-2 text-[10px] font-mono font-semibold uppercase tracking-widest text-slate-600">
           Product
         </p>
-        <MobileNavItem label="Features" onClick={() => scrollAndClose('features')} />
-        <MobileNavItem label="How it works" onClick={() => scrollAndClose('how-it-works')} />
-        <MobileNavItem label="Compare tools" onClick={() => scrollAndClose('compare')} />
+        <Link
+          to="/features"
+          onClick={closeMenu}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+        >
+          Features
+        </Link>
+        <Link
+          to="/how-it-works"
+          onClick={closeMenu}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+        >
+          How it works
+        </Link>
+        <Link
+          to="/compare"
+          onClick={closeMenu}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+        >
+          Compare tools
+        </Link>
         <Link
           to="/pricing"
           onClick={closeMenu}
@@ -157,22 +169,33 @@ export default function LandingNav({
         >
           Pricing
         </Link>
-        <MobileNavItem label="FAQ" onClick={() => scrollAndClose('faq')} />
+        <Link
+          to="/faq"
+          onClick={closeMenu}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+        >
+          FAQ
+        </Link>
 
         <p className="px-3 pt-4 pb-2 text-[10px] font-mono font-semibold uppercase tracking-widest text-slate-600">
           {stackUi ? 'Studio' : 'Stack'}
         </p>
         {stackUi ? (
           <>
-            <MobileNavItem
-              label="App bundles"
-              subtitle="Cadence + CitePilot — one subscription"
-              onClick={() => scrollAndClose('growth-stack')}
-            />
+            <Link
+              to="/growth-stack"
+              onClick={closeMenu}
+              className="w-full flex flex-col gap-0.5 px-3 py-3 rounded-xl text-left hover:bg-slate-800 cursor-pointer"
+            >
+              <span className="text-sm font-semibold text-slate-300 hover:text-white">App bundles</span>
+              <span className="text-[10px] text-slate-500 leading-snug">Cadence + CitePilot — one subscription</span>
+            </Link>
             <Link
               to="/studio"
               onClick={closeMenu}
-              className="w-full flex flex-col gap-0.5 px-3 py-3 rounded-xl text-left hover:bg-slate-800 cursor-pointer"
+              className={`w-full flex flex-col gap-0.5 px-3 py-3 rounded-xl text-left cursor-pointer ${
+                pathname === '/studio' ? 'bg-slate-800' : 'hover:bg-slate-800'
+              }`}
             >
               <span className="flex items-center gap-3 text-sm font-semibold text-slate-300 hover:text-white">
                 <Package className="w-4 h-4 shrink-0 opacity-90" />
@@ -184,7 +207,13 @@ export default function LandingNav({
             </Link>
           </>
         ) : (
-          <MobileNavItem label="Growth Stack" onClick={() => scrollAndClose('growth-stack')} />
+          <Link
+            to="/growth-stack"
+            onClick={closeMenu}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+          >
+            Growth Stack
+          </Link>
         )}
 
         <div className="border-t border-slate-800 my-3 pt-3 space-y-1">
