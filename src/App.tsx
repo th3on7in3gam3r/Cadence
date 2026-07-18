@@ -27,7 +27,7 @@ import CampaignCalendar from './components/CampaignCalendar';
 import AppHeader from './components/AppHeader';
 import StudioDashboard from './pages/StudioDashboard';
 import HelpPage from './pages/HelpPage';
-import { PRODUCT_NAME } from './lib/brand';
+import { PRODUCT_NAME, STATUS_PAGE_URL, STUDIO_PARENT } from './lib/brand';
 import { syncWorkspaceBrand, resolveActiveBrandOnLoad, saveCurrentBrandSnapshot, ensureWorkspaceBrand } from './lib/teamsApi';
 import { normalizeBrandUrl } from './utils/websiteUrl';
 import { computeCampaignReadiness } from './utils/campaignReadiness';
@@ -590,6 +590,7 @@ export default function App({ onGoHome }: AppProps) {
           ...prev,
           [type]: [{
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            createdDateStr: new Date().toISOString().slice(0, 10),
             summary: "Original AI draft generation",
             asset: data
           }],
@@ -691,6 +692,7 @@ export default function App({ onGoHome }: AppProps) {
             ...(prev[activeAssetType] || []),
             {
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              createdDateStr: new Date().toISOString().slice(0, 10),
               summary: data.summary || `Refined: "${feedbackText.slice(0, 35)}${feedbackText.length > 35 ? '...' : ''}"`,
               asset: data,
               toneIntensity
@@ -1062,6 +1064,15 @@ export default function App({ onGoHome }: AppProps) {
                   ) : activeView === 'history-scans' ? (
                     <HistoryScans 
                       onBackToDashboard={() => goTo('dashboard')}
+                      onGoToCreate={() => {
+                        goTo('dashboard');
+                        setTimeout(() => {
+                          document.getElementById('dashboard-create-section')?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          });
+                        }, 150);
+                      }}
                       cachedAssets={cachedAssets}
                       assetHistory={assetHistory}
                       onRevertAsset={handleRevertAsset}
@@ -1081,7 +1092,16 @@ export default function App({ onGoHome }: AppProps) {
       {/* 4. Elegant Universal Footer block */}
       <footer className="bg-slate-900 border-t border-slate-800 py-6 text-center text-xs text-slate-400 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>{PRODUCT_NAME} © {new Date().getFullYear()}</span>
+          {activeView === 'studio' ? (
+            <span className="text-left">
+              {STUDIO_PARENT} © {new Date().getFullYear()}
+              <span className="block text-[10px] text-slate-500 mt-0.5">
+                A Bible Funland Studios product · {PRODUCT_NAME} marketing hub
+              </span>
+            </span>
+          ) : (
+            <span>{PRODUCT_NAME} © {new Date().getFullYear()}</span>
+          )}
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -1090,10 +1110,15 @@ export default function App({ onGoHome }: AppProps) {
             >
               User guide
             </button>
-            <span className="flex items-center gap-1">
+            <a
+              href={STATUS_PAGE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-slate-500 hover:text-emerald-400 transition-colors"
+            >
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               API Status: Online
-            </span>
+            </a>
           </div>
         </div>
       </footer>

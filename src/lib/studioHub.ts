@@ -30,6 +30,28 @@ export type PersonaId =
   | 'content_founder'
   | 'church';
 
+export type ProductAvailability = 'available' | 'beta' | 'coming_soon';
+
+export const POSTWICK_PUBLIC_NOTE =
+  'Shared discovery feed — no account required to browse.';
+
+export const LINKED_VS_BUNDLED_NOTE =
+  'Linked = connected via email in Settings. Bundled = one Stripe subscription covering multiple products.';
+
+export function availabilityBadge(availability: ProductAvailability): {
+  label: string;
+  className: string;
+} {
+  switch (availability) {
+    case 'available':
+      return { label: 'Available', className: 'bg-emerald-950 text-emerald-400' };
+    case 'beta':
+      return { label: 'Beta', className: 'bg-amber-950 text-amber-400' };
+    case 'coming_soon':
+      return { label: 'Coming soon', className: 'bg-slate-800 text-slate-500' };
+  }
+}
+
 export interface StudioHubProduct {
   id: StudioHubProductId;
   name: string;
@@ -37,6 +59,7 @@ export interface StudioHubProduct {
   href: string;
   category: 'growth' | 'church' | 'hub';
   bundleId?: StudioBundleId;
+  availability?: ProductAvailability;
 }
 
 export const STUDIO_HUB_PRODUCTS: StudioHubProduct[] = [
@@ -86,6 +109,7 @@ export const STUDIO_HUB_PRODUCTS: StudioHubProduct[] = [
     tagline: 'Cinematic reels from your sermons',
     href: 'https://vesper.biblefunland.com',
     category: 'church',
+    availability: 'available',
   },
   {
     id: 'rhemanote',
@@ -93,6 +117,7 @@ export const STUDIO_HUB_PRODUCTS: StudioHubProduct[] = [
     tagline: 'Scripture-linked study notes from your messages',
     href: 'https://rhemanotes.biblefunland.com',
     category: 'church',
+    availability: 'available',
   },
   {
     id: 'pulpit',
@@ -100,6 +125,7 @@ export const STUDIO_HUB_PRODUCTS: StudioHubProduct[] = [
     tagline: 'Ministry command center — connect Vesper, Kerygma & RhemaNote',
     href: 'https://pulpit.biblefunland.com',
     category: 'hub',
+    availability: 'beta',
   },
 ];
 

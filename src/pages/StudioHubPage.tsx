@@ -24,7 +24,9 @@ import StudioBundlesPricingSection from '../components/StudioBundlesPricingSecti
 import MarketingSiteShell from '../components/marketing/MarketingSiteShell';
 import {
   PERSONA_OPTIONS,
+  POSTWICK_PUBLIC_NOTE,
   STUDIO_HUB_PRODUCTS,
+  availabilityBadge,
   productById,
   type PersonaId,
   type StudioHubProductId,
@@ -257,8 +259,18 @@ export default function StudioHubPage() {
                 className="group p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/30 transition-colors"
               >
                 <div className="text-amber-400 mb-2">{ICONS[product.id]}</div>
-                <h3 className="font-bold text-white">{product.name}</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-white">{product.name}</h3>
+                  {product.id === 'postwick' && (
+                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-sky-950 text-sky-400">
+                      Public gallery
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">{product.tagline}</p>
+                {product.id === 'postwick' && (
+                  <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{POSTWICK_PUBLIC_NOTE}</p>
+                )}
                 {product.bundleId && (
                   <Link
                     to={aiCmoBillingPath({ bundle: product.bundleId })}
@@ -280,19 +292,33 @@ export default function StudioHubPage() {
           <h2 className="text-2xl font-display font-extrabold text-white">Church & ministry tools</h2>
           <p className="text-slate-500 text-sm mt-2">Sermon → reels, social, and study notes</p>
           <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {churchProducts.map((product) => (
-              <a
-                key={product.id}
-                href={product.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-amber-500/30 transition-colors"
-              >
-                <div className="text-amber-400 mb-2">{ICONS[product.id]}</div>
-                <h3 className="font-bold text-white">{product.name}</h3>
-                <p className="text-xs text-slate-500 mt-2">{product.tagline}</p>
-              </a>
-            ))}
+            {churchProducts.map((product) => {
+              const badge = product.availability
+                ? availabilityBadge(product.availability)
+                : null;
+              return (
+                <a
+                  key={product.id}
+                  href={product.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-amber-500/30 transition-colors"
+                >
+                  <div className="text-amber-400 mb-2">{ICONS[product.id]}</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-bold text-white">{product.name}</h3>
+                    {badge && (
+                      <span
+                        className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${badge.className}`}
+                      >
+                        {badge.label}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">{product.tagline}</p>
+                </a>
+              );
+            })}
           </div>
         </div>
       </section>

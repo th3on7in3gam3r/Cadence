@@ -26,10 +26,13 @@ import {
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { fetchBillingStatus, type BillingStatus } from '../lib/billingApi';
 import { aiCmoBillingPath, aiCmoStudioHubUrl } from '../lib/growthStack';
-import { MARKETING_BUNDLES, bundleCheckoutHref } from '../lib/bundles';
+import { MARKETING_BUNDLES, STUDIO_BUNDLE, bundleCheckoutHref, bundleSavings } from '../lib/bundles';
 import {
+  LINKED_VS_BUNDLED_NOTE,
   PERSONA_OPTIONS,
+  POSTWICK_PUBLIC_NOTE,
   STUDIO_HUB_PRODUCTS,
+  availabilityBadge,
   productById,
   type PersonaId,
 } from '../lib/studioHub';
@@ -81,8 +84,22 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
       .finally(() => setLoading(false));
   }, [cloud]);
 
+  useEffect(() => {
+    if (!persona) return;
+    requestAnimationFrame(() => {
+      document.getElementById('studio-persona-recommendation')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    });
+  }, [persona]);
+
   const linkedProducts = identity?.products.filter((p) => p.linked) ?? [];
   const activeBundles = billing?.activeBundles ?? billing?.studioSubscriptions ?? [];
+  const activeBundleCount = activeBundles.filter(
+    (b) => b.status === 'active' || b.status === 'trialing',
+  ).length;
+  const studioSavings = bundleSavings(STUDIO_BUNDLE);
   const recommendation = persona ? PERSONA_OPTIONS.find((p) => p.id === persona) : null;
   const primary = recommendation ? productById(recommendation.primaryProduct) : null;
 
@@ -97,7 +114,7 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
     <div className="max-w-5xl mx-auto px-4 py-8 md:py-10">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-          <p className="text-[10px] font-mono text-violet-400 uppercase tracking-widest flex items-center gap-1.5">
+          <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
             <Grid3X3 className="w-3.5 h-3.5" />
             Bible Funland Studio
           </p>
@@ -135,19 +152,43 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
       ) : (
         <>
           {/* Status strip */}
-          <div className="grid sm:grid-cols-3 gap-3 mb-8">
+          <div className="grid sm:grid-cols-3 gap-3 mb-3">
             <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-              <p className="text-[10px] font-mono text-slate-500 uppercase">Linked products</p>
+              <p
+                className="text-[10px] font-mono text-slate-500 uppercase"
+                title="Connected via email in Settings → Studio"
+              >
+                Linked products
+              </p>
               <p className="mt-1 text-2xl font-display font-black text-white">
                 {linkedProducts.length}
                 <span className="text-sm font-normal text-slate-500"> / 4</span>
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-              <p className="text-[10px] font-mono text-slate-500 uppercase">Active bundles</p>
-              <p className="mt-1 text-2xl font-display font-black text-white">
-                {activeBundles.filter((b) => b.status === 'active' || b.status === 'trialing').length}
+            <div
+              className={`p-4 rounded-xl bg-slate-900 border transition-colors ${
+                activeBundleCount === 0
+                  ? 'border-dashed border-slate-700 hover:border-emerald-500/40'
+                  : 'border-slate-800'
+              }`}
+            >
+              <p
+                className="text-[10px] font-mono text-slate-500 uppercase"
+                title="One Stripe subscription covering multiple products"
+              >
+                Active bundles
               </p>
+              {activeBundleCount === 0 ? (
+                <Link
+                  to={bundleCheckoutHref('studio')}
+                  className="mt-2 block text-xs font-semibold text-emerald-400 hover:text-emerald-300 leading-snug"
+                >
+                  No bundles active — bundle all {STUDIO_BUNDLE.products.length} products and save{' '}
+                  {studioSavings?.percent ?? 0}% →
+                </Link>
+              ) : (
+                <p className="mt-1 text-2xl font-display font-black text-white">{activeBundleCount}</p>
+              )}
             </div>
             <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
               <p className="text-[10px] font-mono text-slate-500 uppercase">Studio email</p>
@@ -156,12 +197,13 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
               </p>
             </div>
           </div>
+          <p className="text-[11px] text-slate-500 mb-8 leading-relaxed">{LINKED_VS_BUNDLED_NOTE}</p>
 
           {/* Quick actions */}
           <div className="flex flex-wrap gap-2 mb-10">
             <Link
               to="/app/settings?tab=studio"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg"
             >
               <Link2 className="w-3.5 h-3.5" />
               Connect products
@@ -206,7 +248,7 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
                       {GROWTH_ICONS[product.id]}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-sm font-bold text-white">{product.name}</h3>
                         <span
                           className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${badgeClass}`}
@@ -215,6 +257,11 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">{product.tagline}</p>
+                      {isPostwick && (
+                        <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                          {POSTWICK_PUBLIC_NOTE}
+                        </p>
+                      )}
                       <div className="mt-3 flex flex-wrap gap-2">
                         <a
                           href={product.href}
@@ -227,7 +274,7 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
                         {product.bundleId && (
                           <Link
                             to={bundleCheckoutHref(product.bundleId)}
-                            className="text-[11px] font-bold text-violet-400 hover:underline"
+                            className="text-[11px] font-bold text-emerald-400 hover:underline"
                           >
                             Bundle pricing
                           </Link>
@@ -252,7 +299,7 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
                   return (
                     <div
                       key={sub.stripe_subscription_id}
-                      className="p-4 rounded-xl bg-slate-900 border border-violet-500/20 flex items-center justify-between gap-4"
+                      className="p-4 rounded-xl bg-slate-900 border border-emerald-500/20 flex items-center justify-between gap-4"
                     >
                       <div>
                         <p className="text-sm font-bold text-white">
@@ -288,8 +335,16 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
                 </button>
               ))}
             </div>
+            {!persona && (
+              <p className="mt-4 text-xs text-slate-500 italic">
+                Select a persona to see a recommended product below.
+              </p>
+            )}
             {recommendation && primary && (
-              <div className="mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800">
+              <div
+                id="studio-persona-recommendation"
+                className="mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800 ring-1 ring-amber-500/40"
+              >
                 <p className="text-xs text-amber-400 font-mono uppercase">Recommended</p>
                 <p className="mt-1 text-sm font-bold text-white">{primary.name}</p>
                 <p className="text-xs text-slate-500">{primary.tagline}</p>
@@ -306,7 +361,7 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
                   {recommendation.bundleId && (
                     <Link
                       to={aiCmoBillingPath({ bundle: recommendation.bundleId })}
-                      className="text-xs font-bold text-violet-400 hover:underline"
+                      className="text-xs font-bold text-emerald-400 hover:underline"
                     >
                       View bundle
                     </Link>
@@ -323,23 +378,42 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
               Church & ministry tools
             </h2>
             <div className="grid sm:grid-cols-3 gap-3">
-              {churchStack.map((product) => (
-                <a
-                  key={product.id}
-                  href={product.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/30 transition-colors group"
-                >
-                  <div className="text-amber-400 mb-2">
-                    {CHURCH_ICONS[product.id] ?? <LayoutGrid className="w-4 h-4" />}
+              {churchStack.map((product) => {
+                const badge = product.availability
+                  ? availabilityBadge(product.availability)
+                  : null;
+                return (
+                  <div
+                    key={product.id}
+                    className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-3"
+                  >
+                    <div className="text-amber-400 mt-0.5">
+                      {CHURCH_ICONS[product.id] ?? <LayoutGrid className="w-4 h-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-bold text-white">{product.name}</h3>
+                        {badge && (
+                          <span
+                            className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${badge.className}`}
+                          >
+                            {badge.label}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{product.tagline}</p>
+                      <a
+                        href={product.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-3 text-[11px] font-bold text-slate-400 hover:text-white"
+                      >
+                        Open →
+                      </a>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-amber-100">
-                    {product.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">{product.tagline}</p>
-                </a>
-              ))}
+                );
+              })}
             </div>
           </section>
         </>

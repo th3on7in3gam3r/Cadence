@@ -18,7 +18,7 @@ const TYPE_LABELS: Record<MarketingAssetType, string> = {
   lead_magnet: 'Lead Magnet',
 };
 
-function parseSortKey(timestamp: string, index: number): number {
+export function parseSortKey(timestamp: string, index: number): number {
   const parsed = Date.parse(timestamp);
   if (!Number.isNaN(parsed)) return parsed;
   return Date.now() - index * 60000;

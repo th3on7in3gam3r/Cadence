@@ -353,7 +353,7 @@ export default function Dashboard({
       </div>
 
       {/* Create content — primary action area */}
-      <div ref={createSectionRef} className="space-y-4 scroll-mt-6">
+      <div ref={createSectionRef} id="dashboard-create-section" className="space-y-4 scroll-mt-6">
         <div className="border-b border-slate-800 pb-3">
           <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
             <Clock className="w-5 h-5 text-amber-500" />

@@ -14,6 +14,10 @@ export const PRODUCT_SUBTITLE = 'Strategy, SEO & content — on cadence';
 
 export const STUDIO_PARENT = 'Bible Funland Studio';
 
+export const STATUS_PAGE_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_STATUS_PAGE_URL) ||
+  'https://status.cadence.app';
+
 export const PRODUCTION_ORIGIN = 'https://growth.biblefunland.com';
 
 export function productPublicOrigin(): string {
