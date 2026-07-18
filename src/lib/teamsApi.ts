@@ -11,7 +11,7 @@ import {
   mergeWorkspacePayload,
   type WorkspacePayload,
 } from './workspaceApi';
-import { slugifyBrandId } from './appPaths';
+import { buildAppPath, slugifyBrandId } from './appPaths';
 import { normalizeBrandUrl } from '../utils/websiteUrl';
 import {
   listLocalBrands,
@@ -21,6 +21,14 @@ import {
   upsertBrandForWorkspace,
   type LocalBrand,
 } from '../utils/brands';
+
+function navigateAfterBrandSwitch(payload?: WorkspacePayload | null): void {
+  if (payload?.brandAnalysis && payload.brandUrl) {
+    window.location.href = buildAppPath('dashboard', slugifyBrandId(payload.brandUrl));
+    return;
+  }
+  window.location.href = '/app/onboarding';
+}
 
 export type MemberRole = 'admin' | 'editor';
 
@@ -273,7 +281,7 @@ export async function switchBrand(brandId: string): Promise<void> {
     if (target?.payload) hydrateLocalFromPayload(target.payload as WorkspacePayload);
     saveLocalBrands(brands);
     setActiveBrandId(brandId);
-    window.location.reload();
+    navigateAfterBrandSwitch(target?.payload as WorkspacePayload | undefined);
     return;
   }
 
@@ -287,7 +295,7 @@ export async function switchBrand(brandId: string): Promise<void> {
   const data = await res.json();
   if (data.brand?.payload) hydrateLocalFromPayload(data.brand.payload);
   setActiveBrandId(brandId);
-  window.location.reload();
+  navigateAfterBrandSwitch(data.brand?.payload as WorkspacePayload | undefined);
 }
 
 export async function fetchMembers(): Promise<

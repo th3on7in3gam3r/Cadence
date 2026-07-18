@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PRODUCT_NAME, PRODUCT_SUBTITLE } from '../lib/brand';
 import {
   Sparkles, Globe, BrainCircuit, Target, Megaphone, ArrowRight,
@@ -59,6 +59,7 @@ interface OnboardingProps {
   isLoading: boolean;
   apiKeyConfigured: boolean;
   hostedAi?: boolean;
+  initialBrandUrl?: string;
 }
 
 const PRESETS = [
@@ -88,7 +89,13 @@ const PRESETS = [
   },
 ];
 
-export default function Onboarding({ onAnalyze, isLoading, apiKeyConfigured, hostedAi }: OnboardingProps) {
+export default function Onboarding({
+  onAnalyze,
+  isLoading,
+  apiKeyConfigured,
+  hostedAi,
+  initialBrandUrl = '',
+}: OnboardingProps) {
   const { user } = useAuth();
   const savedSetup = loadUserSetup();
   const [step, setStep] = useState<OnboardingStep>(
@@ -103,10 +110,14 @@ export default function Onboarding({ onAnalyze, isLoading, apiKeyConfigured, hos
   const [setupError, setSetupError] = useState<string | null>(null);
   const [savingSetup, setSavingSetup] = useState(false);
 
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(initialBrandUrl);
   const [goal, setGoal] = useState('10x Organic Lead Capture & Conversions');
   const [brandVoice, setBrandVoice] = useState('Inferred from website content');
   const [customChallenge, setCustomChallenge] = useState('');
+
+  useEffect(() => {
+    if (initialBrandUrl) setUrl(initialBrandUrl);
+  }, [initialBrandUrl]);
 
   const handleUrlChange = (newUrl: string) => {
     setUrl(newUrl);

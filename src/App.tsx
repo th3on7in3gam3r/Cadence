@@ -243,6 +243,19 @@ export default function App({ onGoHome }: AppProps) {
       goTo('dashboard', { replace: true });
       return;
     }
+    const viewsNeedingBrand = [
+      'dashboard',
+      'workspace',
+      'seo-agent',
+      'calendar',
+      'campaign-history',
+      'history-scans',
+      'studio',
+    ];
+    if (!brandAnalysis && viewsNeedingBrand.includes(activeView)) {
+      goTo('onboarding', { replace: true });
+      return;
+    }
     if (shouldShowOnboarding(user, !!brandAnalysis) && activeView !== 'onboarding') {
       goTo('onboarding');
     }
@@ -870,6 +883,7 @@ export default function App({ onGoHome }: AppProps) {
                 isLoading={isLoading} 
                 apiKeyConfigured={hostedAi || apiKeyConfigured}
                 hostedAi={hostedAi}
+                initialBrandUrl={brandUrl}
               />
             </motion.div>
           ) : activeView === 'help' ? (
