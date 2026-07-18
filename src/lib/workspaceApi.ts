@@ -40,6 +40,23 @@ export function hydrateLocalFromPayload(payload: WorkspacePayload): void {
   if (payload.campaignRuns) localStorage.setItem('ai_cmo_campaign_runs', JSON.stringify(payload.campaignRuns));
 }
 
+export function buildEmptyWorkspacePayload(brandUrl = ''): WorkspacePayload {
+  return {
+    brandUrl,
+    growthGoal: '',
+    brandVoice: 'Inferred from website content',
+    customChallenge: '',
+    brandAnalysis: null,
+    cachedAssets: {},
+    assetHistory: {},
+    activeView: 'onboarding',
+    activeAssetType: null,
+    campaignRuns: [],
+    seoCrawl: null,
+    seoAudit: null,
+  };
+}
+
 export function buildPayloadFromLocal(): WorkspacePayload {
   let brandAnalysis = null;
   try {

@@ -4,8 +4,9 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Plus, Building2, Check } from 'lucide-react';
+import { ChevronDown, Plus, Building2, Check, Loader2 } from 'lucide-react';
 import { fetchBrands, switchBrand, createBrand } from '../lib/teamsApi';
+import { buildEmptyWorkspacePayload } from '../lib/workspaceApi';
 import type { BrandSummary } from '../lib/teamsApi';
 import { getActiveBrandId } from '../utils/brands';
 import { domainFromBrandUrl, normalizeBrandUrl } from '../utils/websiteUrl';
@@ -34,6 +35,7 @@ export default function BrandSwitcher({
   const [newUrl, setNewUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   const refreshBrands = () => {
     fetchBrands()
@@ -69,29 +71,34 @@ export default function BrandSwitcher({
       return;
     }
     setBusy(true);
+    setSwitchError(null);
     setOpen(false);
     try {
       await switchBrand(id);
-    } catch {
+    } catch (e) {
+      setSwitchError(e instanceof Error ? e.message : 'Failed to switch brand');
       setBusy(false);
     }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim()) return;
+    const name = newName.trim();
+    if (!name) {
+      setAddError('Enter a brand name.');
+      return;
+    }
     setBusy(true);
     setAddError(null);
     try {
       const url = newUrl.trim() ? normalizeBrandUrl(newUrl.trim()) : undefined;
-      await createBrand(newName.trim(), url);
+      const brand = await createBrand(name, url, buildEmptyWorkspacePayload(url || ''));
       setNewName('');
       setNewUrl('');
       setAdding(false);
-      refreshBrands();
+      await switchBrand(brand.id);
     } catch (e) {
       setAddError(e instanceof Error ? e.message : 'Failed to add brand');
-    } finally {
       setBusy(false);
     }
   };
@@ -123,6 +130,11 @@ export default function BrandSwitcher({
         <span className="truncate">{headerLabel}</span>
         <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
       </button>
+      {switchError && (
+        <p className="absolute right-0 top-full mt-1 z-50 max-w-[280px] text-[11px] text-rose-400 bg-rose-950/40 border border-rose-900/50 rounded-lg px-2.5 py-1.5">
+          {switchError}
+        </p>
+      )}
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
@@ -179,35 +191,57 @@ export default function BrandSwitcher({
         </>
       )}
       {adding && (
-        <form
-          onSubmit={handleAdd}
-          className="absolute right-0 top-full mt-1 z-50 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-xl flex flex-col gap-2 min-w-[220px]"
-        >
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Brand name"
-            className="text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white w-full"
-            autoFocus
-          />
-          <input
-            value={newUrl}
-            onChange={(e) => setNewUrl(e.target.value)}
-            placeholder="Website URL (optional)"
-            className="text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white w-full"
-          />
-          <div className="flex gap-2">
-            <button type="submit" className="text-xs font-bold px-2 py-1 bg-emerald-600 text-white rounded cursor-pointer">
-              Add
-            </button>
-            <button type="button" onClick={() => setAdding(false)} className="text-xs text-slate-500 cursor-pointer">
-              Cancel
-            </button>
-          </div>
-          {addError ? (
-            <p className="text-[11px] text-rose-400 leading-snug">{addError}</p>
-          ) : null}
-        </form>
+        <>
+          <div className="fixed inset-0 z-40" aria-hidden />
+          <form
+            onSubmit={handleAdd}
+            className="absolute right-0 top-full mt-1 z-50 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-xl flex flex-col gap-2 min-w-[240px]"
+          >
+            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">New brand site</p>
+            <input
+              value={newName}
+              onChange={(e) => {
+                setNewName(e.target.value);
+                if (addError) setAddError(null);
+              }}
+              placeholder="Brand name"
+              className="text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white w-full"
+              autoFocus
+              disabled={busy}
+            />
+            <input
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+              placeholder="Website URL (optional)"
+              className="text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white w-full"
+              disabled={busy}
+            />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={busy}
+                className="text-xs font-bold px-2 py-1 bg-emerald-600 text-white rounded cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+              >
+                {busy && <Loader2 className="w-3 h-3 animate-spin" />}
+                Add
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setAdding(false);
+                  setAddError(null);
+                }}
+                className="text-xs text-slate-500 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+            {addError ? (
+              <p className="text-[11px] text-rose-400 leading-snug">{addError}</p>
+            ) : null}
+          </form>
+        </>
       )}
     </div>
   );
