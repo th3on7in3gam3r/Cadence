@@ -9,6 +9,7 @@ import {
   aiCmoAppUrl,
   aiCmoStudioBillingUrl,
   kerygmaHomeUrl,
+  postwickHomeUrl,
   type StudioBundleId,
 } from './growthStack';
 
@@ -16,6 +17,7 @@ export type StudioHubProductId =
   | 'ai_cmo'
   | 'citepilot'
   | 'kerygma'
+  | 'postwick'
   | 'aegis'
   | 'vesper'
   | 'rhemanote'
@@ -59,6 +61,14 @@ export const STUDIO_HUB_PRODUCTS: StudioHubProduct[] = [
     name: GROWTH_STACK_PRODUCTS.kerygma.name,
     tagline: GROWTH_STACK_PRODUCTS.kerygma.tagline,
     href: kerygmaHomeUrl('studio-hub'),
+    category: 'growth',
+    bundleId: 'social',
+  },
+  {
+    id: 'postwick',
+    name: GROWTH_STACK_PRODUCTS.postwick.name,
+    tagline: GROWTH_STACK_PRODUCTS.postwick.tagline,
+    href: postwickHomeUrl('studio-hub'),
     category: 'growth',
     bundleId: 'social',
   },

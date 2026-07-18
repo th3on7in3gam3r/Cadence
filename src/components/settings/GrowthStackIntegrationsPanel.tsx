@@ -8,6 +8,7 @@ import {
   Activity,
   Cloud,
   ExternalLink,
+  Globe2,
   KeyRound,
   Loader2,
   Search,
@@ -24,7 +25,7 @@ import {
   saveGrowthStackSettings,
   type GrowthStackSettings,
 } from '../../utils/growthStackSettings';
-import { GROWTH_STACK_PRODUCTS } from '../../lib/growthStack';
+import { GROWTH_STACK_PRODUCTS, postwickHomeUrl } from '../../lib/growthStack';
 
 type ProductKeyId = keyof GrowthStackSettings;
 type SisterProductKey = 'citePilot' | 'kerygma' | 'aegis';
@@ -229,6 +230,25 @@ export default function GrowthStackIntegrationsPanel() {
               </div>
             );
           })}
+
+          <div className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-xl flex gap-3">
+            <Globe2 className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-white">{GROWTH_STACK_PRODUCTS.postwick.name}</p>
+              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                Public gallery for posts published on Kerygma. Create on Kerygma → share to Postwick →
+                manage captions in Postwick Studio.
+              </p>
+              <a
+                href={postwickHomeUrl('settings-integrations')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-sky-400 hover:text-sky-300"
+              >
+                Open Postwick <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
 
           <div className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-xl flex gap-3">
             <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />

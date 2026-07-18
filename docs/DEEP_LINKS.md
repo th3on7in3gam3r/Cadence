@@ -8,6 +8,7 @@ Canonical cross-product URLs for Phase 1. Update production hosts here when doma
 | Kerygma Social | https://kerygmasocial.com | native-landing `:3001` |
 | Aegis Loop | https://aegis-loop.com (→ aegisloop.dev) | `:3847` |
 | Pulse | https://pulse-5o1m.onrender.com | http://localhost:3020 |
+| Postwick | https://postwick.vercel.app | — |
 | **Cadence** | `https://growth.biblefunland.com` | http://localhost:3000 |
 | Studio | https://www.biblefunlandstudios.com/ | — |
 
@@ -32,6 +33,17 @@ https://kerygmasocial.com/sign-up?url={fullUrl}&redirect_url=/onboarding
 - `{fullUrl}` = encoded `https://example.com`
 - Implemented in: `growthStack.ts` / `growth-stack.ts` → `kerygmaSignUpUrl()`
 - Used in: Cadence SEO Agent, CitePilot audit results
+
+### Postwick public gallery
+
+```
+https://postwick.vercel.app/
+https://postwick.vercel.app/studio
+```
+
+- Browse posts brands share from Kerygma; manage captions in Studio
+- Implemented in: `ai-cmo/src/lib/growthStack.ts` → `postwickHomeUrl()`, `postwickStudioUrl()`
+- Used in: landing Growth Stack section, studio hub, marketing footer
 
 ### Cadence workspace
 

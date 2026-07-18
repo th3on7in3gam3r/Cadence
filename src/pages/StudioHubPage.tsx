@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   Link2,
   CreditCard,
+  Globe2,
 } from 'lucide-react';
 import StudioBundlesPricingSection from '../components/StudioBundlesPricingSection';
 import MarketingFooter from '../components/MarketingFooter';
@@ -36,6 +37,7 @@ const ICONS: Record<StudioHubProductId, React.ReactNode> = {
   ai_cmo: <Sparkles className="w-5 h-5" />,
   citepilot: <Search className="w-5 h-5" />,
   kerygma: <Share2 className="w-5 h-5" />,
+  postwick: <Globe2 className="w-5 h-5" />,
   aegis: <Shield className="w-5 h-5" />,
   vesper: <Video className="w-5 h-5" />,
   rhemanote: <BookOpen className="w-5 h-5" />,
@@ -148,7 +150,7 @@ export default function StudioHubPage() {
             </span>
           </h1>
           <p className="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Aegis Loop, CitePilot, {PRODUCT_NAME}, and Kerygma Social — plus church media tools — in one
+            Aegis Loop, CitePilot, {PRODUCT_NAME}, Kerygma Social, and Postwick — plus church media tools — in one
             studio family. Bundle pricing with a single Stripe checkout on {PRODUCT_NAME}.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -256,8 +258,8 @@ export default function StudioHubPage() {
       <section id="products" className="py-16 md:py-20 border-b border-slate-800 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-2xl font-display font-extrabold text-white">Growth stack products</h2>
-          <p className="text-slate-500 text-sm mt-2">Find → cite → strategize → publish → secure</p>
-          <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <p className="text-slate-500 text-sm mt-2">Find → cite → strategize → publish → share → secure</p>
+          <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {growthProducts.map((product) => (
               <a
                 key={product.id}

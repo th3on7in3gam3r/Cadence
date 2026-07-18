@@ -21,6 +21,7 @@ import {
   Shield,
   Sparkles,
   Video,
+  Globe2,
 } from 'lucide-react';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { fetchBillingStatus, type BillingStatus } from '../lib/billingApi';
@@ -39,10 +40,11 @@ import {
   type StudioProductStatus,
 } from '../lib/studioApi';
 
-const GROWTH_ICONS: Record<StudioProductId, React.ReactNode> = {
+const GROWTH_ICONS: Record<string, React.ReactNode> = {
   ai_cmo: <Sparkles className="w-4 h-4" />,
   citepilot: <Search className="w-4 h-4" />,
   kerygma: <Share2 className="w-4 h-4" />,
+  postwick: <Globe2 className="w-4 h-4" />,
   aegis: <Shield className="w-4 h-4" />,
 };
 
@@ -181,26 +183,35 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
             <div className="grid sm:grid-cols-2 gap-3">
               {growthStack.map((product) => {
                 const status = identityMap.get(product.id as StudioProductId);
-                const linked = status?.linked ?? product.id === 'ai_cmo';
+                const isPostwick = product.id === 'postwick';
+                const linked = isPostwick
+                  ? null
+                  : (status?.linked ?? product.id === 'ai_cmo');
+                const badgeLabel = isPostwick
+                  ? 'Public gallery'
+                  : linked
+                    ? 'Linked'
+                    : 'Not linked';
+                const badgeClass = isPostwick
+                  ? 'bg-sky-950 text-sky-400'
+                  : linked
+                    ? 'bg-emerald-950 text-emerald-400'
+                    : 'bg-slate-800 text-slate-500';
                 return (
                   <div
                     key={product.id}
                     className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-3"
                   >
-                    <div className={`mt-0.5 ${linked ? 'text-emerald-400' : 'text-slate-600'}`}>
-                      {GROWTH_ICONS[product.id as StudioProductId]}
+                    <div className={`mt-0.5 ${isPostwick ? 'text-sky-400' : linked ? 'text-emerald-400' : 'text-slate-600'}`}>
+                      {GROWTH_ICONS[product.id]}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-bold text-white">{product.name}</h3>
                         <span
-                          className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${
-                            linked
-                              ? 'bg-emerald-950 text-emerald-400'
-                              : 'bg-slate-800 text-slate-500'
-                          }`}
+                          className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${badgeClass}`}
                         >
-                          {linked ? 'Linked' : 'Not linked'}
+                          {badgeLabel}
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">{product.tagline}</p>

@@ -23,6 +23,11 @@ export const GROWTH_STACK_PRODUCTS = {
     tagline: 'Social posts on autopilot from your URL',
     url: 'https://kerygmasocial.com',
   },
+  postwick: {
+    name: 'Postwick',
+    tagline: 'Discover what brands share — powered by Kerygma posts',
+    url: 'https://postwick.vercel.app',
+  },
   aegis: {
     name: 'Aegis Loop',
     tagline: 'Find vulnerabilities before you ship',
@@ -91,6 +96,25 @@ export function kerygmaSignUpUrl(websiteUrl: string, campaign = 'kerygma-signup'
   });
   const base = `${GROWTH_STACK_PRODUCTS.kerygma.url}/sign-up?${params.toString()}`;
   return withUtm(base, { source: 'cadence', campaign, medium: 'referral' });
+}
+
+export function postwickPublicOrigin(): string {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_POSTWICK_URL) {
+    return String(import.meta.env.VITE_POSTWICK_URL).replace(/\/+$/, '');
+  }
+  return GROWTH_STACK_PRODUCTS.postwick.url;
+}
+
+export function postwickHomeUrl(campaign = 'growth-stack'): string {
+  return withUtm(postwickPublicOrigin(), { source: 'cadence', campaign, medium: 'referral' });
+}
+
+export function postwickStudioUrl(campaign = 'postwick-studio'): string {
+  return withUtm(`${postwickPublicOrigin()}/studio`, {
+    source: 'cadence',
+    campaign,
+    medium: 'referral',
+  });
 }
 
 /** Tag a brand / public landing URL for Cadence campaign attribution in Pulse. */

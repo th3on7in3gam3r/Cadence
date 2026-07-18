@@ -6,7 +6,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BrainCircuit, ExternalLink, Layers } from 'lucide-react';
-import { BIBLEFUNLAND_STUDIOS_URL, GROWTH_STACK_PRODUCTS, kerygmaHomeUrl, kerygmaPricingUrl } from '../lib/growthStack';
+import { BIBLEFUNLAND_STUDIOS_URL, GROWTH_STACK_PRODUCTS, kerygmaHomeUrl, kerygmaPricingUrl, postwickHomeUrl } from '../lib/growthStack';
 import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCT_TAGLINE, STUDIO_PARENT, showGrowthStackUi } from '../lib/brand';
 
 type FooterVariant = 'landing' | 'studio';
@@ -127,6 +127,11 @@ export default function MarketingFooter({
     {
       label: GROWTH_STACK_PRODUCTS.kerygma.name,
       href: kerygmaHomeUrl('footer-stack'),
+      external: true,
+    },
+    {
+      label: GROWTH_STACK_PRODUCTS.postwick.name,
+      href: postwickHomeUrl('footer-stack'),
       external: true,
     },
     {

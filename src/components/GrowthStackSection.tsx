@@ -4,13 +4,14 @@
  */
 
 import React from 'react';
-import { ExternalLink, Layers, Shield, Sparkles, Share2, Search } from 'lucide-react';
+import { ExternalLink, Layers, Shield, Sparkles, Share2, Search, Globe2 } from 'lucide-react';
 import {
   BIBLEFUNLAND_STUDIOS_URL,
   GROWTH_STACK_PRODUCTS,
   aiCmoAppUrl,
   aiCmoStudioHubUrl,
   kerygmaHomeUrl,
+  postwickHomeUrl,
 } from '../lib/growthStack';
 import { PRODUCT_NAME } from '../lib/brand';
 
@@ -28,6 +29,13 @@ const SISTER_PRODUCTS = [
     color: 'text-amber-400',
     border: 'border-amber-500/20 hover:border-amber-500/40',
     href: GROWTH_STACK_PRODUCTS.kerygma.url,
+  },
+  {
+    key: 'postwick',
+    icon: <Globe2 className="w-5 h-5" />,
+    color: 'text-sky-400',
+    border: 'border-sky-500/20 hover:border-sky-500/40',
+    href: GROWTH_STACK_PRODUCTS.postwick.url,
   },
   {
     key: 'aegis',
@@ -48,7 +56,7 @@ export default function GrowthStackSection() {
             Part of the growth stack
           </p>
           <h2 className="mt-3 text-3xl md:text-4xl font-display font-extrabold text-white">
-            Strategy, citations, social, and security — connected
+            Strategy, citations, social, discovery, and security — connected
           </h2>
           <p className="mt-4 text-slate-400 text-sm leading-relaxed">
             {PRODUCT_NAME} is one product in the{' '}
@@ -70,7 +78,7 @@ export default function GrowthStackSection() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="p-5 rounded-2xl bg-slate-900 border border-emerald-500/30 shadow-lg shadow-emerald-900/10">
             <div className="flex items-center gap-2 text-emerald-400 mb-2">
               <Sparkles className="w-5 h-5" />
@@ -93,7 +101,9 @@ export default function GrowthStackSection() {
             const href =
               item.key === 'kerygma'
                 ? kerygmaHomeUrl('growth-stack-card')
-                : product.url;
+                : item.key === 'postwick'
+                  ? postwickHomeUrl('growth-stack-card')
+                  : product.url;
             return (
               <a
                 key={item.key}
