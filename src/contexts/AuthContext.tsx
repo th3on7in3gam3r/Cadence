@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { getSupabase } from '../lib/supabase';
 import { isCloudEnabled } from '../lib/cloudConfig';
@@ -12,7 +12,9 @@ interface AuthContextValue {
   cloudEnabled: boolean;
   session: Session | null;
   user: User | null;
+  isGuest: boolean;
   loading: boolean;
+  signInAsGuest: () => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
@@ -63,10 +65,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [cloudEnabled]);
 
+  const signInAsGuest = useCallback(async () => {
+    const sb = getSupabase();
+    if (!sb) return { error: 'Cloud not configured' };
+    const { data: existing } = await sb.auth.getSession();
+    if (existing.session) return {};
+    const { error } = await sb.auth.signInAnonymously();
+    return { error: error?.message };
+  }, []);
+
   const signInWithGoogle = useCallback(async () => {
     const sb = getSupabase();
     if (!sb) return;
     const redirectTo = `${window.location.origin}/app`;
+    const { data: userData } = await sb.auth.getUser();
+    if (userData.user?.is_anonymous) {
+      await sb.auth.linkIdentity({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      return;
+    }
     await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -79,6 +98,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithEmail = useCallback(async (email: string) => {
     const sb = getSupabase();
     if (!sb) return { error: 'Cloud not configured' };
+    const { data: userData } = await sb.auth.getUser();
+    if (userData.user?.is_anonymous) {
+      const { error } = await sb.auth.updateUser({ email });
+      if (error) return { error: error.message };
+      const { error: otpError } = await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/app` },
+      });
+      return { error: otpError?.message };
+    }
     const { error } = await sb.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${window.location.origin}/app` },
@@ -92,21 +121,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        cloudEnabled,
-        session,
-        user: session?.user ?? null,
-        loading,
-        signInWithGoogle,
-        signInWithEmail,
-        signOut,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const user = session?.user ?? null;
+  const isGuest = user?.is_anonymous === true;
+
+  const value = useMemo(
+    () => ({
+      cloudEnabled,
+      session,
+      user,
+      isGuest,
+      loading,
+      signInAsGuest,
+      signInWithGoogle,
+      signInWithEmail,
+      signOut,
+    }),
+    [cloudEnabled, session, user, isGuest, loading, signInAsGuest, signInWithGoogle, signInWithEmail, signOut],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

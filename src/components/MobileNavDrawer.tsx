@@ -69,6 +69,7 @@ interface MobileNavItemProps {
   icon?: React.ReactNode;
   active?: boolean;
   variant?: 'default' | 'primary' | 'muted';
+  subtitle?: string;
 }
 
 export function MobileNavItem({
@@ -77,6 +78,7 @@ export function MobileNavItem({
   icon,
   active,
   variant = 'default',
+  subtitle,
 }: MobileNavItemProps) {
   const base =
     'w-full flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-left text-sm font-semibold transition-colors cursor-pointer touch-manipulation';
@@ -92,7 +94,12 @@ export function MobileNavItem({
   return (
     <button type="button" onClick={onClick} className={`${base} ${styles}`}>
       {icon && <span className="shrink-0 opacity-90">{icon}</span>}
-      <span>{label}</span>
+      <span className="flex flex-col items-start min-w-0">
+        <span>{label}</span>
+        {subtitle && (
+          <span className="text-[10px] font-normal text-slate-500 mt-0.5 leading-snug">{subtitle}</span>
+        )}
+      </span>
     </button>
   );
 }

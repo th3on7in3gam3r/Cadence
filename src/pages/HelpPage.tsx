@@ -15,6 +15,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { PRODUCT_NAME } from '../lib/brand';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_SEO } from '../lib/pageSeo';
 import {
   HELP_SECTIONS,
   isHelpSectionId,
@@ -222,6 +224,8 @@ const SECTION_ICONS: Record<HelpSectionId, React.ReactNode> = {
 
 export default function HelpPage({ variant = 'app', onBack }: HelpPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  usePageMeta(variant === 'public' ? PAGE_SEO['/help'] : null);
+
   const paramSection = searchParams.get('section');
   const [activeSection, setActiveSection] = useState<HelpSectionId>(
     isHelpSectionId(paramSection) ? paramSection : 'overview',

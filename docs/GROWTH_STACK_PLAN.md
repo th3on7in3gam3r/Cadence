@@ -13,6 +13,7 @@
 - `[ ]` = not started
 - `[~]` = in progress / partial
 - Each item notes **which repo** owns the work
+- **Cadence-only add-ons** (team collab, white-label, calendar handoff, competitor watch, Chrome extension): see [ROADMAP.md](./ROADMAP.md)
 
 | Repo | Product | Path on disk |
 |------|---------|--------------|

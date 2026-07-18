@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
-  BrainCircuit,
   ArrowRight,
   Search,
   FileText,
@@ -19,18 +18,25 @@ import {
   Zap,
   Target,
   Package,
-  Menu,
 } from 'lucide-react';
 import CadencePricingSection from './CadencePricingSection';
 import GrowthStackCta from './GrowthStackCta';
 import MarketingFooter from './MarketingFooter';
-import MobileNavDrawer, { MobileNavItem } from './MobileNavDrawer';
-import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCT_TAGLINE, showGrowthStackUi } from '../lib/brand';
+import LandingHeroPreview from './LandingHeroPreview';
+import LandingNav from './landing/LandingNav';
+import LandingSocialProof from './LandingSocialProof';
+import LandingStackComparison from './LandingStackComparison';
+import JsonLd from './seo/JsonLd';
+import { CONTENT_STUDIO_CALLOUT, GENERATOR_STATS_SUBLINE } from '../data/landingGenerators';
+import { buildCadenceSoftwareApplicationSchema } from '../data/structuredData';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_SEO } from '../lib/pageSeo';
+import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCT_TAGLINE } from '../lib/brand';
 
 interface LandingPageProps {
-  onGetStarted: () => void;
+  onTryFree: () => void;
   onOpenWorkspace: () => void;
-  onSignIn?: () => void;
+  onSignIn: () => void;
   hasWorkspace?: boolean;
   cloudEnabled?: boolean;
 }
@@ -71,7 +77,7 @@ const FAQ_BASE = [
   },
   {
     q: 'Is this just ChatGPT with a form?',
-    a: 'It connects specialized workflows: brand analysis, SEO crawling, asset generation, version history, and campaign export in one workspace.',
+    a: `No. ${PRODUCT_NAME} connects brand analysis, SEO crawling, five content generators (keywords, blog, social, email, and lead magnet), version history, and campaign export in one workspace — see the comparison table above for how that differs from ChatGPT, Semrush, Jasper, and Buffer.`,
   },
   {
     q: 'Can I use it for GEO / AI search?',
@@ -83,223 +89,127 @@ function getStartedFaq(cloudEnabled?: boolean) {
   return {
     q: 'What do I need to get started?',
     a: cloudEnabled
-      ? 'Your website URL and a free account. AI runs in the cloud — no API key required.'
+      ? 'Paste your website URL — try one free brand analysis instantly, no signup required. Create a free account to save your workspace, generate content, and run SEO audits (3/month on Free).'
       : 'A website URL and a Google Gemini API key. The app runs in your browser — your data stays in local storage.',
   };
 }
 
 export default function LandingPage({
-  onGetStarted,
+  onTryFree,
   onOpenWorkspace,
   onSignIn,
   hasWorkspace,
   cloudEnabled,
 }: LandingPageProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const primaryCta = cloudEnabled ? (onSignIn ?? onGetStarted) : onGetStarted;
-  const stackUi = showGrowthStackUi();
+  const location = useLocation();
   const faq = [FAQ_BASE[0], getStartedFaq(cloudEnabled), ...FAQ_BASE.slice(1)];
+
+  usePageMeta(PAGE_SEO['/']);
+
+  useEffect(() => {
+    if (location.hash === '#pricing') {
+      requestAnimationFrame(() => {
+        document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  }, [location.hash]);
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    setMobileMenuOpen(false);
   };
-  const closeMenu = () => setMobileMenuOpen(false);
+
+  const primaryLabel = cloudEnabled ? 'Try free — analyze your site' : 'Start free — analyze your site';
+  const freemiumNote = cloudEnabled
+    ? 'Free plan · 1 brand · 3 SEO audits/mo · No credit card'
+    : 'Self-hosted · Bring your own Gemini API key · No credit card';
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 antialiased">
-      {/* Nav */}
-      <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-emerald-400">
-              <BrainCircuit className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-display font-extrabold text-white text-sm md:text-base leading-tight block">
-                {PRODUCT_NAME}
-              </span>
-              <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider hidden sm:block">
-                {PRODUCT_TAGLINE}
-              </span>
-            </div>
-          </div>
-          <nav className="hidden lg:flex items-center gap-6 text-sm text-slate-400">
-            <button type="button" onClick={() => scrollTo('features')} className="hover:text-white transition cursor-pointer">
-              Features
-            </button>
-            <button type="button" onClick={() => scrollTo('how-it-works')} className="hover:text-white transition cursor-pointer">
-              How it works
-            </button>
-            <button type="button" onClick={() => scrollTo('pricing')} className="hover:text-white transition cursor-pointer">
-              Pricing
-            </button>
-            <button type="button" onClick={() => scrollTo('growth-stack')} className="hover:text-white transition cursor-pointer">
-              Growth Stack
-            </button>
-            {stackUi && (
-              <Link to="/studio" className="hover:text-white transition">
-                Studio hub
-              </Link>
-            )}
-            <button type="button" onClick={() => scrollTo('faq')} className="hover:text-white transition cursor-pointer">
-              FAQ
-            </button>
-          </nav>
-          <div className="flex items-center gap-2">
-            {hasWorkspace && (
-              <button
-                type="button"
-                onClick={onOpenWorkspace}
-                className="hidden sm:inline-flex text-xs font-bold text-slate-300 hover:text-white px-3 py-2 cursor-pointer"
-              >
-                Open workspace
-              </button>
-            )}
-            {cloudEnabled && (
-              <button
-                type="button"
-                onClick={primaryCta}
-                className="hidden sm:inline-flex text-xs font-bold text-slate-300 hover:text-white px-3 py-2 cursor-pointer"
-              >
-                Sign in
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={primaryCta}
-              className="hidden sm:inline-flex text-xs md:text-sm font-bold px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg cursor-pointer items-center gap-1.5 transition"
-            >
-              {cloudEnabled ? 'Open app' : 'Get started'}
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2.5 min-h-[44px] min-w-[44px] rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800 cursor-pointer flex items-center justify-center touch-manipulation"
-              aria-label="Open menu"
-              aria-expanded={mobileMenuOpen}
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <MobileNavDrawer open={mobileMenuOpen} onClose={closeMenu} title={PRODUCT_NAME}>
-        <MobileNavItem label="Features" onClick={() => scrollTo('features')} />
-        <MobileNavItem label="How it works" onClick={() => scrollTo('how-it-works')} />
-        <MobileNavItem label="Pricing" onClick={() => scrollTo('pricing')} />
-        <MobileNavItem label="Growth Stack" onClick={() => scrollTo('growth-stack')} />
-        {stackUi && (
-          <Link
-            to="/studio"
-            onClick={closeMenu}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
-          >
-            <Package className="w-4 h-4 shrink-0 opacity-90" />
-            <span>Studio hub</span>
-          </Link>
-        )}
-        <MobileNavItem label="FAQ" onClick={() => scrollTo('faq')} />
-        <div className="border-t border-slate-800 my-2 pt-2 space-y-1">
-          {hasWorkspace && (
-            <MobileNavItem
-              label="Open workspace"
-              onClick={() => {
-                closeMenu();
-                onOpenWorkspace();
-              }}
-            />
-          )}
-          {cloudEnabled && (
-            <MobileNavItem
-              label="Sign in"
-              onClick={() => {
-                closeMenu();
-                primaryCta();
-              }}
-              variant="muted"
-            />
-          )}
-          <MobileNavItem
-            label={cloudEnabled ? 'Open app' : 'Get started free'}
-            onClick={() => {
-              closeMenu();
-              primaryCta();
-            }}
-            variant="primary"
-            icon={<ArrowRight className="w-4 h-4" />}
-          />
-        </div>
-      </MobileNavDrawer>
+      <JsonLd data={buildCadenceSoftwareApplicationSchema()} />
+      <LandingNav
+        cloudEnabled={cloudEnabled}
+        hasWorkspace={hasWorkspace}
+        onTryFree={onTryFree}
+        onOpenWorkspace={onOpenWorkspace}
+        onSignIn={onSignIn}
+        scrollTo={scrollTo}
+      />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-slate-800">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/40 via-slate-950 to-slate-950" />
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
-        <div className="relative max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-20 md:pt-24 md:pb-28 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono text-emerald-400 mb-6"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Strategy · SEO · Content · One workspace
-          </motion.div>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-display font-extrabold text-white tracking-tight leading-[1.08] max-w-4xl mx-auto"
-          >
-            Your AI marketing department —{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
-              from URL to launch-ready copy
-            </span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mt-6 text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed"
-          >
-            Analyze any brand, audit SEO, and generate blogs, social posts, emails, and keyword plans —
-            without juggling five different tools.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3"
-          >
-            <button
-              type="button"
-              onClick={primaryCta}
-              className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 transition"
+        <div className="relative max-w-6xl mx-auto px-4 md:px-6 pt-12 pb-12 md:pt-16 md:pb-16">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono text-emerald-400 mb-6"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Strategy · SEO · Content · One workspace
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="text-4xl sm:text-5xl font-display font-extrabold text-white tracking-tight leading-[1.08]"
+              >
+                Your AI marketing department —{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
+                  from URL to launch-ready copy
+                </span>
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="mt-5 text-lg text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+              >
+                Analyze any brand, audit SEO, and generate blogs, social posts, emails, and keyword plans —
+                without juggling five different tools.
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3"
+              >
+                <button
+                  type="button"
+                  onClick={onTryFree}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 transition"
+                >
+                  {primaryLabel}
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollTo('how-it-works')}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold rounded-xl cursor-pointer transition"
+                >
+                  See how it works
+                </button>
+              </motion.div>
+              <p className="mt-4 text-xs text-slate-500 font-mono">{freemiumNote}</p>
+              {cloudEnabled && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Already have an account?{' '}
+                  <button type="button" onClick={onSignIn} className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer">
+                    Sign in
+                  </button>
+                </p>
+              )}
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
             >
-              {cloudEnabled ? 'Sign in to your workspace' : 'Start free — analyze your site'}
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo('pricing')}
-              className="w-full sm:w-auto px-8 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl cursor-pointer transition shadow-lg shadow-violet-900/25"
-            >
-              View pricing
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo('how-it-works')}
-              className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold rounded-xl cursor-pointer transition"
-            >
-              See how it works
-            </button>
-          </motion.div>
-          <p className="mt-6 text-xs text-slate-500 font-mono">
-            {cloudEnabled
-              ? 'Cloud workspace · Your brand syncs across devices · No API key needed'
-              : 'Self-hosted · Bring your own Gemini API key · No credit card'}
-          </p>
+              <LandingHeroPreview />
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -307,42 +217,28 @@ export default function LandingPage({
       <section className="border-b border-slate-800 bg-slate-900/50">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
-            { label: 'Brand analysis', value: '< 2 min' },
-            { label: 'SEO page crawl', value: 'Up to 20 pages' },
-            { label: 'Content types', value: '5 generators' },
-            { label: 'Export', value: 'Campaign ZIP' },
+            { label: 'Brand analysis', value: '< 2 min', subline: undefined },
+            { label: 'SEO page crawl', value: 'Up to 20 pages', subline: undefined },
+            { label: 'Content types', value: '5 generators', subline: GENERATOR_STATS_SUBLINE },
+            { label: 'Export', value: 'Campaign ZIP', subline: undefined },
           ].map((stat) => (
             <div key={stat.label}>
               <p className="text-xl md:text-2xl font-display font-black text-white">{stat.value}</p>
               <p className="text-[11px] text-slate-500 font-mono uppercase mt-1 tracking-wide">{stat.label}</p>
+              {stat.subline && (
+                <p className="text-[10px] text-slate-500 font-mono mt-1.5 normal-case tracking-normal leading-snug px-1">
+                  {stat.subline}
+                </p>
+              )}
             </div>
           ))}
         </div>
+        <p className="max-w-6xl mx-auto px-4 md:px-6 pb-6 text-center text-xs text-slate-500">
+          <strong className="text-slate-400 font-semibold">Content studio:</strong> {CONTENT_STUDIO_CALLOUT}
+        </p>
       </section>
 
-      {/* Pricing teaser */}
-      {!stackUi && (
-        <section className="border-b border-emerald-900/30 bg-gradient-to-r from-emerald-950/40 via-slate-950 to-slate-950">
-          <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <p className="text-xs font-mono text-emerald-400 uppercase tracking-wider">{PRODUCT_NAME} plans</p>
-                <p className="mt-1 text-sm md:text-base text-slate-300">
-                  Free to start · Pro from <span className="text-white font-bold">$49/mo</span> · Team from{' '}
-                  <span className="text-white font-bold">$149/mo</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => scrollTo('pricing')}
-                className="px-5 py-2.5 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer"
-              >
-                Compare plans
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+      <LandingSocialProof />
 
       {/* Features */}
       <section id="features" className="py-20 md:py-28 border-b border-slate-800 scroll-mt-16">
@@ -391,9 +287,11 @@ export default function LandingPage({
         </div>
       </section>
 
-      <CadencePricingSection cloudEnabled={cloudEnabled} onGetStarted={primaryCta} />
+      <LandingStackComparison />
 
-      <GrowthStackCta cloudEnabled={cloudEnabled} onGetStarted={primaryCta} />
+      <CadencePricingSection cloudEnabled={cloudEnabled} onGetStarted={onTryFree} />
+
+      <GrowthStackCta cloudEnabled={cloudEnabled} onGetStarted={onTryFree} />
 
       {/* Value props */}
       <section className="py-20 md:py-28 border-b border-slate-800">
@@ -431,7 +329,7 @@ export default function LandingPage({
             </div>
             <button
               type="button"
-              onClick={onGetStarted}
+              onClick={onTryFree}
               className="mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg cursor-pointer transition"
             >
               Try it on your site
@@ -439,7 +337,6 @@ export default function LandingPage({
           </div>
         </div>
       </section>
-
 
       {/* FAQ */}
       <section id="faq" className="py-20 md:py-28 border-b border-slate-800 scroll-mt-16">
@@ -471,20 +368,20 @@ export default function LandingPage({
             Ready to run marketing like a pro?
           </h2>
           <p className="mt-4 text-slate-400">
-            Open the workspace, paste your URL, and let {PRODUCT_NAME} build the plan.
+            Paste your URL and let {PRODUCT_NAME} build the plan — free to start.
           </p>
           <button
             type="button"
-            onClick={onGetStarted}
+            onClick={onTryFree}
             className="mt-8 px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer inline-flex items-center gap-2 transition shadow-lg shadow-emerald-900/25"
           >
-            Launch {PRODUCT_NAME} workspace
+            {primaryLabel}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </section>
 
-      <MarketingFooter onScrollTo={scrollTo} onGetStarted={onGetStarted} />
+      <MarketingFooter onScrollTo={scrollTo} onGetStarted={onTryFree} />
     </div>
   );
 }

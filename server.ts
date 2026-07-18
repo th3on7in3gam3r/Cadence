@@ -8,6 +8,8 @@ import {
   getSecurityStatus,
   rateLimitExpensiveApis,
   requireApiAccess,
+  blockGuestPremium,
+  type ApiAuthedRequest,
 } from "./server/middleware/security";
 import { crawlWebsite } from "./server/seo/crawler";
 import type { CrawlMode } from "./server/lib/plans";
@@ -26,6 +28,7 @@ import partnerPulseRouter from "./server/routes/partnerPulse";
 import growthStackKeysRouter from "./server/routes/growthStackKeys";
 import reportsRouter from "./server/routes/reports";
 import { canRunSeoAudit, recordUsageEvent } from "./server/lib/usage";
+import { canGuestAnalyze, recordGuestAnalyze, guestLimitResponse } from "./server/lib/guestTrial";
 import { emitStudioOpsEvent } from "./server/lib/studioOps";
 import { getSupabaseAdmin } from "./server/db/supabaseAdmin";
 import type { AuthedRequest } from "./server/middleware/requireUser";
@@ -224,6 +227,7 @@ async function generateGeminiJson(
 }
 
 const protectedApi = [requireApiAccess, rateLimitExpensiveApis];
+const protectedPremiumApi = [requireApiAccess, blockGuestPremium, rateLimitExpensiveApis];
 
 // 1. Health and Setup Check API (no auth — status only, never exposes secrets)
 app.get("/api/health", (req, res) => {
@@ -257,6 +261,14 @@ app.use("/api/reports", reportsRouter);
 // 2. Website Analysis API
 app.post("/api/analyze", ...protectedApi, async (req, res) => {
   try {
+    const userId = (req as ApiAuthedRequest).userId;
+    if (userId) {
+      const guestCheck = await canGuestAnalyze(userId);
+      if (!guestCheck.allowed) {
+        return guestLimitResponse(res, guestCheck.reason || "Guest trial limit reached.");
+      }
+    }
+
     const { url, goal, brandVoice, customChallenge, brandKit } = req.body;
     if (!url) {
       return res.status(400).json({ error: "Website URL is required." });
@@ -380,6 +392,7 @@ Task: Produce a complete, detailed growth strategy summary. If the scrap text wa
     });
 
     const parsedData = cleanAndParseJson(response.text?.trim() || "{}");
+    if (userId) await recordGuestAnalyze(userId);
     res.json(parsedData);
   } catch (error: any) {
     console.error("Analysis failed:", error);
@@ -388,7 +401,7 @@ Task: Produce a complete, detailed growth strategy summary. If the scrap text wa
 });
 
 // 3. Generate Deliverable API
-app.post("/api/generate-asset", ...protectedApi, async (req, res) => {
+app.post("/api/generate-asset", ...protectedPremiumApi, async (req, res) => {
   try {
     const { assetType, companyInfo, customRequirements, brandKit, brandUrl } = req.body;
     if (!assetType || !companyInfo) {
@@ -504,7 +517,7 @@ ${campaignLandingUrl(String(brandUrl), {
 });
 
 // 4. Refinement / Editing Conversation API
-app.post("/api/refine", ...protectedApi, async (req, res) => {
+app.post("/api/refine", ...protectedPremiumApi, async (req, res) => {
   try {
     const { assetType, companyInfo, lastDraft, discussionHistory, userFeedback, toneIntensity, brandKit } = req.body;
     if (!assetType || !lastDraft || !userFeedback) {
@@ -586,7 +599,7 @@ Task: Provide a fully revised and optimized draft. Implement the user's suggesti
 });
 
 // 5. SEO Agent — multi-page crawl
-app.post("/api/seo-agent/crawl", ...protectedApi, async (req, res) => {
+app.post("/api/seo-agent/crawl", ...protectedPremiumApi, async (req, res) => {
   try {
     const { url, mode = 'quick' } = req.body as { url: string; mode?: CrawlMode };
     if (!url) return res.status(400).json({ error: "Website URL is required." });
@@ -626,7 +639,7 @@ app.post("/api/seo-agent/crawl", ...protectedApi, async (req, res) => {
 });
 
 // 6. SEO Agent — AI strategy, keyword gaps, meta rewrites, 100% roadmap
-app.post("/api/seo-agent/audit", ...protectedApi, async (req, res) => {
+app.post("/api/seo-agent/audit", ...protectedPremiumApi, async (req, res) => {
   try {
     const userId = (req as AuthedRequest).userId;
     if (userId) {
@@ -814,7 +827,7 @@ Be specific, actionable, and data-driven. No ellipses in JSON.`;
 });
 
 // 7. SEO Agent — rewrite meta tags for a single page
-app.post("/api/seo-agent/rewrite-meta", ...protectedApi, async (req, res) => {
+app.post("/api/seo-agent/rewrite-meta", ...protectedPremiumApi, async (req, res) => {
   try {
     const { url, currentTitle, currentMetaDescription, targetKeyword, brandName } = req.body;
     if (!url) return res.status(400).json({ error: "url is required." });
@@ -856,7 +869,7 @@ Return JSON with suggestedTitle (30-60 chars), suggestedMetaDescription (110-170
 });
 
 // 8. Campaign Studio — generate hero image with Google Imagen
-app.post("/api/generate-image", ...protectedApi, async (req, res) => {
+app.post("/api/generate-image", ...protectedPremiumApi, async (req, res) => {
   try {
     const { prompt, assetType, artisticTheme } = req.body;
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {

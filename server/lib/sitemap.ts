@@ -8,6 +8,7 @@ import { serverPublicOrigin } from './brand';
 /** Marketing & legal pages — not authenticated app routes. */
 export const PUBLIC_SITEMAP_PATHS: { path: string; changefreq: string; priority: string }[] = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
+  { path: '/pricing', changefreq: 'monthly', priority: '0.9' },
   { path: '/studio', changefreq: 'monthly', priority: '0.8' },
   { path: '/help', changefreq: 'monthly', priority: '0.8' },
   { path: '/privacy', changefreq: 'yearly', priority: '0.3' },

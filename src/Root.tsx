@@ -12,7 +12,6 @@ import AppErrorBoundary from './components/ErrorBoundary';
 import GlobalProgressBar from './components/GlobalProgressBar';
 import OfflineBanner from './components/OfflineBanner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { isCloudEnabled } from './lib/cloudConfig';
 import { ProgressProvider } from './contexts/ProgressContext';
 import {
   PrivacyPage,
@@ -22,6 +21,9 @@ import {
 } from './pages/LegalPages';
 import StudioHubPage from './pages/StudioHubPage';
 import HelpPage from './pages/HelpPage';
+import PricingPage from './pages/PricingPage';
+import ScrollToTopOnNavigate from './components/ScrollToTopOnNavigate';
+import { useTryFree } from './hooks/useTryFree';
 
 function hasSavedWorkspace(): boolean {
   try {
@@ -33,12 +35,14 @@ function hasSavedWorkspace(): boolean {
 
 function LandingPageRoute() {
   const navigate = useNavigate();
-  const cloudEnabled = isCloudEnabled();
+  const { cloudEnabled } = useAuth();
+  const onTryFree = useTryFree();
+
   return (
     <LandingPage
       cloudEnabled={cloudEnabled}
       hasWorkspace={hasSavedWorkspace()}
-      onGetStarted={() => navigate(cloudEnabled ? '/app' : '/app/onboarding')}
+      onTryFree={() => void onTryFree()}
       onSignIn={() => navigate('/app')}
       onOpenWorkspace={() => {
         const url = localStorage.getItem('ai_cmo_brand_url') || '';
@@ -82,8 +86,10 @@ export default function Root() {
             </a>
             <GlobalProgressBar />
             <OfflineBanner />
+            <ScrollToTopOnNavigate />
             <Routes>
               <Route path="/" element={<LandingPageRoute />} />
+              <Route path="/pricing" element={<PricingPage />} />
               <Route path="/studio" element={<StudioHubPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />

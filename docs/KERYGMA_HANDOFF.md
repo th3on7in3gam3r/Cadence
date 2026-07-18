@@ -2,6 +2,8 @@
 
 Phase 2 spec — how the two products divide work without merging codebases.
 
+Cadence feature roadmap (calendar handoff, priorities): [ROADMAP.md](./ROADMAP.md)
+
 ## Product split
 
 | AI-CMO | Kerygma Social |

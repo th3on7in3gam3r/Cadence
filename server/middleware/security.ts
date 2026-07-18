@@ -5,7 +5,8 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { isSupabaseConfigured } from '../lib/config';
-import { resolveUserIdFromBearer } from '../db/supabaseAdmin';
+import { getSupabaseAdmin } from '../db/supabaseAdmin';
+import { guestLimitResponse } from '../lib/guestTrial';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const apiToken = process.env.CMO_API_TOKEN?.trim();
@@ -29,6 +30,11 @@ function isLocalhostRequest(req: Request): boolean {
   return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
 }
 
+export interface ApiAuthedRequest extends Request {
+  userId?: string;
+  isGuest?: boolean;
+}
+
 export function extractAccessToken(req: Request): string | null {
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) {
@@ -45,10 +51,15 @@ export async function requireApiAccess(req: Request, res: Response, next: NextFu
 
   // Cloud SaaS: signed-in users pass Supabase JWT (server hosts Gemini key)
   if (isSupabaseConfigured() && provided) {
-    const userId = await resolveUserIdFromBearer(provided);
-    if (userId) {
-      (req as Request & { userId?: string }).userId = userId;
-      return next();
+    const sb = getSupabaseAdmin();
+    if (sb) {
+      const { data, error } = await sb.auth.getUser(provided);
+      if (!error && data.user) {
+        const authed = req as ApiAuthedRequest;
+        authed.userId = data.user.id;
+        authed.isGuest = data.user.is_anonymous === true;
+        return next();
+      }
     }
   }
 
@@ -73,6 +84,18 @@ export async function requireApiAccess(req: Request, res: Response, next: NextFu
 
   if (!provided || provided !== apiToken) {
     return res.status(401).json({ error: 'Invalid or missing API access token.' });
+  }
+  next();
+}
+
+/** Block guest (anonymous) users from premium AI routes until they create an account. */
+export function blockGuestPremium(req: Request, res: Response, next: NextFunction) {
+  const authed = req as ApiAuthedRequest;
+  if (authed.isGuest) {
+    return guestLimitResponse(
+      res,
+      'Create a free account to unlock content generation, SEO tools, and cloud save.',
+    );
   }
   next();
 }

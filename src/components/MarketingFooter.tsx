@@ -98,8 +98,10 @@ export default function MarketingFooter({
       : [
           scrollLink('features', 'Features'),
           scrollLink('how-it-works', 'How it works'),
-          scrollLink('pricing', 'Pricing'),
-          scrollLink('growth-stack', 'Growth Stack'),
+          { label: 'Pricing', to: '/pricing' },
+          scrollLink('growth-stack', stackUi ? 'App bundles' : 'Growth Stack'),
+          ...(stackUi ? [{ label: 'Studio apps', to: '/studio' }] : []),
+          scrollLink('compare', 'Compare tools'),
           scrollLink('faq', 'FAQ'),
           { label: 'User guide', to: '/help' },
           ...(onGetStarted
@@ -108,7 +110,7 @@ export default function MarketingFooter({
         ];
 
   const studioLinks: FooterLink[] = [
-    { label: 'Studio hub', to: '/studio' },
+    { label: 'Studio apps', to: '/studio' },
     { label: 'Manage billing', to: '/app/settings?tab=billing' },
     { label: 'Connect products', to: '/app/settings?tab=studio' },
     {

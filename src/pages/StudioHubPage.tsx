@@ -32,6 +32,8 @@ import {
 } from '../lib/studioHub';
 import { aiCmoAppUrl, aiCmoBillingPath } from '../lib/growthStack';
 import { PRODUCT_NAME } from '../lib/brand';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_SEO } from '../lib/pageSeo';
 
 const ICONS: Record<StudioHubProductId, React.ReactNode> = {
   ai_cmo: <Sparkles className="w-5 h-5" />,
@@ -80,6 +82,9 @@ const HUB_FAQ = [
 export default function StudioHubPage() {
   const navigate = useNavigate();
   const [persona, setPersona] = useState<PersonaId | null>(null);
+
+  usePageMeta(PAGE_SEO['/studio']);
+
   const recommendation = persona ? PERSONA_OPTIONS.find((p) => p.id === persona) : null;
   const primary = recommendation ? productById(recommendation.primaryProduct) : null;
 

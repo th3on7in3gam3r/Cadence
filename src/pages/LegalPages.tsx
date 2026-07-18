@@ -7,14 +7,19 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import MarketingFooter from '../components/MarketingFooter';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_SEO } from '../lib/pageSeo';
 import { PRODUCT_NAME } from '../lib/brand';
 
 interface LegalPageProps {
   title: string;
+  seoPath: keyof typeof PAGE_SEO;
   children: React.ReactNode;
 }
 
-export function LegalLayout({ title, children }: LegalPageProps) {
+export function LegalLayout({ title, seoPath, children }: LegalPageProps) {
+  usePageMeta(PAGE_SEO[seoPath]);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <a href="#legal-main" className="skip-link">
@@ -45,7 +50,7 @@ export function LegalLayout({ title, children }: LegalPageProps) {
 
 export function PrivacyPage() {
   return (
-    <LegalLayout title="Privacy Policy">
+    <LegalLayout title="Privacy Policy" seoPath="/privacy">
       <p>
         {PRODUCT_NAME} (&quot;we&quot;, &quot;the service&quot;) processes website URLs, marketing content you generate,
         and optional integration data (Google Search Console, GA4, WordPress) to provide strategy and SEO tools.
@@ -78,7 +83,7 @@ export function PrivacyPage() {
 
 export function TermsPage() {
   return (
-    <LegalLayout title="Terms of Service">
+    <LegalLayout title="Terms of Service" seoPath="/terms">
       <p>
         By using {PRODUCT_NAME} you agree to these terms. The service is provided &quot;as is&quot; for marketing
         and SEO assistance. You are responsible for reviewing all AI-generated content before publishing.
@@ -104,7 +109,7 @@ export function TermsPage() {
 
 export function SecurityPage() {
   return (
-    <LegalLayout title="Security">
+    <LegalLayout title="Security" seoPath="/security">
       <p>
         We design {PRODUCT_NAME} for professional teams connecting OAuth integrations and storing marketing assets.
       </p>
@@ -129,7 +134,7 @@ export function SecurityPage() {
 
 export function DataRetentionPage() {
   return (
-    <LegalLayout title="Data Retention">
+    <LegalLayout title="Data Retention" seoPath="/data-retention">
       <h2 className="text-base font-bold text-white">Workspace data</h2>
       <p>
         Active workspaces persist until you delete them or your account is removed. Cloud sync stores

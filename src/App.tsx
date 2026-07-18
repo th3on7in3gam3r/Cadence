@@ -51,6 +51,7 @@ import {
 import { CampaignRun } from './types';
 import type { ApprovalStatus } from './types';
 import { useAuth } from './contexts/AuthContext';
+import GuestTrialBanner from './components/GuestTrialBanner';
 import {
   buildPayloadFromLocal,
   fetchCloudWorkspace,
@@ -70,7 +71,9 @@ interface AppProps {
 }
 
 export default function App({ onGoHome }: AppProps) {
-  const { cloudEnabled, session, signOut, user } = useAuth();
+  const { cloudEnabled, session, signOut, user, isGuest } = useAuth();
+  const guestUpgradeMsg =
+    'Create a free account to unlock content generation, SEO tools, and cloud save.';
   const [cloudHydrated, setCloudHydrated] = useState(!cloudEnabled);
   const [hostedAi, setHostedAi] = useState(false);
   const [activeView, setActiveView] = useState<AppView>(() => {
@@ -476,8 +479,16 @@ export default function App({ onGoHome }: AppProps) {
       });
 
       if (!response.ok) {
-        const errPayload = await response.json().catch(() => ({}));
-        throw new Error(errPayload.error || `HTTP Network check failed: status ${response.status}`);
+        const errPayload = await response.json().catch(() => ({})) as {
+          error?: string;
+          code?: string;
+          upgradeHint?: string;
+        };
+        const msg =
+          errPayload.code === 'GUEST_LIMIT'
+            ? errPayload.upgradeHint || errPayload.error
+            : errPayload.error || `HTTP Network check failed: status ${response.status}`;
+        throw new Error(msg);
       }
 
       const data: WebsiteAnalysis = await response.json();
@@ -526,6 +537,10 @@ export default function App({ onGoHome }: AppProps) {
 
   // Handler 2: Build a specific deliverable copy
   const handleGenerateAsset = async (type: MarketingAssetType) => {
+    if (isGuest && !cachedAssets[type]) {
+      triggerToast(guestUpgradeMsg, 'error');
+      return;
+    }
     // If we already compiled this draft previously, reuse from cache to support fluid workspace navigating
     if (cachedAssets[type]) {
       setActiveAssetType(type);
@@ -600,6 +615,10 @@ export default function App({ onGoHome }: AppProps) {
   // Handler 3: Peer-Review & Live refinement edits
   const handleRefineAsset = async (feedbackText: string, toneIntensity: number) => {
     if (!activeAssetType || !cachedAssets[activeAssetType]) return;
+    if (isGuest) {
+      triggerToast(guestUpgradeMsg, 'error');
+      return;
+    }
     
     setIsRefiningAsset(true);
     setStatusError(null);
@@ -845,6 +864,7 @@ export default function App({ onGoHome }: AppProps) {
         onNewAudit={() => setShowNewRunModal(true)}
         goTo={goTo}
       />
+      <GuestTrialBanner />
 
       {/* 2. Global Strategy Errors Handler block */}
       {statusError && (
@@ -911,8 +931,20 @@ export default function App({ onGoHome }: AppProps) {
                       generatingType={generatingAssetType}
                       assetHistory={assetHistory}
                       onNavigateToHistory={() => goTo('campaign-history')}
-                      onNavigateToSeoAgent={() => goTo('seo-agent')}
-                      onNavigateToCalendar={() => goTo('calendar')}
+                      onNavigateToSeoAgent={() => {
+                        if (isGuest) {
+                          triggerToast(guestUpgradeMsg, 'error');
+                          return;
+                        }
+                        goTo('seo-agent');
+                      }}
+                      onNavigateToCalendar={() => {
+                        if (isGuest) {
+                          triggerToast(guestUpgradeMsg, 'error');
+                          return;
+                        }
+                        goTo('calendar');
+                      }}
                       onNewAudit={() => setShowNewRunModal(true)}
                       onOpenHelp={(section) => goTo('help', { helpSection: section })}
                       savedRunsCount={campaignRuns.length}

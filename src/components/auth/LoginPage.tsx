@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from '../../lib/brand';
 
 export default function LoginPage() {
-  const { signInWithGoogle, signInWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signInAsGuest } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +25,15 @@ export default function LoginPage() {
     else setSent(true);
   };
 
+  const handleGuestTry = async () => {
+    setBusy(true);
+    setError(null);
+    const result = await signInAsGuest();
+    setBusy(false);
+    if (result.error) setError(result.error);
+    else window.location.href = '/app/onboarding';
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl">
@@ -37,6 +46,20 @@ export default function LoginPage() {
             <p className="text-xs text-slate-400">{PRODUCT_TAGLINE}</p>
           </div>
         </div>
+
+        <p className="text-xs text-slate-400 mb-5 leading-relaxed">
+          Free plan includes 1 brand workspace and 3 SEO audits per month. No credit card required.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => void handleGuestTry()}
+          disabled={busy}
+          className="w-full py-3 mb-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-lg text-sm cursor-pointer flex items-center justify-center gap-2"
+        >
+          Try free — analyze your site
+          <ArrowRight className="w-4 h-4" />
+        </button>
 
         <button
           type="button"
@@ -60,7 +83,7 @@ export default function LoginPage() {
 
         {sent ? (
           <p className="text-sm text-emerald-400 text-center py-4">
-            Check your email for a magic sign-in link.
+            Check your email for a magic sign-in link. Your workspace will be saved to your account.
           </p>
         ) : (
           <form onSubmit={handleEmail} className="space-y-3">
@@ -79,7 +102,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-lg text-sm cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-750 disabled:opacity-50 text-white font-bold rounded-lg text-sm cursor-pointer flex items-center justify-center gap-2 border border-slate-700"
             >
               Send magic link
               <ArrowRight className="w-4 h-4" />
@@ -88,7 +111,7 @@ export default function LoginPage() {
         )}
 
         <p className="text-[10px] text-slate-500 text-center mt-6 leading-relaxed">
-          AI is powered by our servers — no Gemini API key needed after sign-in.
+          AI runs on our servers — no Gemini API key needed. Guest trial work transfers when you create an account.
         </p>
       </div>
     </div>
