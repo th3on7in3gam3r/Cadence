@@ -9,12 +9,14 @@ export interface GrowthStackSettings {
   citePilotApiKey: string;
   kerygmaApiKey: string;
   aegisApiKey: string;
+  postwickApiKey: string;
 }
 
 const DEFAULTS: GrowthStackSettings = {
   citePilotApiKey: '',
   kerygmaApiKey: '',
   aegisApiKey: '',
+  postwickApiKey: '',
 };
 
 export function loadGrowthStackSettings(): GrowthStackSettings {
@@ -27,6 +29,7 @@ export function loadGrowthStackSettings(): GrowthStackSettings {
       citePilotApiKey: parsed.citePilotApiKey ?? '',
       kerygmaApiKey: parsed.kerygmaApiKey ?? '',
       aegisApiKey: parsed.aegisApiKey ?? '',
+      postwickApiKey: parsed.postwickApiKey ?? '',
     };
   } catch {
     return { ...DEFAULTS };

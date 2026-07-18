@@ -33,6 +33,7 @@ router.put('/keys', requireUser, async (req: AuthedRequest, res) => {
       citePilotApiKey: String(body.citePilotApiKey ?? ''),
       kerygmaApiKey: String(body.kerygmaApiKey ?? ''),
       aegisApiKey: String(body.aegisApiKey ?? ''),
+      postwickApiKey: String(body.postwickApiKey ?? ''),
     });
     return res.json({ ok: true, ...keys });
   } catch (e: unknown) {
