@@ -25,7 +25,7 @@ import {
   saveGrowthStackSettings,
   type GrowthStackSettings,
 } from '../../utils/growthStackSettings';
-import { GROWTH_STACK_PRODUCTS } from '../../lib/growthStack';
+import { GROWTH_STACK_PRODUCTS, postwickStudioUrl } from '../../lib/growthStack';
 
 type ProductKeyId = keyof GrowthStackSettings;
 type SisterProductKey = 'citePilot' | 'kerygma' | 'aegis' | 'postwick';
@@ -67,8 +67,8 @@ const PRODUCT_KEY_FIELDS: {
     productKey: 'postwick',
     icon: <Globe2 className="w-4 h-4" />,
     iconColor: 'text-sky-400',
-    placeholder: 'API key from Postwick Studio',
-    hint: 'Optional — stored for upcoming Postwick publish integrations.',
+    placeholder: 'pw_live_… from Postwick Studio',
+    hint: 'Create a key in Postwick Studio → API keys, then paste it here.',
   },
 ];
 
@@ -212,6 +212,10 @@ export default function GrowthStackIntegrationsPanel() {
         <form onSubmit={(e) => void handleSave(e)} className="space-y-3">
           {PRODUCT_KEY_FIELDS.map((field) => {
             const product = GROWTH_STACK_PRODUCTS[field.productKey];
+            const productHref =
+              field.productKey === 'postwick'
+                ? postwickStudioUrl('settings-integrations')
+                : product.url;
             return (
               <div
                 key={field.id}
@@ -223,12 +227,12 @@ export default function GrowthStackIntegrationsPanel() {
                     <span className="text-sm font-bold text-white">{product.name}</span>
                   </div>
                   <a
-                    href={product.url}
+                    href={productHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[10px] font-bold text-slate-500 hover:text-slate-300 inline-flex items-center gap-1 shrink-0"
                   >
-                    Open {product.name}
+                    {field.productKey === 'postwick' ? 'Open Postwick Studio' : `Open ${product.name}`}
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -242,7 +246,23 @@ export default function GrowthStackIntegrationsPanel() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white font-mono"
                   aria-label={`${product.name} API key`}
                 />
-                <p className="text-[10px] text-slate-600">{field.hint}</p>
+                <p className="text-[10px] text-slate-600">
+                  {field.hint}
+                  {field.productKey === 'postwick' ? (
+                    <>
+                      {' '}
+                      <a
+                        href={postwickStudioUrl('settings-integrations')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:text-sky-300 font-bold inline-flex items-center gap-0.5"
+                      >
+                        Open Studio
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </>
+                  ) : null}
+                </p>
               </div>
             );
           })}
