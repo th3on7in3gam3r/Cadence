@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import CopywriterSidebar from './CopywriterSidebar';
 import FormatMarkdown from './asset-workspace/FormatMarkdown';
+import BlogArticleReader from './blog-reader/BlogArticleReader';
 import RefinePanel from './asset-workspace/RefinePanel';
 import StudioImageMetaBar from './asset-workspace/StudioImageMetaBar';
 import SeoChecklistPanel from './asset-workspace/SeoChecklistPanel';
@@ -1056,7 +1057,8 @@ export default function AssetWorkspace({
                   </div>
                 </label>
 
-                {/* Readability Heatmap Toggle */}
+                {/* Readability Heatmap Toggle — not used for blog (dedicated reader layout) */}
+                {assetType !== 'blog_post' && (
                 <label className="flex items-center gap-2 cursor-pointer text-[11px] font-medium" title="Visualize paragraph complexity levels in real time font-sans">
                   <input
                     type="checkbox"
@@ -1069,6 +1071,7 @@ export default function AssetWorkspace({
                     <span>Readability Heatmap</span>
                   </div>
                 </label>
+                )}
               </div>
             </div>
 
@@ -1690,12 +1693,25 @@ export default function AssetWorkspace({
                       </div>
                     )}
 
+                    {assetType === 'blog_post' && !editMode ? (
+                      <BlogArticleReader
+                        content={localAssetContent}
+                        title={asset.title}
+                        summary={asset.summary}
+                        cta={asset.taglineOrCTA}
+                        ctaUrl={productLandingUrl || subscribeUrl}
+                        brandName={companyInfo.brandName}
+                        highlightKeywords={highlightKeywords}
+                        activeKeywords={sortedTargetKeywords}
+                      />
+                    ) : (
                     <FormatMarkdown 
                       text={localAssetContent} 
                       highlightKeywords={highlightKeywords} 
                       activeKeywords={sortedTargetKeywords} 
                       enableHeatmap={enableHeatmap} 
                     />
+                    )}
 
                     {/* Integrated External AI Interop & IDE Prompt Toolbox */}
                     {!editMode && (

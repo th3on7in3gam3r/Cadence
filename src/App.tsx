@@ -51,7 +51,7 @@ import {
   clearSeoStorage,
 } from './utils/campaignRuns';
 import { CampaignRun } from './types';
-import type { ApprovalStatus } from './types';
+import type { ApprovalStatus, AssetHistoryEntry } from './types';
 import { useAuth } from './contexts/AuthContext';
 import GuestTrialBanner from './components/GuestTrialBanner';
 import {
@@ -110,7 +110,7 @@ export default function App({ onGoHome }: AppProps) {
     const saved = localStorage.getItem('ai_cmo_cached_assets');
     try { return saved ? JSON.parse(saved) : {}; } catch(e) { return {}; }
   });
-  const [assetHistory, setAssetHistory] = useState<Record<MarketingAssetType, { timestamp: string; summary: string; asset: GeneratedAsset; toneIntensity?: number }[]>>(() => {
+  const [assetHistory, setAssetHistory] = useState<Record<MarketingAssetType, AssetHistoryEntry[]>>(() => {
     const saved = localStorage.getItem('ai_cmo_asset_history');
     try { return saved ? JSON.parse(saved) : {}; } catch(e) { return {}; }
   });
@@ -799,7 +799,7 @@ export default function App({ onGoHome }: AppProps) {
     setBrandAnalysis(null);
     setActiveAssetType(null);
     setCachedAssets({});
-    setAssetHistory({} as Record<MarketingAssetType, { timestamp: string; summary: string; asset: GeneratedAsset; toneIntensity?: number }[]>);
+    setAssetHistory({} as Record<MarketingAssetType, AssetHistoryEntry[]>);
     clearSeoStorage();
     setSeoSessionKey((k) => k + 1);
     goTo('onboarding');
@@ -823,7 +823,7 @@ export default function App({ onGoHome }: AppProps) {
     setSeoSessionKey((k) => k + 1);
     setActiveAssetType(null);
     setCachedAssets({});
-    setAssetHistory({} as Record<MarketingAssetType, { timestamp: string; summary: string; asset: GeneratedAsset; toneIntensity?: number }[]>);
+    setAssetHistory({} as Record<MarketingAssetType, AssetHistoryEntry[]>);
     await handleUrlAnalysis({
       url,
       goal: growthGoal,
@@ -843,7 +843,7 @@ export default function App({ onGoHome }: AppProps) {
     setCustomChallenge(run.customChallenge);
     setBrandAnalysis(run.brandAnalysis);
     setCachedAssets(run.cachedAssets);
-    setAssetHistory((run.assetHistory || {}) as Record<MarketingAssetType, { timestamp: string; summary: string; asset: GeneratedAsset; toneIntensity?: number }[]>);
+    setAssetHistory((run.assetHistory || {}) as Record<MarketingAssetType, AssetHistoryEntry[]>);
     setActiveAssetType(null);
     setSeoSessionKey((k) => k + 1);
     goTo('dashboard');

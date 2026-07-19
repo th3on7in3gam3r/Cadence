@@ -5,7 +5,13 @@ describe('wordpressBlocks', () => {
   it('converts headings', () => {
     const out = toWordPressBlocks('### Table of Contents');
     expect(out).toContain('<!-- wp:heading {"level":3} -->');
-    expect(out).toContain('<h3 class="wp-block-heading">Table of Contents</h3>');
+    expect(out).toContain('<h3 class="wp-block-heading" id="table-of-contents">Table of Contents</h3>');
+  });
+
+  it('adds id attributes to h2+ headings for anchor links', () => {
+    const out = toWordPressBlocks('## Intro\n\nHello.\n\n## Second Section');
+    expect(out).toContain('id="intro"');
+    expect(out).toContain('id="second-section"');
   });
 
   it('converts unordered lists with links', () => {

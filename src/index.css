@@ -104,6 +104,17 @@ body {
   margin-top: 1rem;
 }
 
+/* Blog article reader — numbered step cards */
+.blog-ol-steps {
+  counter-reset: blog-step;
+}
+.blog-ol-steps > .blog-ol-step {
+  counter-increment: blog-step;
+}
+.blog-ol-steps > .blog-ol-step .blog-ol-step-badge::before {
+  content: counter(blog-step);
+}
+
 /* Form controls — consistent product selects & inputs */
 .cmo-select {
   appearance: none;
