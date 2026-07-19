@@ -15,7 +15,7 @@ import {
   Settings, Calendar, Clock, BarChart3, Target,
   Award, CheckCircle2, Search, RotateCcw,
   Eye, Edit3, Share2, Linkedin, Twitter, Facebook, Link,
-  Image, SlidersHorizontal, ExternalLink, Code2, MessageSquarePlus, Package
+  Image, SlidersHorizontal, ExternalLink, Code2, MessageSquarePlus, Package, BookOpen
 } from 'lucide-react';
 import CopywriterSidebar from './CopywriterSidebar';
 import FormatMarkdown from './asset-workspace/FormatMarkdown';
@@ -721,6 +721,7 @@ export default function AssetWorkspace({
   };
 
   const nextOptions = fetchNextOptions();
+  const isBlogPreview = assetType === 'blog_post' && !editMode;
 
   return (
     <div className="space-y-8 pb-20 min-w-0 w-full overflow-x-hidden">
@@ -981,7 +982,7 @@ export default function AssetWorkspace({
                   title="Render HTML output preview"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Strategic Preview</span>
+                  <span>{isBlogPreview || assetType === 'blog_post' ? 'Article Preview' : 'Strategic Preview'}</span>
                 </button>
                 <button
                   type="button"
@@ -994,7 +995,7 @@ export default function AssetWorkspace({
                   title="Open live editor and markdown customizer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>Interactive Editor</span>
+                  <span>{assetType === 'blog_post' ? 'Edit Markdown' : 'Interactive Editor'}</span>
                 </button>
               </div>
 
@@ -1075,7 +1076,8 @@ export default function AssetWorkspace({
               </div>
             </div>
 
-            {/* CMO Strategy Callout Box */}
+            {/* CMO Strategy Callout Box — summary shown in blog article hero */}
+            {!isBlogPreview && (
             <div className="p-4 md:px-6 bg-slate-950/40 border-b border-slate-800">
               <div className="flex gap-2.5 items-start">
                 <div className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-emerald-400 font-mono font-bold rounded shrink-0 uppercase mt-0.5 border border-slate-705">
@@ -1086,8 +1088,7 @@ export default function AssetWorkspace({
                 </p>
               </div>
             </div>
-
-            {/* Core copy block — content full width; SEO checklist stacks below (no side squeeze) */}
+            )}
             <div className="flex flex-col divide-y divide-slate-800 min-w-0">
               <div className="p-6 md:p-8 bg-slate-900/10 min-h-[420px] min-w-0 overflow-x-auto">
                 {editMode ? (
@@ -1197,7 +1198,30 @@ export default function AssetWorkspace({
                       />
                     )}
 
-                    {/* Campaign Studio Visual Suite — all marketing content types */}
+                    {isBlogPreview && (
+                      <div className="mb-10 rounded-2xl border border-emerald-500/20 bg-slate-950/80 shadow-xl shadow-emerald-950/10 overflow-hidden">
+                        <div className="px-5 py-3 border-b border-emerald-500/15 bg-emerald-500/5 flex items-center gap-2">
+                          <BookOpen className="w-4 h-4 text-emerald-400" />
+                          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                            Article preview — formatted for reading
+                          </span>
+                        </div>
+                        <div className="p-4 md:p-6">
+                          <BlogArticleReader
+                            content={localAssetContent}
+                            title={asset.title}
+                            summary={asset.summary}
+                            cta={asset.taglineOrCTA}
+                            ctaUrl={productLandingUrl || subscribeUrl}
+                            brandName={companyInfo.brandName}
+                            highlightKeywords={highlightKeywords}
+                            activeKeywords={sortedTargetKeywords}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Campaign Studio Visual Suite — below article for blog preview */}
                     {!editMode && (
                       <div className="mb-8 p-5 bg-slate-950/80 border border-slate-800 rounded-2xl shadow-xl select-none animate-fade-in">
                         
@@ -1693,18 +1717,7 @@ export default function AssetWorkspace({
                       </div>
                     )}
 
-                    {assetType === 'blog_post' && !editMode ? (
-                      <BlogArticleReader
-                        content={localAssetContent}
-                        title={asset.title}
-                        summary={asset.summary}
-                        cta={asset.taglineOrCTA}
-                        ctaUrl={productLandingUrl || subscribeUrl}
-                        brandName={companyInfo.brandName}
-                        highlightKeywords={highlightKeywords}
-                        activeKeywords={sortedTargetKeywords}
-                      />
-                    ) : (
+                    {assetType !== 'blog_post' && (
                     <FormatMarkdown 
                       text={localAssetContent} 
                       highlightKeywords={highlightKeywords} 
@@ -1714,7 +1727,7 @@ export default function AssetWorkspace({
                     )}
 
                     {/* Integrated External AI Interop & IDE Prompt Toolbox */}
-                    {!editMode && (
+                    {!editMode && assetType !== 'blog_post' && (
                       <div className="mt-10 p-5 bg-slate-950 border border-slate-850 rounded-2xl space-y-4 text-left shadow-lg">
                         <div className="border-b border-slate-850 pb-3 flex justify-between items-center select-none">
                           <div>
