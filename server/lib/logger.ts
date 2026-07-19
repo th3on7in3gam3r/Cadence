@@ -19,7 +19,7 @@ function emit(level: LogLevel, message: string, fields?: LogFields) {
   const line = JSON.stringify(entry);
   if (level === 'error') console.error(line);
   else if (level === 'warn') console.warn(line);
-  else console.log(line);
+  else console.info(line);
 }
 
 export const logger = {
