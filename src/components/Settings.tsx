@@ -506,7 +506,7 @@ export default function Settings({ brandName, brandUrl, onResetWorkspace, onOpen
                     <label className="text-[10px] font-mono font-bold text-slate-500 block uppercase mb-1">Auto-Archive Delay Days</label>
                     <select
                       value={settings.autoArchiveDays}
-                      onChange={(e) => setSettings(prev => ({ ...prev, autoArchiveDays: parseInt(e.target.value) }))}
+                      onChange={(e) => setSettings(prev => ({ ...prev, autoArchiveDays: parseInt(e.target.value, 10) }))}
                       className="w-full text-xs font-sans bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
                     >
                       <option value={7}>Archive older than 7 Days</option>
