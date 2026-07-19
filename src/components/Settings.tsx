@@ -496,7 +496,7 @@ export default function Settings({ brandName, brandUrl, onResetWorkspace, onOpen
                   <input
                     type="range" min="20" max="100"
                     value={settings.defaultToneIntensity}
-                    onChange={(e) => setSettings(prev => ({ ...prev, defaultToneIntensity: parseInt(e.target.value) }))}
+                    onChange={(e) => setSettings(prev => ({ ...prev, defaultToneIntensity: parseInt(e.target.value, 10) }))}
                     className="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   />
                 </div>
