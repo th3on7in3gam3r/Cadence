@@ -742,11 +742,11 @@ export default function AssetWorkspace({
         </span>
       </div>
 
-      {/* 2. Primary Asset Container — side-by-side refine panel only at xl+ to avoid clipping */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 xl:gap-8 items-start min-w-0 w-full">
+      {/* 2. Primary Asset Container — version history above deliverable (full width) */}
+      <div className="flex flex-col gap-6 xl:gap-8 items-start min-w-0 w-full">
         
-        {/* Left Side: Elaborated Draft display */}
-        <div className="xl:col-span-8 space-y-6 min-w-0 w-full">
+        {/* Active deliverable — full width below version history */}
+        <div className="w-full order-2 space-y-6 min-w-0">
           <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg overflow-hidden min-w-0">
             {/* Asset Top Actions Header */}
             <div className="bg-slate-900 border-b border-slate-800 p-4 md:px-6 flex flex-wrap justify-between items-start sm:items-center gap-3 bg-slate-900/95 sticky top-0 z-10">
@@ -2126,8 +2126,8 @@ Include personalized subject line options, preview text, and direct booking link
 
         </div>
 
-        {/* Right Side: version history — refine panel moved full-width below */}
-        <div className="xl:col-span-4 space-y-6 min-w-0 w-full">
+        {/* Version history — full width above active deliverable */}
+        <div className="w-full order-1 space-y-6 min-w-0">
           <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg p-5 space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-800 pb-3.5 gap-2">
               <div>
