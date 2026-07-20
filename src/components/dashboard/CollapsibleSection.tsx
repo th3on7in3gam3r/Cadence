@@ -12,6 +12,8 @@ interface CollapsibleSectionProps {
   subtitle?: string;
   icon?: React.ReactNode;
   defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   collapsedPreview?: React.ReactNode;
   children: React.ReactNode;
 }
@@ -22,17 +24,24 @@ export default function CollapsibleSection({
   subtitle,
   icon,
   defaultOpen = false,
+  open: controlledOpen,
+  onOpenChange,
   collapsedPreview,
   children,
 }: CollapsibleSectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (controlledOpen === undefined) setInternalOpen(next);
+  };
 
   return (
     <section className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
       <button
         type="button"
         id={id}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between gap-3 p-4 md:p-5 text-left cursor-pointer hover:bg-slate-850/50 transition-colors"
         aria-expanded={open}
       >

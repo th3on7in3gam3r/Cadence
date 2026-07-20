@@ -20,6 +20,7 @@ import {
 import CopywriterSidebar from './CopywriterSidebar';
 import FormatMarkdown from './asset-workspace/FormatMarkdown';
 import BlogArticleReader from './blog-reader/BlogArticleReader';
+import CollapsibleSection from './dashboard/CollapsibleSection';
 import RefinePanel from './asset-workspace/RefinePanel';
 import StudioImageMetaBar from './asset-workspace/StudioImageMetaBar';
 import SeoChecklistPanel from './asset-workspace/SeoChecklistPanel';
@@ -171,6 +172,7 @@ export default function AssetWorkspace({
   const [compareRightIdx, setCompareRightIdx] = useState<number>(0);
   const [compareDiffViewMode, setCompareDiffViewMode] = useState<'side' | 'inline'>('side');
   const [isComparePanelOpen, setIsComparePanelOpen] = useState<boolean>(false);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
 
   // Version categorization, tagging and archiving filtration states
   const [historyFilterTag, setHistoryFilterTag] = useState<string>('All');
@@ -356,6 +358,7 @@ export default function AssetWorkspace({
     setCompareDiffViewMode('side');
     setIsComparePanelOpen(true);
     setIsCompareModalOpen(true);
+    setVersionHistoryOpen(true);
   };
 
   const applyQuickPolish = (prompt: string) => {
@@ -2126,18 +2129,47 @@ Include personalized subject line options, preview text, and direct booking link
 
         </div>
 
-        {/* Version history — full width above active deliverable */}
-        <div className="w-full order-1 space-y-6 min-w-0">
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-800 pb-3.5 gap-2">
-              <div>
-                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5 text-amber-500 animate-spin" style={{ animationDuration: '3s' }} />
-                  Version History
-                </h4>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-sans">Track, categorize, and compare draft refinements.</p>
+        {/* Version history — collapsed by default, full width above active deliverable */}
+        <div className="w-full order-1 min-w-0">
+          <CollapsibleSection
+            id="version-history-panel"
+            title="Version History"
+            subtitle="Track, categorize, and compare draft refinements."
+            icon={<RefreshCw className="w-4 h-4 text-amber-500 animate-spin" style={{ animationDuration: '3s' }} />}
+            defaultOpen={false}
+            open={versionHistoryOpen}
+            onOpenChange={setVersionHistoryOpen}
+            collapsedPreview={
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
+                <span className="font-mono">
+                  {history?.length || 0} {history?.length === 1 ? 'version' : 'versions'}
+                </span>
+                {history?.[0]?.summary && (
+                  <>
+                    <span className="text-slate-600">·</span>
+                    <span className="truncate max-w-md">{history[0].summary}</span>
+                  </>
+                )}
+                {history && history.length >= 2 && (
+                  <>
+                    <span className="text-slate-600">·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openVersionCompare(0, history.length - 1);
+                      }}
+                      className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer"
+                    >
+                      Compare versions
+                    </button>
+                  </>
+                )}
               </div>
-              <div className="flex gap-2">
+            }
+          >
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 justify-end">
                 <button
                   type="button"
                   id="open-global-compare-btn"
@@ -2159,7 +2191,6 @@ Include personalized subject line options, preview text, and direct booking link
                   {history?.length || 0} {history?.length === 1 ? 'version' : 'versions'}
                 </span>
               </div>
-            </div>
 
             {/* Inline side-by-side version comparison */}
             {isComparePanelOpen && history && history.length >= 2 && (
@@ -2660,7 +2691,8 @@ Include personalized subject line options, preview text, and direct booking link
                 </div>
               );
             })()}
-          </div>
+            </div>
+          </CollapsibleSection>
         </div>
       </div>
 
