@@ -174,6 +174,43 @@ export async function createBrand(
   return data.brand;
 }
 
+export async function deleteBrand(brandId: string): Promise<void> {
+  if (!isCloudEnabled()) {
+    const brands = listLocalBrands();
+    if (brands.length <= 1) {
+      throw new Error('You need at least one brand workspace.');
+    }
+    const filtered = brands.filter((b) => b.id !== brandId);
+    if (filtered.length === brands.length) {
+      throw new Error('Brand not found');
+    }
+    saveLocalBrands(filtered);
+
+    const activeId = getActiveBrandId();
+    if (activeId === brandId) {
+      const next = filtered[0];
+      setActiveBrandId(next.id);
+      if (next.payload) hydrateLocalFromPayload(next.payload as WorkspacePayload);
+      navigateAfterBrandSwitch(next.payload as WorkspacePayload | undefined);
+    }
+    return;
+  }
+
+  const res = await apiFetch(`/api/teams/brands/${brandId}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error || 'Failed to delete brand');
+  }
+
+  const activeId = getActiveBrandId();
+  if (activeId === brandId) {
+    const remaining = (await fetchBrands()).filter((b) => b.id !== brandId);
+    if (remaining.length > 0) {
+      await switchBrand(remaining[0].id);
+    }
+  }
+}
+
 /** Create or reuse the cloud brand row for the current workspace URL. */
 export async function ensureWorkspaceBrand(
   name: string,

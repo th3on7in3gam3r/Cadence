@@ -154,6 +154,41 @@ router.put('/brands/:id', requireUser, async (req: AuthedRequest, res) => {
   }
 });
 
+router.delete('/brands/:id', requireUser, async (req: AuthedRequest, res) => {
+  try {
+    const org = await getOrCreateOrg(req.userId!);
+    const sb = getSupabaseAdmin()!;
+    const { data: brand, error: fetchError } = await sb
+      .from('brands')
+      .select('id, org_id')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    if (brand.org_id !== org.id) {
+      return res.status(403).json({ error: 'You do not have access to this brand.' });
+    }
+
+    const { count, error: countError } = await sb
+      .from('brands')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', org.id);
+    if (countError) throw countError;
+    if ((count || 0) <= 1) {
+      return res.status(400).json({ error: 'You need at least one brand workspace.' });
+    }
+
+    const { error } = await sb.from('brands').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e: unknown) {
+    if (isSchemaNotReadyError(e)) {
+      return res.status(503).json({ error: 'Database tables not set up', setupHint: schemaSetupHint() });
+    }
+    res.status(500).json({ error: e instanceof Error ? e.message : 'Failed to delete brand' });
+  }
+});
+
 router.get('/members', requireUser, async (req: AuthedRequest, res) => {
   try {
     const org = await getOrCreateOrg(req.userId!);

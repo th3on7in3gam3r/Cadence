@@ -38,6 +38,10 @@ export function setActiveBrandId(id: string): void {
   localStorage.setItem(ACTIVE_BRAND_KEY, id);
 }
 
+export function clearActiveBrandId(): void {
+  localStorage.removeItem(ACTIVE_BRAND_KEY);
+}
+
 function slugFromUrl(brandUrl: string): string {
   return brandUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 48) || 'workspace';
 }
