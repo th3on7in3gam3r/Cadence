@@ -188,13 +188,14 @@ export default function SeoAgent({
             ...prev.googleSearchConsole,
             connected: !!gsc,
             propertyUrl: siteUrl || brandUrl,
-            topQueries: live.topQueries || prev.googleSearchConsole.topQueries,
+            topQueries:
+              live.googleSearchConsole?.topQueries || prev.googleSearchConsole.topQueries,
           },
           ga4: {
             ...prev.ga4,
             connected: !!ga4,
             propertyId: ga4PropertyId || prev.ga4.propertyId,
-            topPages: live.topPages || prev.ga4.topPages,
+            topPages: live.ga4?.topPages || prev.ga4.topPages,
           },
         }));
       } catch {

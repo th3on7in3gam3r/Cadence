@@ -29,13 +29,18 @@ function googleAuthUrl(state: string, scopes: string): string {
 }
 
 async function getConnection(userId: string, provider: string) {
-  const sb = getSupabaseAdmin()!;
-  const { data } = await sb
+  const sb = getSupabaseAdmin();
+  if (!sb) return null;
+  const { data, error } = await sb
     .from('integration_connections')
     .select('*')
     .eq('user_id', userId)
     .eq('provider', provider)
     .maybeSingle();
+  if (error) {
+    console.warn(`integration_connections lookup failed (${provider}):`, error.message);
+    return null;
+  }
   return data;
 }
 
@@ -65,7 +70,15 @@ async function getValidAccessToken(userId: string, provider: string): Promise<st
   const conn = await getConnection(userId, provider);
   if (!conn?.access_token) return null;
   if (conn.expires_at && new Date(conn.expires_at) < new Date() && conn.refresh_token) {
-    return refreshGoogleToken(userId, provider, conn.refresh_token);
+    try {
+      return await refreshGoogleToken(userId, provider, conn.refresh_token);
+    } catch (e: unknown) {
+      console.warn(
+        `Google token refresh failed (${provider}):`,
+        e instanceof Error ? e.message : e,
+      );
+      return null;
+    }
   }
   return conn.access_token;
 }
@@ -238,7 +251,17 @@ router.get('/seo-data', requireUser, async (req: AuthedRequest, res) => {
         : { connected: false },
     });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'Failed to load SEO data' });
+    console.error('seo-data error:', e);
+    res.json({
+      googleSearchConsole: {
+        connected: false,
+        error: e instanceof Error ? e.message : 'Failed to load Search Console data',
+      },
+      ga4: {
+        connected: false,
+        error: e instanceof Error ? e.message : 'Failed to load Analytics data',
+      },
+    });
   }
 });
 

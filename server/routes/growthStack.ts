@@ -85,9 +85,10 @@ router.get('/citepilot/citations', async (req: AuthedRequest, res) => {
     }
 
     const err = await upstream.json().catch(() => ({}));
-    return res.status(upstream.status === 404 ? 502 : upstream.status).json({
-      error: (err as { error?: string }).error || 'CitePilot request failed',
+    return res.json({
       connected: false,
+      domain,
+      error: (err as { error?: string }).error || 'CitePilot request failed',
     });
   } catch (e: unknown) {
     return res.status(502).json({

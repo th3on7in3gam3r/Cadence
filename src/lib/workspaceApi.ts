@@ -143,8 +143,14 @@ export async function fetchLiveSeoData(siteUrl: string, ga4PropertyId?: string) 
   const params = new URLSearchParams({ siteUrl });
   if (ga4PropertyId) params.set('ga4PropertyId', ga4PropertyId);
   const res = await apiFetch(`/api/integrations/seo-data?${params}`);
-  if (!res.ok) throw new Error('Failed to load live SEO data');
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return {
+      googleSearchConsole: { connected: false as const },
+      ga4: { connected: false as const },
+    };
+  }
+  return data;
 }
 
 export async function publishToWordPress(input: {

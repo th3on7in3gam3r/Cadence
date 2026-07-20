@@ -31,7 +31,10 @@ export async function getGrowthStackKeysForUser(userId: string): Promise<GrowthS
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.warn('growth_stack_api_keys lookup failed:', error.message);
+    return { ...EMPTY };
+  }
   if (!data) return { ...EMPTY };
 
   return {
