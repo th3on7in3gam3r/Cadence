@@ -955,7 +955,10 @@ async function setupServer() {
   }
 
   const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Cadence dev-server running on port ${PORT}`);
+    logger.info("server_started", {
+      port: PORT,
+      mode: process.env.NODE_ENV || "development",
+    });
   });
 
   server.on("error", (err: NodeJS.ErrnoException) => {

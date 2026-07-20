@@ -10,6 +10,7 @@ interface LogFields {
 }
 
 function emit(level: LogLevel, message: string, fields?: LogFields) {
+  if (level === 'debug' && process.env.NODE_ENV === 'production') return;
   const entry = {
     ts: new Date().toISOString(),
     level,
