@@ -483,15 +483,36 @@ export default function AssetWorkspace({
     }
     setIsPublishing(true);
     try {
+      const coverUrl = studioImageSrc() || '';
+      const featuredMediaUrl = isGeneratedImageUrl(coverUrl) ? '' : coverUrl;
+      const excerpt = (asset.summary || '').trim();
+      const metaDescription =
+        excerpt.length >= 40
+          ? excerpt.slice(0, 160)
+          : `${excerpt} ${companyInfo.brandName}`.trim().slice(0, 160);
+      const answerBlock =
+        (asset.taglineOrCTA || excerpt || asset.title || '').trim().slice(0, 280);
+
       const result = await publishToWordPress({
         title: asset.title || `${companyInfo.brandName} blog post`,
-        content: toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(studioImageSrc() || '')) || localAssetContent,
-        excerpt: asset.summary || '',
+        content:
+          toWordPressBlocks(
+            localAssetContent,
+            buildWordPressSeoMeta(coverUrl),
+          ) || localAssetContent,
+        excerpt,
         status: asDraft ? 'draft' : 'publish',
+        featuredMediaUrl: featuredMediaUrl || undefined,
+        metaDescription:
+          metaDescription.length >= 40 ? metaDescription : undefined,
+        answerBlock: answerBlock.length >= 40 ? answerBlock : metaDescription,
+        byline: companyInfo.brandName || undefined,
       });
       triggerToast?.(
-        asDraft ? `Draft saved on WordPress (ID ${result.postId}).` : `Published: ${result.link || result.postId}`,
-        'success'
+        asDraft
+          ? `Draft saved (ID ${result.postId}).`
+          : `Published: ${result.link || result.postId}`,
+        'success',
       );
       recordPublishEvent({
         assetType,

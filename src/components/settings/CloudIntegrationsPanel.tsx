@@ -80,7 +80,7 @@ export default function CloudIntegrationsPanel() {
       await connectWordPress(wpSiteUrl.trim(), wpUsername.trim(), wpPassword.trim());
       setWpPassword('');
       await refresh();
-      setSuccess('WordPress connected.');
+      setSuccess('Signal Desk / WordPress connected.');
       setTimeout(() => setSuccess(null), 2500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'WordPress connect failed');
@@ -146,14 +146,17 @@ export default function CloudIntegrationsPanel() {
         <div>
           <h3 className="text-sm font-display font-extrabold text-white">Publishing</h3>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            Publish blog drafts directly from the asset workspace.
+            Connect Signal Desk (or any self-hosted WordPress) to publish blogs from Campaign Studio.
           </p>
         </div>
         <div className={`p-4 rounded-xl border ${wpConnected ? 'bg-emerald-950/20 border-emerald-800/40' : 'bg-slate-950 border-slate-800'}`}>
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">🔵</span>
+            <span className="text-2xl">📰</span>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-white">WordPress (Self-Hosted)</p>
+              <p className="text-sm font-semibold text-white">Signal Desk / WordPress</p>
+              <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">
+                Use your Signal Desk site URL plus the publisher username and app password from Signal Desk Admin → Invite publisher.
+              </p>
               <div className="flex items-center gap-1 mt-1">
                 {wpConnected ? (
                   <><Wifi className="w-3 h-3 text-emerald-400" /><span className="text-[10px] font-mono text-emerald-400">Connected</span></>
@@ -168,7 +171,7 @@ export default function CloudIntegrationsPanel() {
               <input
                 type="url"
                 required
-                placeholder="https://yoursite.com"
+                placeholder="https://your-signal-desk.example"
                 value={wpSiteUrl}
                 onChange={(e) => setWpSiteUrl(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
@@ -176,7 +179,7 @@ export default function CloudIntegrationsPanel() {
               <input
                 type="text"
                 required
-                placeholder="WordPress username"
+                placeholder="Publisher username (e.g. cadence)"
                 value={wpUsername}
                 onChange={(e) => setWpUsername(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
@@ -184,7 +187,7 @@ export default function CloudIntegrationsPanel() {
               <input
                 type="password"
                 required
-                placeholder="Application password"
+                placeholder="App password from Signal Desk"
                 value={wpPassword}
                 onChange={(e) => setWpPassword(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
@@ -194,7 +197,7 @@ export default function CloudIntegrationsPanel() {
                 disabled={wpSaving}
                 className="px-4 py-2 bg-white text-slate-900 rounded-lg text-xs font-bold cursor-pointer disabled:opacity-50"
               >
-                {wpSaving ? 'Connecting…' : 'Connect WordPress'}
+                {wpSaving ? 'Connecting…' : 'Connect Signal Desk'}
               </button>
             </form>
           )}

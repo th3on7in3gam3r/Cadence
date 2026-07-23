@@ -158,6 +158,10 @@ export async function publishToWordPress(input: {
   content: string;
   status?: 'draft' | 'publish';
   excerpt?: string;
+  featuredMediaUrl?: string;
+  metaDescription?: string;
+  answerBlock?: string;
+  byline?: string;
 }) {
   const res = await apiFetch('/api/publish/wordpress', {
     method: 'POST',

@@ -28,6 +28,15 @@ export const GROWTH_STACK_PRODUCTS = {
     tagline: 'Discover what brands share — powered by Kerygma posts',
     url: 'https://postwick.vercel.app',
   },
+  signalDesk: {
+    name: 'Signal Desk',
+    tagline: 'Citation-ready newsroom for Cadence & CitePilot',
+    url:
+      (typeof import.meta !== 'undefined' &&
+        import.meta.env?.VITE_SIGNAL_DESK_URL &&
+        String(import.meta.env.VITE_SIGNAL_DESK_URL).replace(/\/+$/, '')) ||
+      'https://signaldesk.biblefunland.com',
+  },
   aegis: {
     name: 'Aegis Loop',
     tagline: 'Find vulnerabilities before you ship',
@@ -111,6 +120,29 @@ export function postwickHomeUrl(campaign = 'growth-stack'): string {
 
 export function postwickStudioUrl(campaign = 'postwick-studio'): string {
   return withUtm(`${postwickPublicOrigin()}/studio`, {
+    source: 'cadence',
+    campaign,
+    medium: 'referral',
+  });
+}
+
+export function signalDeskPublicOrigin(): string {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SIGNAL_DESK_URL) {
+    return String(import.meta.env.VITE_SIGNAL_DESK_URL).replace(/\/+$/, '');
+  }
+  return GROWTH_STACK_PRODUCTS.signalDesk.url;
+}
+
+export function signalDeskHomeUrl(campaign = 'growth-stack'): string {
+  return withUtm(signalDeskPublicOrigin(), {
+    source: 'cadence',
+    campaign,
+    medium: 'referral',
+  });
+}
+
+export function signalDeskPublishUrl(campaign = 'signal-desk-publish'): string {
+  return withUtm(`${signalDeskPublicOrigin()}/publish`, {
     source: 'cadence',
     campaign,
     medium: 'referral',

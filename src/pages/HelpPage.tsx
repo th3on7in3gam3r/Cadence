@@ -115,7 +115,7 @@ function SectionPost() {
   return (
     <HelpProse>
       <p className="text-emerald-400/90 font-medium">
-        Most common question: how do I get a blog from Cadence onto WordPress?
+        Most common question: how do I get a blog from Cadence onto Signal Desk (or WordPress)?
       </p>
 
       <h2 className="text-base font-bold text-white pt-2">Method A — Copy &amp; paste (all plans)</h2>
@@ -123,17 +123,18 @@ function SectionPost() {
         <li>Dashboard → <strong className="text-white">Blog post</strong> → Generate.</li>
         <li>Edit in Campaign Studio. Optional: <strong className="text-white">Generate image</strong> → Download.</li>
         <li>Click <strong className="text-white">Copy WordPress HTML</strong> (hero image downloads too).</li>
-        <li>WordPress → Posts → Add New → <strong className="text-white">Code editor</strong> → paste.</li>
+        <li>WordPress / Signal Desk → Posts → Add New → <strong className="text-white">Code editor</strong> → paste.</li>
         <li>Upload hero to Media Library → set <strong className="text-white">Featured image</strong> in the sidebar.</li>
         <li>Copy meta description / slug from the SEO reference block (if included) into Yoast or Rank Math.</li>
         <li>Remove helper blocks you don&apos;t want visible → Publish.</li>
       </ol>
 
-      <h2 className="text-base font-bold text-white pt-4">Method B — Direct publish (cloud)</h2>
+      <h2 className="text-base font-bold text-white pt-4">Method B — Direct publish to Signal Desk (cloud)</h2>
       <ol className="list-decimal pl-5 space-y-2">
-        <li>Settings → Integrations → connect WordPress (application password).</li>
+        <li>In Signal Desk Admin, invite a publisher and copy the app password once.</li>
+        <li>Cadence → Settings → Integrations → connect <strong className="text-white">Signal Desk / WordPress</strong> (site URL + username + app password).</li>
         <li>In Campaign Studio, set approval to <strong className="text-white">Approved</strong>.</li>
-        <li>Click <strong className="text-white">Save draft</strong> or <strong className="text-white">Publish</strong>.</li>
+        <li>Click <strong className="text-white">Save draft</strong> or <strong className="text-white">Publish</strong>. Live publish needs summary, cover image URL, and CTA/answer text.</li>
       </ol>
 
       <h2 className="text-base font-bold text-white pt-4">Subscribe button</h2>
