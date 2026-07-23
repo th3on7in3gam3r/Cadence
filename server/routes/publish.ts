@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { requireUser, type AuthedRequest } from '../middleware/requireUser';
 import { getSupabaseAdmin } from '../db/supabaseAdmin';
+import { publishToSignalDeskApi } from '../lib/signaldesk';
 
 const router = Router();
 
@@ -44,8 +45,7 @@ router.post('/wordpress', requireUser, async (req: AuthedRequest, res) => {
 
     if (!conn?.metadata) {
       return res.status(400).json({
-        error:
-          'Connect WordPress or Signal Desk in Settings → Integrations first.',
+        error: 'Connect WordPress in Settings → Integrations first.',
       });
     }
 
@@ -60,33 +60,12 @@ router.post('/wordpress', requireUser, async (req: AuthedRequest, res) => {
     );
 
     const excerptText = typeof excerpt === 'string' ? excerpt.trim() : '';
-    const description =
-      (typeof metaDescription === 'string' && metaDescription.trim()) ||
-      excerptText;
-    const cover =
-      typeof featuredMediaUrl === 'string' ? featuredMediaUrl.trim() : '';
-    const answer =
-      (typeof answerBlock === 'string' && answerBlock.trim()) ||
-      description ||
-      excerptText;
 
     const payload: Record<string, unknown> = {
       title,
       content,
       status,
       excerpt: excerptText,
-    };
-
-    // Signal Desk (WP-compatible) publish-ready fields; ignored by plain WordPress.
-    if (cover) {
-      payload.featured_media_url = cover;
-    }
-    payload.meta = {
-      description,
-      cover_image_url: cover || undefined,
-      answer_block: answer,
-      byline:
-        typeof byline === 'string' && byline.trim() ? byline.trim() : undefined,
     };
 
     const wpRes = await fetch(`${base}/wp-json/wp/v2/posts`, {
@@ -115,6 +94,94 @@ router.post('/wordpress', requireUser, async (req: AuthedRequest, res) => {
       postId: post.id,
       link: post.link,
       status: post.status,
+    });
+  } catch (e: unknown) {
+    res
+      .status(500)
+      .json({ error: e instanceof Error ? e.message : 'Publish failed' });
+  }
+});
+
+router.post('/signaldesk', requireUser, async (req: AuthedRequest, res) => {
+  try {
+    const {
+      title,
+      content,
+      status = 'draft',
+      excerpt,
+      featuredMediaUrl,
+      metaDescription,
+      answerBlock,
+      byline,
+    } = req.body as {
+      title?: string;
+      content?: string;
+      status?: string;
+      excerpt?: string;
+      featuredMediaUrl?: string;
+      metaDescription?: string;
+      answerBlock?: string;
+      byline?: string;
+    };
+    if (!title || !content) {
+      return res.status(400).json({ error: 'title and content are required' });
+    }
+
+    const sb = getSupabaseAdmin()!;
+    const { data: conn } = await sb
+      .from('integration_connections')
+      .select('metadata')
+      .eq('user_id', req.userId!)
+      .eq('provider', 'signaldesk')
+      .maybeSingle();
+
+    if (!conn?.metadata) {
+      return res.status(400).json({
+        error: 'Connect Signal Desk in Settings → Integrations first.',
+      });
+    }
+
+    const meta = conn.metadata as {
+      siteUrl: string;
+      apiKey: string;
+      webhookSecret?: string;
+    };
+
+    const result = await publishToSignalDeskApi({
+      credentials: {
+        siteUrl: meta.siteUrl,
+        apiKey: meta.apiKey,
+        webhookSecret: meta.webhookSecret,
+      },
+      title,
+      content,
+      status,
+      excerpt,
+      featuredMediaUrl,
+      metaDescription,
+      answerBlock,
+      byline,
+    });
+
+    await sb.from('integration_connections').upsert({
+      user_id: req.userId!,
+      provider: 'signaldesk',
+      access_token: null,
+      refresh_token: null,
+      metadata: {
+        ...meta,
+        lastRemoteId: result.postId != null ? String(result.postId) : null,
+        lastRemoteUrl: result.link ?? null,
+        lastRemoteStatus: result.status ?? null,
+      },
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,provider' });
+
+    res.json({
+      ok: true,
+      postId: result.postId,
+      link: result.link,
+      status: result.status,
     });
   } catch (e: unknown) {
     res

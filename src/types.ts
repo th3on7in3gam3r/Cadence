@@ -270,7 +270,7 @@ export interface PublishEvent {
   title: string;
   url?: string;
   publishedAt: string;
-  platform: 'wordpress' | 'manual';
+  platform: 'wordpress' | 'signaldesk' | 'manual';
 }
 
 export interface PageUplift {

@@ -174,6 +174,27 @@ export async function publishToWordPress(input: {
   return res.json();
 }
 
+export async function publishToSignalDesk(input: {
+  title: string;
+  content: string;
+  status?: 'draft' | 'publish' | 'review';
+  excerpt?: string;
+  featuredMediaUrl?: string;
+  metaDescription?: string;
+  answerBlock?: string;
+  byline?: string;
+}) {
+  const res = await apiFetch('/api/publish/signaldesk', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Signal Desk publish failed');
+  }
+  return res.json();
+}
+
 export async function connectWordPress(siteUrl: string, username: string, appPassword: string) {
   const res = await apiFetch('/api/integrations/wordpress', {
     method: 'POST',
@@ -183,6 +204,24 @@ export async function connectWordPress(siteUrl: string, username: string, appPas
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'Connect failed');
   }
+}
+
+export async function connectSignalDesk(siteUrl: string, apiKey: string): Promise<{
+  webhookUrl?: string;
+  webhookSecret?: string;
+  webhookHint?: string;
+  displayName?: string;
+  siteUrl?: string;
+}> {
+  const res = await apiFetch('/api/integrations/signaldesk', {
+    method: 'POST',
+    body: JSON.stringify({ siteUrl, apiKey }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Signal Desk connect failed');
+  }
+  return res.json();
 }
 
 export async function fetchIntegrationStatus(): Promise<{

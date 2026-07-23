@@ -18,6 +18,7 @@ import workspaceRouter from "./server/routes/workspace";
 import integrationsRouter from "./server/routes/integrations";
 import growthStackRouter from "./server/routes/growthStack";
 import publishRouter from "./server/routes/publish";
+import signaldeskWebhookRouter from "./server/routes/signaldeskWebhook";
 import { createSeoIntelRouter } from "./server/routes/seoIntel";
 import notificationsRouter from "./server/routes/notifications";
 import billingRouter, { handleStripeWebhook } from "./server/routes/billing";
@@ -76,6 +77,12 @@ app.post(
       res.status(400).send(`Webhook Error: ${e instanceof Error ? e.message : "unknown"}`);
     }
   }
+);
+
+app.use(
+  "/api/webhooks",
+  express.raw({ type: "application/json" }),
+  signaldeskWebhookRouter,
 );
 
 app.use(express.json({ limit: '2mb' }));

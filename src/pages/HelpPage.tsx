@@ -132,7 +132,7 @@ function SectionPost() {
       <h2 className="text-base font-bold text-white pt-4">Method B — Direct publish to Signal Desk (cloud)</h2>
       <ol className="list-decimal pl-5 space-y-2">
         <li>In Signal Desk Admin, invite a publisher and copy the app password once.</li>
-        <li>Cadence → Settings → Integrations → connect <strong className="text-white">Signal Desk / WordPress</strong> (site URL + username + app password).</li>
+        <li>Cadence → Settings → Integrations → connect <strong className="text-white">Signal Desk</strong> (site URL + API key from Signal Desk Settings). Paste the webhook URL/secret back into Signal Desk.</li>
         <li>In Campaign Studio, set approval to <strong className="text-white">Approved</strong>.</li>
         <li>Click <strong className="text-white">Save draft</strong> or <strong className="text-white">Publish</strong>. Live publish needs summary, cover image URL, and CTA/answer text.</li>
       </ol>

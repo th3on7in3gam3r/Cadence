@@ -48,7 +48,7 @@ import EmailMockupViewport from './EmailMockupViewport';
 import { GeneratedAsset, MarketingAssetType, ChatMessage, WebsiteAnalysis, ApprovalStatus } from '../types';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { PRODUCT_NAME } from '../lib/brand';
-import { publishToWordPress } from '../lib/workspaceApi';
+import { publishToSignalDesk, publishToWordPress, fetchIntegrationStatus } from '../lib/workspaceApi';
 import { recordPublishEvent } from '../utils/analyticsLoop';
 import { getAssetContentMetrics } from '../utils/assetContentMetrics';
 
@@ -493,7 +493,7 @@ export default function AssetWorkspace({
       const answerBlock =
         (asset.taglineOrCTA || excerpt || asset.title || '').trim().slice(0, 280);
 
-      const result = await publishToWordPress({
+      const publishPayload = {
         title: asset.title || `${companyInfo.brandName} blog post`,
         content:
           toWordPressBlocks(
@@ -501,13 +501,32 @@ export default function AssetWorkspace({
             buildWordPressSeoMeta(coverUrl),
           ) || localAssetContent,
         excerpt,
-        status: asDraft ? 'draft' : 'publish',
+        status: asDraft ? ('draft' as const) : ('publish' as const),
         featuredMediaUrl: featuredMediaUrl || undefined,
         metaDescription:
           metaDescription.length >= 40 ? metaDescription : undefined,
         answerBlock: answerBlock.length >= 40 ? answerBlock : metaDescription,
         byline: companyInfo.brandName || undefined,
-      });
+      };
+
+      let result: { postId?: number | string; link?: string };
+      let platform: 'signaldesk' | 'wordpress' = 'wordpress';
+      try {
+        const status = await fetchIntegrationStatus();
+        if (status.connections?.signaldesk?.connected) {
+          result = await publishToSignalDesk(publishPayload);
+          platform = 'signaldesk';
+        } else {
+          result = await publishToWordPress(publishPayload);
+        }
+      } catch (firstErr) {
+        try {
+          result = await publishToWordPress(publishPayload);
+          platform = 'wordpress';
+        } catch {
+          throw firstErr;
+        }
+      }
       triggerToast?.(
         asDraft
           ? `Draft saved (ID ${result.postId}).`
@@ -518,7 +537,7 @@ export default function AssetWorkspace({
         assetType,
         title: asset.title || `${companyInfo.brandName} blog post`,
         url: result.link,
-        platform: 'wordpress',
+        platform,
       });
       onUpdateApproval?.(0, 'published');
     } catch (e: unknown) {

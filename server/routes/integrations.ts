@@ -286,4 +286,57 @@ router.post('/wordpress', requireUser, async (req: AuthedRequest, res) => {
   }
 });
 
+router.post('/signaldesk', requireUser, async (req: AuthedRequest, res) => {
+  try {
+    const { siteUrl, apiKey } = req.body as { siteUrl?: string; apiKey?: string };
+    if (!siteUrl || !apiKey) {
+      return res.status(400).json({ error: 'siteUrl and apiKey are required' });
+    }
+    const {
+      generateWebhookSecret,
+      testSignalDeskConnection,
+      normalizeSignalDeskSiteUrl,
+    } = await import('../lib/signaldesk');
+    const { appPublicUrl } = await import('../lib/config');
+
+    const webhookSecret = generateWebhookSecret();
+    const credentials = {
+      siteUrl: normalizeSignalDeskSiteUrl(siteUrl),
+      apiKey: apiKey.trim(),
+      webhookSecret,
+    };
+    const checked = await testSignalDeskConnection(credentials);
+    const webhookUrl = `${appPublicUrl()}/api/webhooks/signaldesk?userId=${encodeURIComponent(req.userId!)}`;
+
+    const sb = getSupabaseAdmin()!;
+    await sb.from('integration_connections').upsert({
+      user_id: req.userId!,
+      provider: 'signaldesk',
+      access_token: null,
+      refresh_token: null,
+      metadata: {
+        siteUrl: checked.siteUrl,
+        apiKey: credentials.apiKey,
+        webhookSecret,
+        displayName: checked.displayName,
+      },
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,provider' });
+
+    res.json({
+      ok: true,
+      displayName: checked.displayName,
+      siteUrl: checked.siteUrl,
+      webhookUrl,
+      webhookSecret,
+      webhookHint:
+        'Paste this webhook URL and secret into Signal Desk → Studio → Settings → Publish webhook.',
+    });
+  } catch (e: unknown) {
+    res.status(500).json({
+      error: e instanceof Error ? e.message : 'Signal Desk connect failed',
+    });
+  }
+});
+
 export default router;
