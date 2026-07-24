@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { fetchBillingStatus, type BillingStatus } from '../lib/billingApi';
-import { aiCmoBillingPath, aiCmoStudioHubUrl } from '../lib/growthStack';
+import { aiCmoBillingPath, aiCmoStudioHubUrl, signalDeskHomeUrl, signalDeskPublishUrl } from '../lib/growthStack';
 import { MARKETING_BUNDLES, STUDIO_BUNDLE, bundleCheckoutHref, bundleSavings } from '../lib/bundles';
 import {
   LINKED_VS_BUNDLED_NOTE,
@@ -284,6 +284,43 @@ export default function StudioDashboard({ onBackToDashboard }: StudioDashboardPr
                   </div>
                 );
               })}
+            </div>
+
+            <div className="mt-4 p-4 rounded-xl border border-emerald-500/25 bg-emerald-950/20 sm:flex sm:items-center sm:justify-between sm:gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400">
+                  Connected publish desk
+                </p>
+                <h3 className="mt-1 text-sm font-bold text-white">Signal Desk</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  GEO newsroom for Cadence &amp; CitePilot — not a Growth Stack seat.
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 sm:mt-0 shrink-0">
+                <a
+                  href={signalDeskHomeUrl('studio-dashboard', 'desk-home')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg"
+                >
+                  Open desk
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <a
+                  href={signalDeskPublishUrl('studio-dashboard', 'desk-publish')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-700 text-[11px] font-bold rounded-lg text-slate-300 hover:bg-slate-800"
+                >
+                  Publish guide
+                </a>
+                <Link
+                  to="/app/settings?tab=integrations"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-700 text-[11px] font-bold rounded-lg text-slate-300 hover:bg-slate-800"
+                >
+                  Connect CMS
+                </Link>
+              </div>
             </div>
           </section>
 

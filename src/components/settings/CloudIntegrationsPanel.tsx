@@ -201,7 +201,7 @@ export default function CloudIntegrationsPanel() {
               <input
                 type="url"
                 required
-                placeholder="https://your-signal-desk.example"
+                placeholder="https://www.signaldeskblog.com"
                 value={sdSiteUrl}
                 onChange={(e) => setSdSiteUrl(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"

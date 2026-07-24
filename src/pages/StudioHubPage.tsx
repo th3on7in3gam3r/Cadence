@@ -36,7 +36,7 @@ import {
   STUDIO_BUNDLE_PRODUCT_DISPLAY_ORDER,
   bundleProductNamesLine,
 } from '../lib/bundles';
-import { aiCmoAppUrl, aiCmoBillingPath } from '../lib/growthStack';
+import { aiCmoAppUrl, aiCmoBillingPath, signalDeskHomeUrl, signalDeskPublishUrl } from '../lib/growthStack';
 import { PRODUCT_NAME } from '../lib/brand';
 import { useMarketingSite } from '../hooks/useMarketingSite';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -282,6 +282,38 @@ export default function StudioHubPage() {
                 )}
               </a>
             ))}
+          </div>
+
+          <div className="mt-6 p-5 md:p-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 md:flex md:items-center md:justify-between md:gap-6">
+            <div className="max-w-2xl">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400">
+                Connected publish desk
+              </p>
+              <h3 className="mt-2 text-lg font-bold text-white">Signal Desk</h3>
+              <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                Citation-ready GEO newsroom for Cadence and CitePilot — beside the Growth
+                Stack, not a billed sister seat.
+              </p>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3 md:mt-0 md:shrink-0">
+              <a
+                href={signalDeskHomeUrl('studio-hub', 'desk-home')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg"
+              >
+                Open Signal Desk
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href={signalDeskPublishUrl('studio-hub', 'desk-publish')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-600 text-sm font-bold rounded-lg text-slate-200 hover:bg-slate-800"
+              >
+                How to publish
+              </a>
+            </div>
           </div>
         </div>
       </section>

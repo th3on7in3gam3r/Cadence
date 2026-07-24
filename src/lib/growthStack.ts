@@ -35,7 +35,7 @@ export const GROWTH_STACK_PRODUCTS = {
       (typeof import.meta !== 'undefined' &&
         import.meta.env?.VITE_SIGNAL_DESK_URL &&
         String(import.meta.env.VITE_SIGNAL_DESK_URL).replace(/\/+$/, '')) ||
-      'https://signaldesk.biblefunland.com',
+      'https://www.signaldeskblog.com',
   },
   aegis: {
     name: 'Aegis Loop',
