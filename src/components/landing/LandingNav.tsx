@@ -47,7 +47,7 @@ export default function LandingNav({
     ? [
         {
           label: 'App bundles',
-          description: 'Cadence + CitePilot — one subscription',
+          description: 'Growth Stack + Signal Desk Blog publish desk',
           to: '/growth-stack',
         },
         {
@@ -59,7 +59,7 @@ export default function LandingNav({
     : [
         {
           label: 'Growth stack',
-          description: 'Bundled studio subscriptions',
+          description: 'Studio apps + Signal Desk Blog publishing',
           to: '/growth-stack',
         },
       ];

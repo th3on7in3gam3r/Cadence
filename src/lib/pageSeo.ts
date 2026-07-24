@@ -49,8 +49,8 @@ export const PAGE_SEO: Record<string, PageSeoConfig> = {
   },
   '/growth-stack': {
     path: '/growth-stack',
-    title: `App Bundles — ${PRODUCT_NAME} + CitePilot | ${STUDIO_PARENT}`,
-    description: `Bundle ${PRODUCT_NAME} with CitePilot and sister studio apps — one subscription, shared brand URL, and studio bundle pricing.`,
+    title: `Growth Stack — ${PRODUCT_NAME}, CitePilot & Signal Desk Blog | ${STUDIO_PARENT}`,
+    description: `Explore the Bible Funland Growth Stack: ${PRODUCT_NAME} for strategy and SEO, CitePilot for AI citations, Signal Desk Blog for GEO publishing, plus Kerygma, Aegis, and Pulse — one brand URL, bundled pricing.`,
   },
   '/studio': {
     path: '/studio',

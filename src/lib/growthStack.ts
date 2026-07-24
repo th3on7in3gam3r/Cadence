@@ -133,19 +133,21 @@ export function signalDeskPublicOrigin(): string {
   return GROWTH_STACK_PRODUCTS.signalDesk.url;
 }
 
-export function signalDeskHomeUrl(campaign = 'growth-stack'): string {
+export function signalDeskHomeUrl(campaign = 'growth-stack', content?: string): string {
   return withUtm(signalDeskPublicOrigin(), {
     source: 'cadence',
     campaign,
     medium: 'referral',
+    ...(content ? { content } : {}),
   });
 }
 
-export function signalDeskPublishUrl(campaign = 'signal-desk-publish'): string {
+export function signalDeskPublishUrl(campaign = 'signal-desk-publish', content?: string): string {
   return withUtm(`${signalDeskPublicOrigin()}/publish`, {
     source: 'cadence',
     campaign,
     medium: 'referral',
+    ...(content ? { content } : {}),
   });
 }
 

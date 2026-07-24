@@ -6,7 +6,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BrainCircuit, ExternalLink, Layers } from 'lucide-react';
-import { BIBLEFUNLAND_STUDIOS_URL, GROWTH_STACK_PRODUCTS, kerygmaHomeUrl, kerygmaPricingUrl, postwickHomeUrl } from '../lib/growthStack';
+import { BIBLEFUNLAND_STUDIOS_URL, GROWTH_STACK_PRODUCTS, kerygmaHomeUrl, kerygmaPricingUrl, postwickHomeUrl, signalDeskHomeUrl } from '../lib/growthStack';
 import { PRODUCT_NAME, PRODUCT_SUBTITLE, PRODUCT_TAGLINE, STUDIO_PARENT, showGrowthStackUi } from '../lib/brand';
 
 type FooterVariant = 'landing' | 'studio';
@@ -134,6 +134,11 @@ export default function MarketingFooter({
     {
       label: GROWTH_STACK_PRODUCTS.postwick.name,
       href: postwickHomeUrl('footer-stack'),
+      external: true,
+    },
+    {
+      label: 'Signal Desk Blog',
+      href: signalDeskHomeUrl('footer-stack', 'desk-home'),
       external: true,
     },
     {

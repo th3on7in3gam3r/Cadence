@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import GrowthStackCta from '../../components/GrowthStackCta';
+import GrowthStackPromoPage from '../../components/marketing/GrowthStackPromoPage';
 import MarketingSectionPage from './MarketingSectionPage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTryFree } from '../../hooks/useTryFree';
@@ -16,7 +16,7 @@ export default function GrowthStackPage() {
 
   return (
     <MarketingSectionPage seo={PAGE_SEO['/growth-stack']}>
-      <GrowthStackCta cloudEnabled={cloudEnabled} onGetStarted={() => void onTryFree()} />
+      <GrowthStackPromoPage cloudEnabled={cloudEnabled} onGetStarted={() => void onTryFree()} />
     </MarketingSectionPage>
   );
 }
