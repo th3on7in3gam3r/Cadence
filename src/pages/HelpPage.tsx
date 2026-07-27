@@ -122,7 +122,7 @@ function SectionPost() {
       <ol className="list-decimal pl-5 space-y-2">
         <li>Dashboard → <strong className="text-white">Blog post</strong> → Generate.</li>
         <li>Edit in Campaign Studio. Optional: <strong className="text-white">Generate image</strong> → Download.</li>
-        <li>Click <strong className="text-white">Copy WordPress HTML</strong> (hero image downloads too).</li>
+        <li>Click <strong className="text-white">Copy HTML</strong> (hero image downloads too).</li>
         <li>WordPress / Signal Desk → Posts → Add New → <strong className="text-white">Code editor</strong> → paste.</li>
         <li>Upload hero to Media Library → set <strong className="text-white">Featured image</strong> in the sidebar.</li>
         <li>Copy meta description / slug from the SEO reference block (if included) into Yoast or Rank Math.</li>
@@ -202,7 +202,7 @@ function SectionMap() {
         <li>Dashboard — check strategy</li>
         <li>SEO Agent — refresh audit</li>
         <li>Pick a topic from Content plan</li>
-        <li>Generate blog → Copy WordPress HTML → publish</li>
+        <li>Generate blog → Copy HTML → publish</li>
         <li>Kerygma (optional) — social distribution</li>
       </ol>
     </HelpProse>

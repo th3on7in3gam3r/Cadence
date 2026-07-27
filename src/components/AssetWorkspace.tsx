@@ -192,6 +192,13 @@ export default function AssetWorkspace({
   const [showSocialModal, setShowSocialModal] = useState<boolean>(false);
   const [isCopywriterOpen, setIsCopywriterOpen] = useState<boolean>(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  type PublishDestination = 'signaldesk' | 'wordpress';
+  const [publishDestination, setPublishDestination] =
+    useState<PublishDestination>('signaldesk');
+  const [publishConnections, setPublishConnections] = useState<{
+    signaldesk: boolean;
+    wordpress: boolean;
+  }>({ signaldesk: false, wordpress: false });
   const [approvalComment, setApprovalComment] = useState('');
   const [showApprovalPanel, setShowApprovalPanel] = useState(
     isCloudEnabled() && assetType === 'blog_post',
@@ -448,10 +455,36 @@ export default function AssetWorkspace({
     }
   };
 
-  const handleCopyWordPress = async () => {
+  useEffect(() => {
+    if (!isCloudEnabled() || assetType !== 'blog_post') return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const status = await fetchIntegrationStatus();
+        if (cancelled) return;
+        const signaldesk = Boolean(status.connections?.signaldesk?.connected);
+        const wordpress = Boolean(status.connections?.wordpress?.connected);
+        setPublishConnections({ signaldesk, wordpress });
+        setPublishDestination((prev) => {
+          if (prev === 'signaldesk' && signaldesk) return 'signaldesk';
+          if (prev === 'wordpress' && wordpress) return 'wordpress';
+          if (signaldesk) return 'signaldesk';
+          if (wordpress) return 'wordpress';
+          return 'signaldesk';
+        });
+      } catch {
+        // Leave defaults; publish will surface connect errors.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [assetType]);
+
+  const handleCopyHtml = async () => {
     const featuredImageUrl = studioImageSrc() || '';
-    const wpHtml = toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(featuredImageUrl));
-    await navigator.clipboard.writeText(wpHtml);
+    const html = toWordPressBlocks(localAssetContent, buildWordPressSeoMeta(featuredImageUrl));
+    await navigator.clipboard.writeText(html);
 
     if (generatedImageUrl) {
       const link = document.createElement('a');
@@ -463,17 +496,20 @@ export default function AssetWorkspace({
     setCopiedWp(true);
     setTimeout(() => setCopiedWp(false), 2000);
     const imageNote = featuredImageUrl && isGeneratedImageUrl(featuredImageUrl)
-      ? ' Hero image downloaded — set it as Featured image in WordPress sidebar.'
+      ? ' Hero image downloaded — attach it as the cover/featured image at your destination.'
       : ' Generate a custom Imagen image in Campaign Studio for a matching hero.';
     triggerToast?.(
-      `WordPress HTML copied.${imageNote}`,
+      `HTML copied (WordPress-compatible blocks).${imageNote}`,
       'success',
     );
   };
 
-  const handlePublishWordPress = async (asDraft: boolean) => {
+  const handlePublish = async (asDraft: boolean) => {
     if (!isCloudEnabled()) {
-      triggerToast?.('Sign in and connect WordPress in Settings → Integrations.', 'info');
+      triggerToast?.(
+        'Sign in and connect Signal Desk in Settings → Integrations.',
+        'info',
+      );
       return;
     }
     if (currentApprovalStatus !== 'approved' && currentApprovalStatus !== 'published' && !asDraft) {
@@ -481,6 +517,21 @@ export default function AssetWorkspace({
       triggerToast?.('Click the green Approved button below, then Publish again.', 'info');
       return;
     }
+
+    const destination = publishDestination;
+    const connected =
+      destination === 'signaldesk'
+        ? publishConnections.signaldesk
+        : publishConnections.wordpress;
+    if (!connected) {
+      const label = destination === 'signaldesk' ? 'Signal Desk' : 'WordPress';
+      triggerToast?.(
+        `Connect ${label} in Settings → Integrations.`,
+        'info',
+      );
+      return;
+    }
+
     setIsPublishing(true);
     try {
       const coverUrl = studioImageSrc() || '';
@@ -509,35 +560,24 @@ export default function AssetWorkspace({
         byline: companyInfo.brandName || undefined,
       };
 
-      let result: { postId?: number | string; link?: string };
-      let platform: 'signaldesk' | 'wordpress' = 'wordpress';
-      try {
-        const status = await fetchIntegrationStatus();
-        if (status.connections?.signaldesk?.connected) {
-          result = await publishToSignalDesk(publishPayload);
-          platform = 'signaldesk';
-        } else {
-          result = await publishToWordPress(publishPayload);
-        }
-      } catch (firstErr) {
-        try {
-          result = await publishToWordPress(publishPayload);
-          platform = 'wordpress';
-        } catch {
-          throw firstErr;
-        }
-      }
+      const result =
+        destination === 'signaldesk'
+          ? await publishToSignalDesk(publishPayload)
+          : await publishToWordPress(publishPayload);
+
+      const destLabel =
+        destination === 'signaldesk' ? 'Signal Desk' : 'WordPress';
       triggerToast?.(
         asDraft
-          ? `Draft saved (ID ${result.postId}).`
-          : `Published: ${result.link || result.postId}`,
+          ? `${destLabel} draft saved (ID ${result.postId}).`
+          : `Published to ${destLabel}: ${result.link || result.postId}`,
         'success',
       );
       recordPublishEvent({
         assetType,
         title: asset.title || `${companyInfo.brandName} blog post`,
         url: result.link,
-        platform,
+        platform: destination,
       });
       onUpdateApproval?.(0, 'published');
     } catch (e: unknown) {
@@ -862,22 +902,55 @@ export default function AssetWorkspace({
 
                 {assetType === 'blog_post' && isCloudEnabled() && (
                   <>
+                    <label className="sr-only" htmlFor="publish-destination">
+                      Publish to
+                    </label>
+                    <select
+                      id="publish-destination"
+                      value={publishDestination}
+                      onChange={(e) =>
+                        setPublishDestination(e.target.value as PublishDestination)
+                      }
+                      className="max-w-[140px] px-2 py-1.5 bg-slate-800 border border-slate-700 text-slate-200 font-semibold rounded text-xs cursor-pointer"
+                      title="Choose where to publish"
+                    >
+                      <option
+                        value="signaldesk"
+                        disabled={!publishConnections.signaldesk}
+                      >
+                        SignalDesk{publishConnections.signaldesk ? '' : ' (not connected)'}
+                      </option>
+                      <option
+                        value="wordpress"
+                        disabled={!publishConnections.wordpress}
+                      >
+                        WordPress{publishConnections.wordpress ? '' : ' (not connected)'}
+                      </option>
+                    </select>
                     <button
                       type="button"
-                      onClick={() => handlePublishWordPress(true)}
+                      onClick={() => handlePublish(true)}
                       disabled={isPublishing}
                       className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-semibold rounded text-xs cursor-pointer disabled:opacity-50"
-                      title="Save as WordPress draft"
+                      title={
+                        publishDestination === 'signaldesk'
+                          ? 'Save as Signal Desk draft'
+                          : 'Save as WordPress draft'
+                      }
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{isPublishing ? 'Publishing…' : 'WP Draft'}</span>
+                      <span className="hidden sm:inline">{isPublishing ? 'Publishing…' : 'SD Draft'}</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => handlePublishWordPress(false)}
+                      onClick={() => handlePublish(false)}
                       disabled={isPublishing}
                       className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 border border-blue-700 text-white font-bold rounded text-xs cursor-pointer disabled:opacity-50"
-                      title="Publish to WordPress"
+                      title={
+                        publishDestination === 'signaldesk'
+                          ? 'Publish to Signal Desk'
+                          : 'Publish to WordPress'
+                      }
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Publish</span>
@@ -928,10 +1001,10 @@ export default function AssetWorkspace({
                 </button>
                 <button
                   type="button"
-                  id="copy-wordpress-html-btn"
-                  onClick={handleCopyWordPress}
+                  id="copy-html-btn"
+                  onClick={handleCopyHtml}
                   className="flex items-center gap-1 px-3 py-1.5 bg-blue-950/50 border border-blue-500/30 hover:border-blue-400/50 text-blue-200 hover:text-white rounded text-xs font-semibold cursor-pointer shadow-sm select-none transition-all active:scale-95"
-                  title="Copy Gutenberg block HTML for WordPress Code editor"
+                  title="Copy CMS-ready HTML (WordPress-compatible blocks)"
                 >
                   {copiedWp ? (
                     <>
@@ -941,8 +1014,8 @@ export default function AssetWorkspace({
                   ) : (
                     <>
                       <Code2 className="w-4 h-4 text-blue-300" />
-                      <span className="hidden sm:inline">Copy WordPress HTML</span>
-                      <span className="sm:hidden">WP HTML</span>
+                      <span className="hidden sm:inline">Copy HTML</span>
+                      <span className="sm:hidden">HTML</span>
                     </>
                   )}
                 </button>
@@ -951,7 +1024,7 @@ export default function AssetWorkspace({
                     type="button"
                     onClick={onOpenHelp}
                     className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold text-slate-500 hover:text-emerald-400 cursor-pointer"
-                    title="WordPress publishing guide"
+                    title="Publishing guide"
                   >
                     <HelpCircle className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Publishing guide</span>
@@ -964,8 +1037,8 @@ export default function AssetWorkspace({
               <div className="px-4 py-4 bg-slate-950 border-b border-purple-500/20 space-y-3">
                 <p className="text-sm text-slate-300">
                   <span className="font-bold text-white">Review status</span> — pick{' '}
-                  <span className="text-emerald-400 font-bold">Approved</span> before live WordPress publish.
-                  Or use <span className="text-slate-200 font-semibold">WP Draft</span> to skip this step.
+                  <span className="text-emerald-400 font-bold">Approved</span> before live Signal Desk publish.
+                  Or use <span className="text-slate-200 font-semibold">SD Draft</span> to skip this step.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {APPROVAL_STEPS.map((step) => (

@@ -265,7 +265,7 @@ export default function RefinePanel({
                 <span className="text-xs text-slate-500 shrink-0">{seoSnapshot.wordCount} words</span>
               </div>
               <p className="text-xs text-slate-500">
-                Shown below your post when you use <strong className="text-slate-400">Copy WordPress HTML</strong>
+                Shown below your post when you use <strong className="text-slate-400">Copy HTML</strong>
               </p>
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 text-sm">
                 {seoSnapshot.summary && (
