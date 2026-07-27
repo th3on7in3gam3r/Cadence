@@ -5,6 +5,9 @@
 
 import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
+const META_MIN = 40;
+const ANSWER_MIN = 40;
+
 export type SignalDeskCredentials = {
   siteUrl: string;
   apiKey: string;
@@ -18,6 +21,31 @@ export function normalizeSignalDeskSiteUrl(value: string): string {
 
 export function generateWebhookSecret(): string {
   return `sd_wh_${randomBytes(24).toString('base64url')}`;
+}
+
+/** Absolute http(s) cover only — data: / blob / relative are not usable for live publish. */
+export function isUsableSignalDeskCoverUrl(url: string | undefined | null): boolean {
+  const trimmed = (url || '').trim();
+  if (!trimmed || /^data:/i.test(trimmed) || /^blob:/i.test(trimmed)) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export function ensureMinLength(value: string, min: number, padWith: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length >= min) return trimmed;
+  const pad = padWith.trim() || 'Signal Desk dispatch.';
+  if (!trimmed) {
+    return pad.length >= min ? pad : `${pad}${'.'.repeat(min - pad.length)}`;
+  }
+  const filler = ` ${pad}`;
+  let out = trimmed;
+  while (out.length < min) out += filler;
+  return out.slice(0, Math.max(min, trimmed.length));
 }
 
 export async function testSignalDeskConnection(
@@ -58,27 +86,60 @@ export async function publishToSignalDeskApi(input: {
   metaDescription?: string;
   answerBlock?: string;
   byline?: string;
+  slug?: string;
 }): Promise<{ postId: number | string | undefined; link?: string; status?: string }> {
   const siteUrl = normalizeSignalDeskSiteUrl(input.credentials.siteUrl);
-  const excerptText = (input.excerpt || '').trim();
-  const description =
-    (input.metaDescription || '').trim() || excerptText;
-  const cover = (input.featuredMediaUrl || '').trim();
-  const answer =
-    (input.answerBlock || '').trim() || description || excerptText;
+  const title = input.title.trim() || 'Untitled dispatch';
+  const excerptBase =
+    (input.excerpt || '').trim() ||
+    (input.metaDescription || '').trim() ||
+    title;
+  const excerptText = ensureMinLength(excerptBase, META_MIN, title);
+  const description = ensureMinLength(
+    (input.metaDescription || '').trim() || excerptBase,
+    META_MIN,
+    title,
+  );
+  const coverRaw = (input.featuredMediaUrl || '').trim();
+  const cover = isUsableSignalDeskCoverUrl(coverRaw) ? coverRaw : '';
+  const answer = ensureMinLength(
+    (input.answerBlock || '').trim() || description || excerptText,
+    ANSWER_MIN,
+    title,
+  );
+
+  const requestedStatus = (input.status || 'draft').trim().toLowerCase();
+  let status = requestedStatus || 'draft';
+  // Live publish requires an absolute cover URL — mirror CitePilot (downgrade to review).
+  if ((status === 'publish' || status === 'scheduled') && !cover) {
+    status = 'review';
+  }
+
+  const slugHint =
+    (input.slug || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || undefined;
+  const canonical =
+    status === 'publish' || status === 'scheduled'
+      ? `${siteUrl}/posts/${slugHint || 'post'}`
+      : undefined;
 
   const payload: Record<string, unknown> = {
-    title: input.title,
+    title,
     content: input.content,
-    status: input.status || 'draft',
+    status,
     excerpt: excerptText,
   };
+  if (slugHint) payload.slug = slugHint;
   if (cover) payload.featured_media_url = cover;
   payload.meta = {
     description,
-    cover_image_url: cover || undefined,
+    ...(cover ? { cover_image_url: cover } : {}),
     answer_block: answer,
     byline: input.byline?.trim() || undefined,
+    ...(canonical ? { canonical_url: canonical } : {}),
   };
 
   const res = await fetch(`${siteUrl}/wp-json/wp/v2/posts`, {
@@ -103,7 +164,11 @@ export async function publishToSignalDeskApi(input: {
     link?: string;
     status?: string;
   };
-  return { postId: post.id, link: post.link, status: post.status };
+  return {
+    postId: post.id,
+    link: post.link,
+    status: post.status || status,
+  };
 }
 
 export function verifySignalDeskWebhookSignature(

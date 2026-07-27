@@ -567,19 +567,38 @@ export default function AssetWorkspace({
 
       const destLabel =
         destination === 'signaldesk' ? 'Signal Desk' : 'WordPress';
-      triggerToast?.(
-        asDraft
-          ? `${destLabel} draft saved (ID ${result.postId}).`
-          : `Published to ${destLabel}: ${result.link || result.postId}`,
-        'success',
-      );
+      const remoteStatus =
+        typeof (result as { status?: string }).status === 'string'
+          ? String((result as { status?: string }).status).toLowerCase()
+          : '';
+      const savedAsReview =
+        destination === 'signaldesk' &&
+        !asDraft &&
+        (remoteStatus === 'review' || remoteStatus === 'pending');
+
+      if (asDraft) {
+        triggerToast?.(
+          `${destLabel} draft saved (ID ${result.postId}).`,
+          'success',
+        );
+      } else if (savedAsReview) {
+        triggerToast?.(
+          `Saved to Signal Desk for review (ID ${result.postId}). Add a public https cover URL to publish live.`,
+          'info',
+        );
+      } else {
+        triggerToast?.(
+          `Published to ${destLabel}: ${result.link || result.postId}`,
+          'success',
+        );
+      }
       recordPublishEvent({
         assetType,
         title: asset.title || `${companyInfo.brandName} blog post`,
         url: result.link,
         platform: destination,
       });
-      onUpdateApproval?.(0, 'published');
+      onUpdateApproval?.(0, savedAsReview ? 'approved' : 'published');
     } catch (e: unknown) {
       triggerToast?.(e instanceof Error ? e.message : 'Publish failed', 'error');
     } finally {
