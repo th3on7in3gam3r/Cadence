@@ -17,6 +17,7 @@ import {
   Share2,
   Shield,
   Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 import StudioBundlesPricingSection from '../StudioBundlesPricingSection';
 import GrowthStackBundleCta from './GrowthStackBundleCta';
@@ -36,6 +37,7 @@ const PRODUCT_ICONS: Record<string, React.ReactNode> = {
   kerygma: <Share2 className="w-5 h-5" />,
   postwick: <Globe2 className="w-5 h-5" />,
   aegis: <Shield className="w-5 h-5" />,
+  moneyGap: <TrendingUp className="w-5 h-5" />,
   pulse: <Activity className="w-5 h-5" />,
 };
 

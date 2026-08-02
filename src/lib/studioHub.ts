@@ -9,6 +9,7 @@ import {
   aiCmoAppUrl,
   aiCmoStudioBillingUrl,
   kerygmaHomeUrl,
+  moneyGapHomeUrl,
   postwickHomeUrl,
   type StudioBundleId,
 } from './growthStack';
@@ -19,6 +20,7 @@ export type StudioHubProductId =
   | 'kerygma'
   | 'postwick'
   | 'aegis'
+  | 'moneygap'
   | 'vesper'
   | 'rhemanote'
   | 'pulpit';
@@ -102,6 +104,14 @@ export const STUDIO_HUB_PRODUCTS: StudioHubProduct[] = [
     href: GROWTH_STACK_PRODUCTS.aegis.url,
     category: 'growth',
     bundleId: 'devsec',
+  },
+  {
+    id: 'moneygap',
+    name: GROWTH_STACK_PRODUCTS.moneyGap.name,
+    tagline: GROWTH_STACK_PRODUCTS.moneyGap.tagline,
+    href: moneyGapHomeUrl('studio-hub'),
+    category: 'growth',
+    availability: 'available',
   },
   {
     id: 'vesper',

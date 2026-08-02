@@ -9,6 +9,7 @@ import {
   GROWTH_STACK_PRODUCTS,
   aiCmoAppUrl,
   kerygmaHomeUrl,
+  moneyGapHomeUrl,
   postwickHomeUrl,
   pulsePublicOrigin,
   signalDeskHomeUrl,
@@ -23,6 +24,7 @@ export type GrowthStackProductId =
   | 'kerygma'
   | 'postwick'
   | 'aegis'
+  | 'moneyGap'
   | 'pulse';
 
 export interface GrowthStackWorkflowStep {
@@ -56,6 +58,12 @@ export const GROWTH_STACK_WORKFLOW: GrowthStackWorkflowStep[] = [
     product: GROWTH_STACK_PRODUCTS.aegis.name,
     label: 'Find',
     description: 'Scan headers and vulnerabilities before you ship campaigns.',
+  },
+  {
+    id: 'moneygap',
+    product: GROWTH_STACK_PRODUCTS.moneyGap.name,
+    label: 'Find leaks',
+    description: 'Find and close revenue leaks on your live site.',
   },
   {
     id: 'citepilot',
@@ -103,6 +111,7 @@ export const SIGNAL_DESK_SPOTLIGHT = {
 
 export const GROWTH_STACK_TEASER_PILLS = [
   PRODUCT_NAME,
+  GROWTH_STACK_PRODUCTS.moneyGap.name,
   GROWTH_STACK_PRODUCTS.citePilot.name,
   'Signal Desk Blog',
   GROWTH_STACK_PRODUCTS.kerygma.name,
@@ -161,6 +170,15 @@ export function growthStackProductCards(campaign = 'growth-stack-promo'): Growth
       accentClass: 'text-violet-400',
       borderClass: 'border-violet-500/20 hover:border-violet-500/40',
       logoSrc: '/landing/logos/aegis-loop.svg',
+    },
+    {
+      id: 'moneyGap',
+      name: GROWTH_STACK_PRODUCTS.moneyGap.name,
+      tagline: GROWTH_STACK_PRODUCTS.moneyGap.tagline,
+      href: moneyGapHomeUrl(campaign),
+      external: true,
+      accentClass: 'text-lime-400',
+      borderClass: 'border-lime-500/20 hover:border-lime-500/40',
     },
     {
       id: 'pulse',

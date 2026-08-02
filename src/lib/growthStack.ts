@@ -42,6 +42,15 @@ export const GROWTH_STACK_PRODUCTS = {
     tagline: 'Find vulnerabilities before you ship',
     url: 'https://aegis-loop.com',
   },
+  moneyGap: {
+    name: 'MoneyGap AI',
+    tagline: 'Find and close revenue leaks on your site',
+    url:
+      (typeof import.meta !== 'undefined' &&
+        import.meta.env?.VITE_MONEYGAP_URL &&
+        String(import.meta.env.VITE_MONEYGAP_URL).replace(/\/+$/, '')) ||
+      'https://www.moneygap-ai.com',
+  },
   pulse: {
     name: 'Pulse',
     tagline: 'Measure what happens after campaigns land',
@@ -184,6 +193,22 @@ export function pulsePublicOrigin(): string {
     return String(import.meta.env.VITE_PULSE_URL).replace(/\/+$/, '');
   }
   return GROWTH_STACK_PRODUCTS.pulse.url;
+}
+
+export function moneyGapPublicOrigin(): string {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MONEYGAP_URL) {
+    return String(import.meta.env.VITE_MONEYGAP_URL).replace(/\/+$/, '');
+  }
+  return GROWTH_STACK_PRODUCTS.moneyGap.url;
+}
+
+export function moneyGapHomeUrl(campaign = 'growth-stack', content?: string): string {
+  return withUtm(moneyGapPublicOrigin(), {
+    source: 'cadence',
+    campaign,
+    medium: 'referral',
+    ...(content ? { content } : {}),
+  });
 }
 
 /** Pixel `data-site` for a brand domain — must match Pulse `siteIdFromDomain`. */
