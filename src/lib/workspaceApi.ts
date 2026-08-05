@@ -109,11 +109,38 @@ export function mergeWorkspacePayload(
   return merged;
 }
 
+export type CloudWorkspaceResult = {
+  payload: WorkspacePayload | null;
+  ok: boolean;
+  status: number;
+};
+
+/** Load cloud workspace. Retries once on auth failure after a short delay (OAuth handoff). */
 export async function fetchCloudWorkspace(): Promise<WorkspacePayload | null> {
-  const res = await apiFetch('/api/workspace/current');
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.workspace?.payload || null;
+  const result = await fetchCloudWorkspaceDetailed();
+  return result.payload;
+}
+
+export async function fetchCloudWorkspaceDetailed(): Promise<CloudWorkspaceResult> {
+  const attempt = async (): Promise<CloudWorkspaceResult> => {
+    const res = await apiFetch('/api/workspace/current');
+    if (!res.ok) {
+      return { payload: null, ok: false, status: res.status };
+    }
+    const data = await res.json();
+    return {
+      payload: (data.workspace?.payload as WorkspacePayload) || null,
+      ok: true,
+      status: res.status,
+    };
+  };
+
+  let result = await attempt();
+  if (!result.ok && (result.status === 401 || result.status === 403)) {
+    await new Promise((r) => setTimeout(r, 400));
+    result = await attempt();
+  }
+  return result;
 }
 
 export async function saveCloudWorkspace(payload: WorkspacePayload, name?: string): Promise<boolean> {

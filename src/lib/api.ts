@@ -16,6 +16,14 @@ export async function resolveAuthToken(): Promise<string | undefined> {
   return legacy?.trim() || undefined;
 }
 
+async function refreshAuthToken(): Promise<string | undefined> {
+  const sb = getSupabase();
+  if (!sb) return undefined;
+  const { data, error } = await sb.auth.refreshSession();
+  if (error || !data.session?.access_token) return undefined;
+  return data.session.access_token;
+}
+
 export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const token = await resolveAuthToken();
   const headers = new Headers(init.headers);
@@ -28,5 +36,16 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
     headers.set('Content-Type', 'application/json');
   }
 
-  return fetch(input, { ...init, headers });
+  let res = await fetch(input, { ...init, headers });
+
+  // After OAuth / tab sleep, the access token can be stale while refresh still works.
+  if ((res.status === 401 || res.status === 403) && token && getSupabase()) {
+    const refreshed = await refreshAuthToken();
+    if (refreshed && refreshed !== token) {
+      headers.set('Authorization', `Bearer ${refreshed}`);
+      res = await fetch(input, { ...init, headers });
+    }
+  }
+
+  return res;
 }

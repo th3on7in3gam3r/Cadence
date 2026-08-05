@@ -8,11 +8,11 @@ import { BrainCircuit, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from '../../lib/brand';
 
-export default function LoginPage() {
+export default function LoginPage({ authError }: { authError?: string | null }) {
   const { signInWithGoogle, signInWithEmail, signInAsGuest } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(authError || null);
   const [busy, setBusy] = useState(false);
 
   const handleEmail = async (e: React.FormEvent) => {
@@ -50,6 +50,12 @@ export default function LoginPage() {
         <p className="text-xs text-slate-400 mb-5 leading-relaxed">
           Free plan includes 1 brand workspace and 3 SEO audits per month. No credit card required.
         </p>
+
+        {error && (
+          <p className="text-xs text-rose-400 mb-4 leading-relaxed" role="alert">
+            {error}
+          </p>
+        )}
 
         <button
           type="button"
@@ -98,7 +104,7 @@ export default function LoginPage() {
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
-            {error && <p className="text-xs text-rose-400">{error}</p>}
+            {error && !authError && <p className="text-xs text-rose-400">{error}</p>}
             <button
               type="submit"
               disabled={busy}

@@ -30,10 +30,13 @@ import GrowthStackPage from './pages/marketing/GrowthStackPage';
 import ScrollToTopOnNavigate from './components/ScrollToTopOnNavigate';
 
 function AppGate() {
-  const { cloudEnabled, session, loading } = useAuth();
+  const { cloudEnabled, session, loading, authError } = useAuth();
   const navigate = useNavigate();
+  const oauthPending =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('code');
 
-  if (cloudEnabled && loading) {
+  if (cloudEnabled && (loading || oauthPending)) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 text-sm">
         Loading your workspace…
@@ -41,7 +44,7 @@ function AppGate() {
     );
   }
   if (cloudEnabled && !session) {
-    return <LoginPage />;
+    return <LoginPage authError={authError} />;
   }
   return <App onGoHome={() => navigate('/')} />;
 }

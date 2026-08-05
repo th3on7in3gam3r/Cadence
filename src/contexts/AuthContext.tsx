@@ -14,6 +14,7 @@ interface AuthContextValue {
   user: User | null;
   isGuest: boolean;
   loading: boolean;
+  authError: string | null;
   signInAsGuest: () => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string) => Promise<{ error?: string }>;
@@ -22,10 +23,24 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function stripOauthParamsFromUrl() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('code') && !url.searchParams.has('state') && !url.searchParams.has('error')) {
+    return;
+  }
+  url.searchParams.delete('code');
+  url.searchParams.delete('state');
+  url.searchParams.delete('error');
+  url.searchParams.delete('error_description');
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(null, '', next);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const cloudEnabled = isCloudEnabled();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(cloudEnabled);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!cloudEnabled) {
@@ -36,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     const init = async () => {
+      setAuthError(null);
+
       const hash = window.location.hash;
       if (hash.includes('access_token')) {
         const params = new URLSearchParams(hash.replace(/^#/, ''));
@@ -45,6 +62,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await sb.auth.setSession({ access_token, refresh_token });
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
         }
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const oauthError = params.get('error_description') || params.get('error');
+      if (oauthError) {
+        stripOauthParamsFromUrl();
+        if (!cancelled) {
+          setAuthError(oauthError);
+          setSession(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const code = params.get('code');
+      if (code) {
+        // Manual PKCE exchange — avoids racing detectSessionInUrl + getSession.
+        const { data, error } = await sb.auth.exchangeCodeForSession(code);
+        stripOauthParamsFromUrl();
+        if (cancelled) return;
+        if (error) {
+          setAuthError(error.message || 'Sign-in could not be completed. Please try again.');
+          const existing = await sb.auth.getSession();
+          setSession(existing.data.session);
+          setLoading(false);
+          return;
+        }
+        setSession(data.session);
+        setLoading(false);
+        return;
       }
 
       const { data } = await sb.auth.getSession();
@@ -57,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void init();
 
     const { data: sub } = sb.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
+      if (!cancelled) setSession(s);
     });
     return () => {
       cancelled = true;
@@ -131,12 +178,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isGuest,
       loading,
+      authError,
       signInAsGuest,
       signInWithGoogle,
       signInWithEmail,
       signOut,
     }),
-    [cloudEnabled, session, user, isGuest, loading, signInAsGuest, signInWithGoogle, signInWithEmail, signOut],
+    [cloudEnabled, session, user, isGuest, loading, authError, signInAsGuest, signInWithGoogle, signInWithEmail, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -56,7 +56,7 @@ import { useAuth } from './contexts/AuthContext';
 import GuestTrialBanner from './components/GuestTrialBanner';
 import {
   buildPayloadFromLocal,
-  fetchCloudWorkspace,
+  fetchCloudWorkspaceDetailed,
   hydrateLocalFromPayload,
   saveCloudWorkspace,
   mergeWorkspacePayload,
@@ -73,10 +73,13 @@ interface AppProps {
 }
 
 export default function App({ onGoHome }: AppProps) {
-  const { cloudEnabled, session, signOut, user, isGuest } = useAuth();
+  const { cloudEnabled, session, signOut, user, isGuest, loading: authLoading } = useAuth();
   const guestUpgradeMsg =
     'Create a free account to unlock content generation, SEO tools, and cloud save.';
   const [cloudHydrated, setCloudHydrated] = useState(!cloudEnabled);
+  const [cloudSyncReady, setCloudSyncReady] = useState(!cloudEnabled);
+  const [cloudHydrateError, setCloudHydrateError] = useState<string | null>(null);
+  const [cloudHydrateAttempt, setCloudHydrateAttempt] = useState(0);
   const [hostedAi, setHostedAi] = useState(false);
   const [activeView, setActiveView] = useState<AppView>(() => {
     const saved = localStorage.getItem('ai_cmo_active_view') as string | null;
@@ -175,7 +178,7 @@ export default function App({ onGoHome }: AppProps) {
 
   const persistCloudWorkspace = useCallback(
     async (overrides?: Partial<WorkspacePayload>) => {
-      if (!cloudEnabled || !session || !cloudHydrated) return;
+      if (!cloudEnabled || !session || !cloudHydrated || !cloudSyncReady) return;
       const base = workspaceSnapshotRef.current;
       const payload = mergeWorkspacePayload(
         {
@@ -194,31 +197,57 @@ export default function App({ onGoHome }: AppProps) {
       );
       await saveCloudWorkspace(payload).catch(() => undefined);
     },
-    [cloudEnabled, session, cloudHydrated],
+    [cloudEnabled, session, cloudHydrated, cloudSyncReady],
   );
 
-  // Cloud: load workspace on sign-in
+  // Cloud: load workspace on sign-in (wait for auth to finish OAuth handoff first)
   useEffect(() => {
-    if (!cloudEnabled || !session) {
+    if (!cloudEnabled) {
       setCloudHydrated(true);
+      setCloudSyncReady(true);
       return;
     }
+    if (authLoading) return;
+    if (!session) {
+      setCloudHydrated(true);
+      setCloudSyncReady(false);
+      return;
+    }
+
     let cancelled = false;
+    setCloudHydrated(false);
+    setCloudSyncReady(false);
+    setCloudHydrateError(null);
+
     (async () => {
       syncUserSetupFromMetadata(session.user);
-      let payload = await fetchCloudWorkspace();
+      const result = await fetchCloudWorkspaceDetailed();
       if (cancelled) return;
+
+      if (!result.ok) {
+        setCloudHydrateError(
+          'Could not load your saved workspace. Check your connection and try again.',
+        );
+        setCloudHydrated(true);
+        setCloudSyncReady(false);
+        return;
+      }
+
+      let payload = result.payload;
       if (payload) {
         payload = await resolveActiveBrandOnLoad(payload);
-        if (payload.brandUrl && payload.brandAnalysis) {
+        if (cancelled) return;
+        if (payload?.brandUrl && payload.brandAnalysis) {
           await ensureWorkspaceBrand(
             payload.brandAnalysis.brandName || 'My brand',
             payload.brandUrl,
             payload,
           ).catch(() => undefined);
         }
+        if (cancelled) return;
         const localSnapshot = buildPayloadFromLocal();
-        const merged = mergeWorkspacePayload(payload, localSnapshot);
+        // Prefer cloud after sign-in so a failed prior session can't clobber saved work.
+        const merged = mergeWorkspacePayload(localSnapshot, payload);
         hydrateLocalFromPayload(merged);
         if (merged.brandAnalysis) setBrandAnalysis(merged.brandAnalysis);
         if (merged.brandUrl) setBrandUrl(normalizeBrandUrl(merged.brandUrl));
@@ -230,17 +259,44 @@ export default function App({ onGoHome }: AppProps) {
         if (merged.campaignRuns) setCampaignRuns(merged.campaignRuns);
         if (merged.brandAnalysis) {
           localStorage.setItem('ai_cmo_user_setup_complete', 'true');
-          const bid = slugifyBrandId(payload.brandUrl || '');
+          const bid = slugifyBrandId(payload?.brandUrl || '');
           setActiveView('dashboard');
           navigate(buildAppPath('dashboard', bid), { replace: true });
         } else if (merged.activeView && merged.activeView !== 'onboarding') {
           setActiveView(merged.activeView as typeof activeView);
         }
+      } else {
+        const fromBrands = await resolveActiveBrandOnLoad(null);
+        if (cancelled) return;
+        if (fromBrands) {
+          hydrateLocalFromPayload(fromBrands);
+          if (fromBrands.brandAnalysis) setBrandAnalysis(fromBrands.brandAnalysis);
+          if (fromBrands.brandUrl) setBrandUrl(normalizeBrandUrl(fromBrands.brandUrl));
+          if (fromBrands.growthGoal) setGrowthGoal(fromBrands.growthGoal);
+          if (fromBrands.brandVoice) setBrandVoice(fromBrands.brandVoice);
+          if (fromBrands.customChallenge) setCustomChallenge(fromBrands.customChallenge);
+          if (fromBrands.cachedAssets) setCachedAssets(fromBrands.cachedAssets);
+          if (fromBrands.assetHistory) {
+            setAssetHistory(fromBrands.assetHistory as typeof assetHistory);
+          }
+          if (fromBrands.campaignRuns) setCampaignRuns(fromBrands.campaignRuns);
+          if (fromBrands.brandAnalysis) {
+            localStorage.setItem('ai_cmo_user_setup_complete', 'true');
+            const bid = slugifyBrandId(fromBrands.brandUrl || '');
+            setActiveView('dashboard');
+            navigate(buildAppPath('dashboard', bid), { replace: true });
+          }
+        }
       }
+
       setCloudHydrated(true);
+      setCloudSyncReady(true);
     })();
-    return () => { cancelled = true; };
-  }, [cloudEnabled, session?.user?.id]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudEnabled, authLoading, session?.user?.id, cloudHydrateAttempt]);
 
   useEffect(() => {
     if (!cloudHydrated) return;
@@ -266,9 +322,9 @@ export default function App({ onGoHome }: AppProps) {
     }
   }, [cloudHydrated, user, activeView, brandAnalysis]);
 
-  // Cloud: auto-save workspace (debounced)
+  // Cloud: auto-save workspace (debounced) — only after a successful hydrate
   useEffect(() => {
-    if (!cloudEnabled || !session || !cloudHydrated) return;
+    if (!cloudEnabled || !session || !cloudHydrated || !cloudSyncReady) return;
     const timer = setTimeout(() => {
       const payload = mergeWorkspacePayload(
         {
@@ -293,6 +349,7 @@ export default function App({ onGoHome }: AppProps) {
     cloudEnabled,
     session,
     cloudHydrated,
+    cloudSyncReady,
     brandAnalysis,
     brandUrl,
     growthGoal,
@@ -306,7 +363,7 @@ export default function App({ onGoHome }: AppProps) {
   ]);
 
   useEffect(() => {
-    if (!cloudEnabled || !session || !cloudHydrated) return;
+    if (!cloudEnabled || !session || !cloudHydrated || !cloudSyncReady) return;
     const flush = () => {
       void persistCloudWorkspace();
     };
@@ -319,7 +376,7 @@ export default function App({ onGoHome }: AppProps) {
       window.removeEventListener('beforeunload', flush);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [cloudEnabled, session, cloudHydrated, persistCloudWorkspace]);
+  }, [cloudEnabled, session, cloudHydrated, cloudSyncReady, persistCloudWorkspace]);
 
   // OAuth return from Google integrations — handled after triggerToast is defined below
 
@@ -860,6 +917,31 @@ export default function App({ onGoHome }: AppProps) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 text-sm">
         Syncing your cloud workspace…
+      </div>
+    );
+  }
+
+  if (cloudEnabled && cloudHydrateError) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-slate-300 text-sm max-w-md">{cloudHydrateError}</p>
+        <button
+          type="button"
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold cursor-pointer"
+          onClick={() => {
+            setCloudHydrateError(null);
+            setCloudHydrateAttempt((n) => n + 1);
+          }}
+        >
+          Try again
+        </button>
+        <button
+          type="button"
+          className="text-xs text-slate-500 hover:text-slate-300 cursor-pointer"
+          onClick={() => void signOut()}
+        >
+          Sign out
+        </button>
       </div>
     );
   }

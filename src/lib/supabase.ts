@@ -14,7 +14,8 @@ export function getSupabase(): SupabaseClient | null {
   if (!client) {
     client = createClient(config.url, config.anonKey, {
       auth: {
-        detectSessionInUrl: true,
+        // AuthContext exchanges ?code= explicitly to avoid hydrate races.
+        detectSessionInUrl: false,
         flowType: 'pkce',
       },
     });

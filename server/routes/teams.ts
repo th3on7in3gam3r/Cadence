@@ -68,6 +68,7 @@ router.get('/brands', requireUser, async (req: AuthedRequest, res) => {
 
 router.get('/brands/:id', requireUser, async (req: AuthedRequest, res) => {
   try {
+    const org = await getOrCreateOrg(req.userId!);
     const sb = getSupabaseAdmin()!;
     const { data, error } = await sb
       .from('brands')
@@ -76,6 +77,9 @@ router.get('/brands/:id', requireUser, async (req: AuthedRequest, res) => {
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Brand not found' });
+    if (data.org_id !== org.id) {
+      return res.status(403).json({ error: 'You do not have access to this brand.' });
+    }
     res.json({ brand: data });
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : 'Failed to load brand' });
@@ -134,8 +138,19 @@ router.post('/brands', requireUser, async (req: AuthedRequest, res) => {
 
 router.put('/brands/:id', requireUser, async (req: AuthedRequest, res) => {
   try {
+    const org = await getOrCreateOrg(req.userId!);
     const { name, brandUrl, payload } = req.body;
     const sb = getSupabaseAdmin()!;
+    const { data: existing, error: fetchError } = await sb
+      .from('brands')
+      .select('id, org_id')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!existing) return res.status(404).json({ error: 'Brand not found' });
+    if (existing.org_id !== org.id) {
+      return res.status(403).json({ error: 'You do not have access to this brand.' });
+    }
     const { data, error } = await sb
       .from('brands')
       .update({

@@ -18,6 +18,7 @@ import {
   saveLocalBrands,
   getActiveBrandId,
   setActiveBrandId,
+  clearActiveBrandId,
   upsertBrandForWorkspace,
   type LocalBrand,
 } from '../utils/brands';
@@ -133,7 +134,13 @@ export async function fetchBrandPayload(brandId: string): Promise<WorkspacePaylo
     return (b?.payload as WorkspacePayload) || null;
   }
   const res = await apiFetch(`/api/teams/brands/${brandId}`);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // Stale active-brand id from another account/session — drop it so we can recover.
+    if (res.status === 403 || res.status === 404) {
+      if (getActiveBrandId() === brandId) clearActiveBrandId();
+    }
+    return null;
+  }
   const data = await res.json();
   return data.brand?.payload || null;
 }
