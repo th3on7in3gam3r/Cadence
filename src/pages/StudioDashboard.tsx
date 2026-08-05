@@ -22,6 +22,7 @@ import {
   Sparkles,
   Video,
   Globe2,
+  TrendingUp,
 } from 'lucide-react';
 import { isCloudEnabled } from '../lib/cloudConfig';
 import { fetchBillingStatus, type BillingStatus } from '../lib/billingApi';
@@ -49,6 +50,7 @@ const GROWTH_ICONS: Record<string, React.ReactNode> = {
   kerygma: <Share2 className="w-4 h-4" />,
   postwick: <Globe2 className="w-4 h-4" />,
   aegis: <Shield className="w-4 h-4" />,
+  moneygap: <TrendingUp className="w-4 h-4" />,
 };
 
 const CHURCH_ICONS: Record<string, React.ReactNode> = {

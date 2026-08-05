@@ -14,6 +14,7 @@ import {
   Search,
   Share2,
   Shield,
+  TrendingUp,
 } from 'lucide-react';
 import { isCloudEnabled } from '../../lib/cloudConfig';
 import {
@@ -25,10 +26,10 @@ import {
   saveGrowthStackSettings,
   type GrowthStackSettings,
 } from '../../utils/growthStackSettings';
-import { GROWTH_STACK_PRODUCTS, postwickStudioUrl } from '../../lib/growthStack';
+import { GROWTH_STACK_PRODUCTS, moneyGapHomeUrl, postwickStudioUrl } from '../../lib/growthStack';
 
 type ProductKeyId = keyof GrowthStackSettings;
-type SisterProductKey = 'citePilot' | 'kerygma' | 'aegis' | 'postwick';
+type SisterProductKey = 'citePilot' | 'kerygma' | 'aegis' | 'postwick' | 'moneyGap';
 
 const PRODUCT_KEY_FIELDS: {
   id: ProductKeyId;
@@ -70,6 +71,14 @@ const PRODUCT_KEY_FIELDS: {
     placeholder: 'pw_live_… from Postwick Studio',
     hint: 'Create a key in Postwick Studio → API keys, then paste it here.',
   },
+  {
+    id: 'moneyGapApiKey',
+    productKey: 'moneyGap',
+    icon: <TrendingUp className="w-4 h-4" />,
+    iconColor: 'text-emerald-400',
+    placeholder: 'API key from moneygap-ai.com',
+    hint: 'Optional — find revenue leaks on your live site; paste a key when available from MoneyGap settings.',
+  },
 ];
 
 function hasAnyKey(keys: GrowthStackSettings): boolean {
@@ -77,18 +86,34 @@ function hasAnyKey(keys: GrowthStackSettings): boolean {
     keys.citePilotApiKey ||
       keys.kerygmaApiKey ||
       keys.aegisApiKey ||
-      keys.postwickApiKey,
+      keys.postwickApiKey ||
+      keys.moneyGapApiKey,
   );
 }
 
-export default function GrowthStackIntegrationsPanel() {
-  const cloud = isCloudEnabled();
-  const [keys, setKeys] = useState<GrowthStackSettings>({
+function emptyKeys(): GrowthStackSettings {
+  return {
     citePilotApiKey: '',
     kerygmaApiKey: '',
     aegisApiKey: '',
     postwickApiKey: '',
-  });
+    moneyGapApiKey: '',
+  };
+}
+
+function normalizeKeys(partial: Partial<GrowthStackSettings>): GrowthStackSettings {
+  return {
+    citePilotApiKey: partial.citePilotApiKey ?? '',
+    kerygmaApiKey: partial.kerygmaApiKey ?? '',
+    aegisApiKey: partial.aegisApiKey ?? '',
+    postwickApiKey: partial.postwickApiKey ?? '',
+    moneyGapApiKey: partial.moneyGapApiKey ?? '',
+  };
+}
+
+export default function GrowthStackIntegrationsPanel() {
+  const cloud = isCloudEnabled();
+  const [keys, setKeys] = useState<GrowthStackSettings>(emptyKeys);
   const [loading, setLoading] = useState(cloud);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -107,13 +132,9 @@ export default function GrowthStackIntegrationsPanel() {
           if (cancelled) return;
 
           if (remote && hasAnyKey(remote)) {
-            setKeys({
-              citePilotApiKey: remote.citePilotApiKey,
-              kerygmaApiKey: remote.kerygmaApiKey,
-              aegisApiKey: remote.aegisApiKey,
-              postwickApiKey: remote.postwickApiKey ?? '',
-            });
-            saveGrowthStackSettings(remote);
+            const normalized = normalizeKeys(remote);
+            setKeys(normalized);
+            saveGrowthStackSettings(normalized);
             setStorageMode('cloud');
           } else {
             const local = loadGrowthStackSettings();
@@ -149,12 +170,13 @@ export default function GrowthStackIntegrationsPanel() {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const trimmed = {
+    const trimmed = normalizeKeys({
       citePilotApiKey: keys.citePilotApiKey.trim(),
       kerygmaApiKey: keys.kerygmaApiKey.trim(),
       aegisApiKey: keys.aegisApiKey.trim(),
       postwickApiKey: keys.postwickApiKey.trim(),
-    };
+      moneyGapApiKey: keys.moneyGapApiKey.trim(),
+    });
 
     try {
       if (cloud) {
@@ -215,7 +237,9 @@ export default function GrowthStackIntegrationsPanel() {
             const productHref =
               field.productKey === 'postwick'
                 ? postwickStudioUrl('settings-integrations')
-                : product.url;
+                : field.productKey === 'moneyGap'
+                  ? moneyGapHomeUrl('settings-integrations')
+                  : product.url;
             return (
               <div
                 key={field.id}
@@ -232,7 +256,11 @@ export default function GrowthStackIntegrationsPanel() {
                     rel="noopener noreferrer"
                     className="text-[10px] font-bold text-slate-500 hover:text-slate-300 inline-flex items-center gap-1 shrink-0"
                   >
-                    {field.productKey === 'postwick' ? 'Open Postwick Studio' : `Open ${product.name}`}
+                    {field.productKey === 'postwick'
+                      ? 'Open Postwick Studio'
+                      : field.productKey === 'moneyGap'
+                        ? 'Open MoneyGap AI'
+                        : `Open ${product.name}`}
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -258,6 +286,20 @@ export default function GrowthStackIntegrationsPanel() {
                         className="text-sky-400 hover:text-sky-300 font-bold inline-flex items-center gap-0.5"
                       >
                         Open Studio
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </>
+                  ) : null}
+                  {field.productKey === 'moneyGap' ? (
+                    <>
+                      {' '}
+                      <a
+                        href={moneyGapHomeUrl('settings-integrations')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-0.5"
+                      >
+                        Open MoneyGap
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </>

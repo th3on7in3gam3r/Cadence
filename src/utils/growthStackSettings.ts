@@ -10,6 +10,7 @@ export interface GrowthStackSettings {
   kerygmaApiKey: string;
   aegisApiKey: string;
   postwickApiKey: string;
+  moneyGapApiKey: string;
 }
 
 const DEFAULTS: GrowthStackSettings = {
@@ -17,6 +18,7 @@ const DEFAULTS: GrowthStackSettings = {
   kerygmaApiKey: '',
   aegisApiKey: '',
   postwickApiKey: '',
+  moneyGapApiKey: '',
 };
 
 export function loadGrowthStackSettings(): GrowthStackSettings {
@@ -30,6 +32,7 @@ export function loadGrowthStackSettings(): GrowthStackSettings {
       kerygmaApiKey: parsed.kerygmaApiKey ?? '',
       aegisApiKey: parsed.aegisApiKey ?? '',
       postwickApiKey: parsed.postwickApiKey ?? '',
+      moneyGapApiKey: parsed.moneyGapApiKey ?? '',
     };
   } catch {
     return { ...DEFAULTS };

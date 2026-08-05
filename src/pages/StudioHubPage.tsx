@@ -19,6 +19,7 @@ import {
   Link2,
   CreditCard,
   Globe2,
+  TrendingUp,
 } from 'lucide-react';
 import StudioBundlesPricingSection from '../components/StudioBundlesPricingSection';
 import MarketingSiteShell from '../components/marketing/MarketingSiteShell';
@@ -48,6 +49,7 @@ const ICONS: Record<StudioHubProductId, React.ReactNode> = {
   kerygma: <Share2 className="w-5 h-5" />,
   postwick: <Globe2 className="w-5 h-5" />,
   aegis: <Shield className="w-5 h-5" />,
+  moneygap: <TrendingUp className="w-5 h-5" />,
   vesper: <Video className="w-5 h-5" />,
   rhemanote: <BookOpen className="w-5 h-5" />,
   pulpit: <LayoutGrid className="w-5 h-5" />,
