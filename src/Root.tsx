@@ -28,6 +28,7 @@ import ComparePage from './pages/marketing/ComparePage';
 import FaqPage from './pages/marketing/FaqPage';
 import GrowthStackPage from './pages/marketing/GrowthStackPage';
 import ScrollToTopOnNavigate from './components/ScrollToTopOnNavigate';
+import PulseSpaPageviews from './components/PulseSpaPageviews';
 
 function AppGate() {
   const { cloudEnabled, session, loading, authError } = useAuth();
@@ -61,6 +62,7 @@ export default function Root() {
             <GlobalProgressBar />
             <OfflineBanner />
             <ScrollToTopOnNavigate />
+            <PulseSpaPageviews />
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/pricing" element={<PricingPage />} />
