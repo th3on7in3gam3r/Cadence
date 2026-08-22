@@ -520,7 +520,7 @@ export default function Settings({ brandName, brandUrl, onResetWorkspace, onOpen
                     <input
                       type="number" min="1" max="60"
                       value={settings.autoSaveWorkspaceInterval}
-                      onChange={(e) => setSettings(prev => ({ ...prev, autoSaveWorkspaceInterval: parseInt(e.target.value) || 5 }))}
+                      onChange={(e) => setSettings(prev => ({ ...prev, autoSaveWorkspaceInterval: parseInt(e.target.value, 10) || 5 }))}
                       className="w-full text-xs font-sans bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
                     />
                   </div>
